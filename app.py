@@ -14,7 +14,6 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 UPLOADS_DIR = BASE_DIR / "uploads"
@@ -44,77 +43,29 @@ STATUSES = [
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "lexflow-dev-secret-key"
-with app.app_context():
-    init_db()
+
 
 def allowed_file(fn):
     return "." in fn and fn.rsplit(".", 1)[1].lower() in ALLOWED_EXT
 
 
 def get_db_connection():
-    """Create a SQLite connection with foreign keys enabled."""
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     return connection
 
 
-def init_db():
-    """Initialize the LexFlow database and required local folders."""
-    DATA_DIR.mkdir(exist_ok=True)
-    UPLOADS_DIR.mkdir(exist_ok=True)
-
-    with get_db_connection() as connection:
-        ensure_matters_table(connection)
-        connection.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS documents (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                matter_id INTEGER NOT NULL,
-                stored_name TEXT NOT NULL,
-                original_name TEXT NOT NULL,
-                uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (matter_id)
-                    REFERENCES matters (id)
-                    ON DELETE CASCADE
-            );
-
-            CREATE TABLE IF NOT EXISTS events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                matter_id INTEGER NOT NULL,
-                event_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                status TEXT NOT NULL,
-                note TEXT,
-                FOREIGN KEY (matter_id)
-                    REFERENCES matters (id)
-                    ON DELETE CASCADE
-            );
-            """
-        )
-
-
 def ensure_matters_table(connection):
-    """Create or align the matters table with the P2 intake schema."""
     expected_columns = [
-        "id",
-        "created_at",
-        "token",
-        "client_name",
-        "email",
-        "phone",
-        "company",
-        "practice_area",
-        "urgency",
-        "description",
-        "status",
-        "internal_notes",
+        "id", "created_at", "token", "client_name", "email",
+        "phone", "company", "practice_area", "urgency",
+        "description", "status", "internal_notes",
     ]
-
     existing_columns = [
         row["name"]
         for row in connection.execute("PRAGMA table_info(matters)").fetchall()
     ]
-
     create_matters_sql = """
         CREATE TABLE IF NOT EXISTS matters (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -131,17 +82,13 @@ def ensure_matters_table(connection):
             internal_notes TEXT DEFAULT ''
         );
     """
-
     if not existing_columns:
         connection.execute(create_matters_sql)
         return
-
     if existing_columns == expected_columns:
         return
-
     connection.execute("PRAGMA foreign_keys = OFF")
-    connection.execute(
-        """
+    connection.execute("""
         CREATE TABLE matters_new (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             created_at TEXT NOT NULL,
@@ -156,9 +103,7 @@ def ensure_matters_table(connection):
             status TEXT NOT NULL DEFAULT 'New intake',
             internal_notes TEXT DEFAULT ''
         );
-        """
-    )
-
+    """)
     select_values = []
     for column in expected_columns:
         if column in existing_columns:
@@ -175,7 +120,6 @@ def ensure_matters_table(connection):
             select_values.append("''")
         else:
             select_values.append("NULL")
-
     connection.execute(
         f"""
         INSERT INTO matters_new ({", ".join(expected_columns)})
@@ -186,6 +130,36 @@ def ensure_matters_table(connection):
     connection.execute("DROP TABLE matters")
     connection.execute("ALTER TABLE matters_new RENAME TO matters")
     connection.execute("PRAGMA foreign_keys = ON")
+
+
+def init_db():
+    DATA_DIR.mkdir(exist_ok=True)
+    UPLOADS_DIR.mkdir(exist_ok=True)
+    with get_db_connection() as connection:
+        ensure_matters_table(connection)
+        connection.executescript("""
+            CREATE TABLE IF NOT EXISTS documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                matter_id INTEGER NOT NULL,
+                stored_name TEXT NOT NULL,
+                original_name TEXT NOT NULL,
+                uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (matter_id) REFERENCES matters (id) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                matter_id INTEGER NOT NULL,
+                event_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                status TEXT NOT NULL,
+                note TEXT,
+                FOREIGN KEY (matter_id) REFERENCES matters (id) ON DELETE CASCADE
+            );
+        """)
+
+
+# Init DB on startup (works with Gunicorn on Railway)
+with app.app_context():
+    init_db()
 
 
 @app.route("/")
@@ -204,12 +178,10 @@ def seed_demo():
 
 
 def seed_demo_data():
-    """Insert lightweight demo matters only when the database is empty."""
     with get_db_connection() as connection:
         existing_count = connection.execute("SELECT COUNT(*) FROM matters").fetchone()[0]
         if existing_count:
             return False
-
         demo_matters = [
             {
                 "token": secrets.token_hex(8).upper(),
@@ -223,7 +195,7 @@ def seed_demo_data():
                 "status": "Lawyer review",
                 "events": [
                     ("New intake", "Matter created from intake form."),
-                    ("Conflict check", "Conflict check completed by the legal team."),
+                    ("Conflict check", "Conflict check completed."),
                     ("Lawyer review", "Your documents are being reviewed."),
                 ],
             },
@@ -235,11 +207,11 @@ def seed_demo_data():
                 "company": "",
                 "practice_area": "Employment",
                 "urgency": "Medium",
-                "description": "Request for review of employment termination documents.",
+                "description": "Review of employment termination documents.",
                 "status": "Waiting client docs",
                 "events": [
                     ("New intake", "Matter created from intake form."),
-                    ("Waiting client docs", "The legal team is waiting for supporting documents."),
+                    ("Waiting client docs", "Waiting for supporting documents."),
                 ],
             },
             {
@@ -254,56 +226,36 @@ def seed_demo_data():
                 "status": "Quoted",
                 "events": [
                     ("New intake", "Matter created from intake form."),
-                    ("Lawyer review", "The legal team reviewed the initial request."),
-                    ("Quoted", "A fee quote has been prepared for this matter."),
+                    ("Lawyer review", "Initial request reviewed."),
+                    ("Quoted", "A fee quote has been prepared."),
                 ],
             },
         ]
-
         for demo in demo_matters:
             created_at = datetime.utcnow().isoformat()
             cursor = connection.execute(
                 """
                 INSERT INTO matters (
-                    created_at,
-                    token,
-                    client_name,
-                    email,
-                    phone,
-                    company,
-                    practice_area,
-                    urgency,
-                    description,
-                    status,
-                    internal_notes
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    created_at, token, client_name, email, phone,
+                    company, practice_area, urgency, description,
+                    status, internal_notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    created_at,
-                    demo["token"],
-                    demo["client_name"],
-                    demo["email"],
-                    demo["phone"],
-                    demo["company"],
-                    demo["practice_area"],
-                    demo["urgency"],
-                    demo["description"],
-                    demo["status"],
+                    created_at, demo["token"], demo["client_name"],
+                    demo["email"], demo["phone"], demo["company"],
+                    demo["practice_area"], demo["urgency"],
+                    demo["description"], demo["status"],
                     "Demo-only internal note.",
                 ),
             )
             matter_id = cursor.lastrowid
             for status, note in demo["events"]:
                 connection.execute(
-                    """
-                    INSERT INTO events (matter_id, event_time, status, note)
-                    VALUES (?, ?, ?, ?)
-                    """,
+                    "INSERT INTO events (matter_id, event_time, status, note) VALUES (?, ?, ?, ?)",
                     (matter_id, datetime.utcnow().isoformat(), status, note),
                 )
-
-    return True
+        return True
 
 
 @app.route("/submit", methods=["POST"])
@@ -327,79 +279,39 @@ def submit():
         cursor = connection.execute(
             """
             INSERT INTO matters (
-                created_at,
-                token,
-                client_name,
-                email,
-                phone,
-                company,
-                practice_area,
-                urgency,
-                description,
-                status,
-                internal_notes
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                created_at, token, client_name, email, phone,
+                company, practice_area, urgency, description,
+                status, internal_notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (
-                created_at,
-                token,
-                client_name,
-                email,
-                phone,
-                company,
-                practice_area,
-                urgency,
-                description,
-                "New intake",
-                "",
-            ),
+            (created_at, token, client_name, email, phone, company,
+             practice_area, urgency, description, "New intake", ""),
         )
         matter_id = cursor.lastrowid
         connection.execute(
-            """
-            INSERT INTO events (matter_id, event_time, status, note)
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                matter_id,
-                datetime.utcnow().isoformat(),
-                "New intake",
-                "Matter created from intake form.",
-            ),
+            "INSERT INTO events (matter_id, event_time, status, note) VALUES (?, ?, ?, ?)",
+            (matter_id, datetime.utcnow().isoformat(), "New intake", "Matter created from intake form."),
         )
         for uploaded in request.files.getlist("documents"):
             if not uploaded or not uploaded.filename:
                 continue
             if not allowed_file(uploaded.filename):
                 continue
-
             original_name = uploaded.filename
             safe_name = secure_filename(original_name)
             unique_name = f"{secrets.token_hex(8)}_{safe_name}"
             uploaded.save(UPLOAD_DIR / unique_name)
             connection.execute(
                 """
-                INSERT INTO documents (
-                    matter_id,
-                    stored_name,
-                    original_name,
-                    uploaded_at
-                )
+                INSERT INTO documents (matter_id, stored_name, original_name, uploaded_at)
                 VALUES (?, ?, ?, ?)
                 """,
-                (
-                    matter_id,
-                    unique_name,
-                    original_name,
-                    datetime.utcnow().isoformat(),
-                ),
+                (matter_id, unique_name, original_name, datetime.utcnow().isoformat()),
             )
 
     return redirect(url_for("status_page", token=token))
 
 
-# WARNING: In production, restrict this route to authenticated staff only.
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
     return send_from_directory(str(UPLOAD_DIR), filename)
@@ -409,37 +321,19 @@ def uploaded_file(filename):
 def status_page(token):
     with get_db_connection() as connection:
         matter = connection.execute(
-            "SELECT * FROM matters WHERE token = ?",
-            (token,),
+            "SELECT * FROM matters WHERE token = ?", (token,)
         ).fetchone()
-
         if matter is None:
             return "Matter not found. Please check your link.", 404
-
         docs = connection.execute(
-            """
-            SELECT * FROM documents
-            WHERE matter_id = ?
-            ORDER BY uploaded_at DESC
-            """,
+            "SELECT * FROM documents WHERE matter_id = ? ORDER BY uploaded_at DESC",
             (matter["id"],),
         ).fetchall()
         events = connection.execute(
-            """
-            SELECT * FROM events
-            WHERE matter_id = ?
-            ORDER BY event_time DESC
-            """,
+            "SELECT * FROM events WHERE matter_id = ? ORDER BY event_time DESC",
             (matter["id"],),
         ).fetchall()
-
-    return render_template(
-        "status.html",
-        matter=matter,
-        docs=docs,
-        events=events,
-        statuses=STATUSES,
-    )
+    return render_template("status.html", matter=matter, docs=docs, events=events, statuses=STATUSES)
 
 
 @app.route("/admin")
@@ -448,7 +342,6 @@ def admin():
         matters = connection.execute(
             "SELECT * FROM matters ORDER BY created_at DESC"
         ).fetchall()
-
     return render_template("admin.html", matters=matters, statuses=STATUSES)
 
 
@@ -456,69 +349,37 @@ def admin():
 def admin_matter(matter_id):
     with get_db_connection() as connection:
         matter = connection.execute(
-            "SELECT * FROM matters WHERE id = ?",
-            (matter_id,),
+            "SELECT * FROM matters WHERE id = ?", (matter_id,)
         ).fetchone()
-
         if matter is None:
             return "Matter not found.", 404
 
         if request.method == "POST":
-            status = request.form.get("status", "").strip()
+            status = request.form.get("status", "").strip() or matter["status"]
             internal_notes = request.form.get("internal_notes", "").strip()
             event_note = request.form.get("event_note", "").strip()
-
-            if not status:
-                status = matter["status"]
-
             note = event_note or f"Status updated to {status}."
-
             connection.execute(
-                """
-                UPDATE matters
-                SET status = ?, internal_notes = ?
-                WHERE id = ?
-                """,
+                "UPDATE matters SET status = ?, internal_notes = ? WHERE id = ?",
                 (status, internal_notes, matter_id),
             )
             connection.execute(
-                """
-                INSERT INTO events (matter_id, event_time, status, note)
-                VALUES (?, ?, ?, ?)
-                """,
-                (
-                    matter_id,
-                    datetime.utcnow().isoformat(),
-                    status,
-                    note,
-                ),
+                "INSERT INTO events (matter_id, event_time, status, note) VALUES (?, ?, ?, ?)",
+                (matter_id, datetime.utcnow().isoformat(), status, note),
             )
-
             return redirect(url_for("admin_matter", matter_id=matter_id))
 
         docs = connection.execute(
-            """
-            SELECT * FROM documents
-            WHERE matter_id = ?
-            ORDER BY uploaded_at DESC
-            """,
+            "SELECT * FROM documents WHERE matter_id = ? ORDER BY uploaded_at DESC",
             (matter_id,),
         ).fetchall()
         events = connection.execute(
-            """
-            SELECT * FROM events
-            WHERE matter_id = ?
-            ORDER BY event_time DESC
-            """,
+            "SELECT * FROM events WHERE matter_id = ? ORDER BY event_time DESC",
             (matter_id,),
         ).fetchall()
 
     return render_template(
-        "admin_matter.html",
-        matter=matter,
-        docs=docs,
-        events=events,
-        statuses=STATUSES,
+        "admin_matter.html", matter=matter, docs=docs, events=events, statuses=STATUSES
     )
 
 
