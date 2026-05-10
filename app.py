@@ -44,7 +44,8 @@ STATUSES = [
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "lexflow-dev-secret-key"
-
+with app.app_context():
+    init_db()
 
 def allowed_file(fn):
     return "." in fn and fn.rsplit(".", 1)[1].lower() in ALLOWED_EXT
@@ -522,5 +523,4 @@ def admin_matter(matter_id):
 
 
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True, port=5001)
