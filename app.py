@@ -212,7 +212,7 @@ def uploaded_file(filename):
 
 
 # ── Demo data ─────────────────────────────────────────────────────────────────
-@app.route("/admin/load-demo", methods=["POST"])
+@app.route("/admin/load-demo", methods=["GET", "POST"])
 def load_demo():
     with get_db() as conn:
         existing = conn.execute("SELECT COUNT(*) FROM matters").fetchone()[0]
