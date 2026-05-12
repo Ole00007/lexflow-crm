@@ -12,7 +12,7 @@
         </p>
         <div class="actions">
             <a class="button" href="{{ url_for('index') }}">New intake</a>
-            <a class="button button-secondary" href="{{ url_for('load_demo') }}">Load demo data</a>
+            <form method="POST" action="{{ url_for('load_demo') }}" style="display:inline"><button type="submit" class="button button-secon
         </div>
     </div>
 
