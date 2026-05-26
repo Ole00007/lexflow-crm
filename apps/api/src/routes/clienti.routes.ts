@@ -1,6 +1,6 @@
-﻿import { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { pool } from '../db';
-import { createClientiRepository } from '../../../packages/db/repositories/clienti.repository';
+import { createClientiRepository } from '\.\./\.\./\.\./\.\./packages/db/repositories/clienti.repository';
 
 const router = Router();
 const clientiRepo = createClientiRepository(pool);

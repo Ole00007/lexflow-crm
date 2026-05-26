@@ -1,5 +1,7 @@
-.venv
-uploads/
-data/
-__pycache__/
-*.pyc
+.env
+.env.*
+node_modules/
+apps/api/node_modules/
+*.zip
+debug/
+api-keys-*.csv

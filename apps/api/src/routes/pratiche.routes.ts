@@ -1,6 +1,6 @@
-﻿import { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { pool } from '../db';
-import { createPraticheRepository } from '../../../packages/db/repositories/pratiche.repository';
+import { createPraticheRepository } from '\.\./\.\./\.\./\.\./packages/db/repositories/pratiche.repository';
 
 const router = Router();
 const praticheRepo = createPraticheRepository(pool);
