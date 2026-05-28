@@ -11,9 +11,11 @@ def create_app():
 
     from .routes.health import health_bp
     from .routes.contacts import contacts_bp
+    from .routes.cases import cases_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
+    app.register_blueprint(cases_bp)
 
     @app.errorhandler(400)
     def bad_request(error):
@@ -32,3 +34,4 @@ def create_app():
         return jsonify({"error": "Internal server error"}), 500
 
     return app
+
