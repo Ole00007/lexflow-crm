@@ -10,7 +10,10 @@ def create_app():
     migrate.init_app(app, db)
 
     from .routes.health import health_bp
+    from .routes.contacts import contacts_bp
+
     app.register_blueprint(health_bp)
+    app.register_blueprint(contacts_bp)
 
     @app.errorhandler(400)
     def bad_request(error):
