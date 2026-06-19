@@ -13,3 +13,5 @@ __pycache__/
 local_venv/
 *.bak
 *.BACKUP*
+.venv/
+local_venv/
