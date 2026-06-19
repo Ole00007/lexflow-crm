@@ -245,7 +245,7 @@ def load_demo():
     return redirect(url_for("admin"))
 ...
 @app.route("/admin/load-demo", methods=["GET", "POST"])
-def load_demo():
+def load_demo_admin():
     ...
     return redirect(url_for("admin"))
 
