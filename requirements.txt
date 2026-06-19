@@ -2,7 +2,7 @@ alembic==1.18.4
 blinker==1.9.0
 click==8.3.3
 colorama==0.4.6
-Flask==3.0.3
+Flask==2.3.3
 flask-cors==6.0.2
 Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
