@@ -9,3 +9,7 @@ __pycache__/
 *.pyc
 __pycache__/
 *.pyc
+.venv/
+local_venv/
+*.bak
+*.BACKUP*

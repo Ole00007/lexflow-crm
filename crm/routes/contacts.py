@@ -1,12 +1,13 @@
 from flask import Blueprint, jsonify, request
 from ..extensions import db
 from ..models.contact import Contact
+from datetime import datetime
 
 contacts_bp = Blueprint('contacts', __name__)
 
 @contacts_bp.get('/contacts')
 def get_contacts():
-    contacts = Contact.query.order_by(Contact.id.desc()).all()
+    contacts = Contact.query.filter_by(is_deleted=False).order_by(Contact.id.desc()).all()
     return jsonify([c.to_dict() for c in contacts]), 200
 
 @contacts_bp.post('/contacts')
@@ -29,3 +30,16 @@ def create_contact():
     db.session.add(contact)
     db.session.commit()
     return jsonify(contact.to_dict()), 201
+
+@contacts_bp.delete('/contacts/<int:contact_id>')
+def delete_contact(contact_id):
+    contact = Contact.query.get(contact_id)
+    if not contact:
+        return jsonify({'error': 'Contact not found'}), 404
+    if contact.is_deleted:
+        return jsonify({'deleted': False, 'message': 'Contact already deleted'}), 200
+
+    contact.is_deleted = True
+    contact.deleted_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'deleted': True}), 200

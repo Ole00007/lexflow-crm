@@ -7,13 +7,13 @@ from ..models.user import User
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/api/tasks')
 
-@tasks_bp.get('/tasks')
+@tasks_bp.get('/')
 @jwt_required()
 def get_tasks():
     tasks = Task.query.order_by(Task.id.desc()).all()
     return jsonify([t.to_dict() for t in tasks]), 200
 
-@tasks_bp.get('/tasks/<int:task_id>')
+@tasks_bp.get('/<int:task_id>')
 @jwt_required()
 def get_task(task_id):
     task = Task.query.get(task_id)
@@ -23,7 +23,7 @@ def get_task(task_id):
     
     return jsonify(task.to_dict()), 200
 
-@tasks_bp.post('/tasks')
+@tasks_bp.post('/')
 @jwt_required()
 def create_task():
     data = request.get_json()
@@ -55,7 +55,7 @@ def create_task():
     
     return jsonify(task.to_dict()), 201
 
-@tasks_bp.put('/tasks/<int:task_id>')
+@tasks_bp.put('/<int:task_id>')
 @jwt_required()
 def update_task(task_id):
     task = Task.query.get(task_id)
@@ -86,7 +86,7 @@ def update_task(task_id):
     
     return jsonify(task.to_dict()), 200
 
-@tasks_bp.delete('/tasks/<int:task_id>')
+@tasks_bp.delete('/<int:task_id>')
 @jwt_required()
 def delete_task(task_id):
     task = Task.query.get(task_id)

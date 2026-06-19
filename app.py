@@ -1,12 +1,16 @@
 import os
 import secrets
 import sqlite3
-import resend
 from pathlib import Path
 from datetime import datetime
 from flask import (Flask, render_template, request, redirect,
                    url_for, flash, send_from_directory, abort)
 from werkzeug.utils import secure_filename
+
+try:
+    import resend
+except ImportError:
+    resend = None
 
 # ── Config ──────────────────────────────────────────────────────────────────
 BASE_DIR   = Path(__file__).parent
