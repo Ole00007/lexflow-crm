@@ -13,13 +13,14 @@ class Case(db.Model):
     priority = db.Column(db.String(20), nullable=False, default="Medium")
     openedat = db.Column(db.Date, nullable=False, default=date.today)
     duedate = db.Column(db.Date, nullable=True)
-    assignedto = db.Column(db.Integer, nullable=True)
+    assignedto = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     createdat = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updatedat = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     deleted_at = db.Column(db.DateTime, nullable=True)
 
     contact = db.relationship("Contact", backref=db.backref("cases", lazy=True, passive_deletes=True))
+    assigned_user = db.relationship("User", backref=db.backref("assigned_cases", lazy=True))
 
     def to_dict(self):
         return {

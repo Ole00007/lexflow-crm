@@ -3,7 +3,7 @@ from ..extensions import db
 from ..models.contact import Contact
 from datetime import datetime
 
-contacts_bp = Blueprint('contacts', __name__)
+contacts_bp = Blueprint('contacts', __name__, url_prefix='/api/contacts')
 
 @contacts_bp.get('/contacts')
 def get_contacts():

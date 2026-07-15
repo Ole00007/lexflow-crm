@@ -1,7 +1,7 @@
-"""add users and tasks tables
+"""add tasks table
 
 Revision ID: 7a8b9c0d1e2f
-Revises: 69c3d4e5f6a7
+Revises: 8c2d3e4f5a6b
 Create Date: 2026-06-18 23:58:00.000000
 
 """
@@ -10,23 +10,12 @@ import sqlalchemy as sa
 
 
 revision = '7a8b9c0d1e2f'
-down_revision = '69c3d4e5f6a7'
+down_revision = '8c2d3e4f5a6b'
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    op.create_table(
-        'users',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('email', sa.String(length=255), nullable=False),
-        sa.Column('password_hash', sa.String(length=255), nullable=False),
-        sa.Column('role', sa.String(length=50), nullable=False),
-        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('email')
-    )
-    
     op.create_table(
         'tasks',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -47,4 +36,3 @@ def upgrade():
 
 def downgrade():
     op.drop_table('tasks')
-    op.drop_table('users')

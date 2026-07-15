@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from .config import Config
-from .extensions import db, migrate, jwt
+from .extensions import db, migrate, jwt, cors, limiter
 
 def create_app():
     app = Flask(__name__)
@@ -9,18 +10,24 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    cors.init_app(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", ["*"])}})
+    limiter.init_app(app)
 
     from .routes.health import health_bp
     from .routes.contacts import contacts_bp
     from .routes.cases import cases_bp
     from .routes.auth import auth_bp
     from .routes.tasks import tasks_bp
+    from .routes.deadlines import deadlines_bp
+    from .routes.admin import admin_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
     app.register_blueprint(cases_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(tasks_bp)
+    app.register_blueprint(deadlines_bp)
+    app.register_blueprint(admin_bp)
 
     @app.errorhandler(400)
     def bad_request(error):
