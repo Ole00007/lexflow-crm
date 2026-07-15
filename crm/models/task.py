@@ -14,6 +14,8 @@ class Task(db.Model):
     duedate = db.Column(db.Date, nullable=True)
     createdat = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updatedat = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
     case = db.relationship("Case", backref=db.backref("tasks", lazy=True, passive_deletes=True))
     user = db.relationship("User", backref=db.backref("tasks", lazy=True, passive_deletes=True))
@@ -29,5 +31,7 @@ class Task(db.Model):
             "priority": self.priority,
             "duedate": self.duedate.isoformat() if self.duedate else None,
             "createdat": self.createdat.isoformat() if self.createdat else None,
-            "updatedat": self.updatedat.isoformat() if self.updatedat else None
+            "updatedat": self.updatedat.isoformat() if self.updatedat else None,
+            "is_deleted": self.is_deleted,
+            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None
         }

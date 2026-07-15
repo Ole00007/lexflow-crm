@@ -12,7 +12,7 @@ def login():
     if not data or not data.get('email') or not data.get('password'):
         return jsonify({'error': 'Email and password are required'}), 400
     
-    user = User.query.filter_by(email=data.get('email')).first()
+    user = User.query.filter_by(email=data.get('email'), is_deleted=False).first()
     
     if not user or not user.check_password(data.get('password')):
         return jsonify({'error': 'Invalid email or password'}), 401
@@ -27,7 +27,7 @@ def login():
 @jwt_required()
 def get_current_user():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = User.query.filter_by(id=user_id, is_deleted=False).first()
     
     if not user:
         return jsonify({'error': 'User not found'}), 404
