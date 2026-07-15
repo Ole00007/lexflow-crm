@@ -1,7 +1,7 @@
 """create cases table and add soft delete to contacts
 
-Revision ID: 8b1c2d3e4f5a
-Revises: 7a8b9c0d1e2f
+Revision ID: 69c3d4e5f6a7
+Revises: 65b843c76b3d
 Create Date: 2026-06-19 00:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '8b1c2d3e4f5a'
-down_revision = '7a8b9c0d1e2f'
+revision = '69c3d4e5f6a7'
+down_revision = '65b843c76b3d'
 branch_labels = None
 depends_on = None
 

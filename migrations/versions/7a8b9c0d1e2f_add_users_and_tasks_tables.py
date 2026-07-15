@@ -1,7 +1,7 @@
 """add users and tasks tables
 
 Revision ID: 7a8b9c0d1e2f
-Revises: 65b843c76b3d
+Revises: 69c3d4e5f6a7
 Create Date: 2026-06-18 23:58:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 revision = '7a8b9c0d1e2f'
-down_revision = '65b843c76b3d'
+down_revision = '69c3d4e5f6a7'
 branch_labels = None
 depends_on = None
 
