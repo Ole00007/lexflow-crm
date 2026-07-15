@@ -29,6 +29,16 @@ def create_app():
     app.register_blueprint(deadlines_bp)
     app.register_blueprint(admin_bp)
 
+    # Security headers middleware
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+        return response
+
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({"error": "Bad request"}), 400
