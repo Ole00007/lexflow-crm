@@ -8,10 +8,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Config:
     # Database Configuration - with connection pooling
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+    # Handle both postgres:// (deprecated) and postgresql:// schemes
+    db_url = os.getenv(
         "DATABASE_URL",
         f"sqlite:///{BASE_DIR / 'crm_local.db'}"
     )
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,  # Test connections before using
