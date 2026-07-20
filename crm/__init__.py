@@ -20,6 +20,7 @@ def create_app():
     from .routes.tasks import tasks_bp
     from .routes.deadlines import deadlines_bp
     from .routes.admin import admin_bp
+    from .routes.webhooks import webhooks_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -28,6 +29,7 @@ def create_app():
     app.register_blueprint(tasks_bp)
     app.register_blueprint(deadlines_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(webhooks_bp)
 
     # Security headers middleware
     @app.after_request
