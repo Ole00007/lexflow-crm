@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Contacts — LexFlow{% endblock %}
+{% block content %}
+<section class="card stack" aria-labelledby="page-title">
+    <div class="section">
+        <p class="eyebrow">CRM</p>
+        <h1 id="page-title">Contacts</h1>
+        <p class="intro">Manage your contacts across all practices.</p>
+    </div>
+    <div class="section" style="padding-top:0">
+        <div id="contactList" style="display:grid;gap:8px">
+            <p style="color:var(--text-muted)">Login to view contacts.</p>
+        </div>
+    </div>
+</section>
+<script>
+const API = '';
+function token() { return localStorage.getItem('jwt') || ''; }
+function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+function load() {
+  var t = token();
+  if (!t) { document.getElementById('contactList').innerHTML = '<p style="color:var(--text-muted)"><a href="/kanban">Login</a> to view contacts.</p>'; return; }
+  fetch(API + '/api/contacts', {headers:{'Authorization':'Bearer '+t}})
+  .then(r=>r.json())
+  .then(contacts => {
+    if (!contacts.length) { document.getElementById('contactList').innerHTML = '<p style="color:var(--text-muted)">No contacts yet.</p>'; return; }
+    document.getElementById('contactList').innerHTML = contacts.map(c => 
+      '<div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2);display:flex;justify-content:space-between;align-items:center">' +
+      '<div><strong>' + esc(c.fullname) + '</strong><br><span style="color:var(--text-muted);font-size:var(--text-sm)">' + esc(c.email||'') + ' · ' + esc(c.company||'') + '</span></div>' +
+      '<div><span class="badge">' + esc(c.stat||'lead') + '</span></div></div>'
+    ).join('')
+  })
+  .catch(e => document.getElementById('contactList').innerHTML = '<p style="color:var(--text-muted)">Failed to load: ' + e.message + '</p>');
+}
+load();
+</script>
+{% endblock %}

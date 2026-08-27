@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Calendar — LexFlow{% endblock %}
+{% block content %}
+<section class="card stack" aria-labelledby="page-title">
+    <div class="section">
+        <p class="eyebrow">Schedule</p>
+        <h1 id="page-title">Calendar</h1>
+        <p class="intro">Court hearings, filing deadlines, and legal calendar events.</p>
+    </div>
+    <div class="section">
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <select id="filterType" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+                <option value="">All types</option>
+                <option value="hearing">Hearing</option>
+                <option value="court_date">Court date</option>
+                <option value="filing_deadline">Filing deadline</option>
+                <option value="deposition">Deposition</option>
+                <option value="meeting">Meeting</option>
+                <option value="reminder">Reminder</option>
+            </select>
+            <input type="date" id="filterFrom" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <input type="date" id="filterTo" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <button class="button" onclick="loadEvents()">Filter</button>
+            <button class="button button-secondary" onclick="openModal()">+ New event</button>
+        </div>
+        <div id="eventList" style="display:grid;gap:12px">
+            <p style="color:var(--text-muted)">Login to view calendar events.</p>
+        </div>
+    </div>
+</section>
+
+<div class="modal-overlay" id="modalOverlay" onclick="event.target===this&&closeModal()">
+  <div class="modal">
+    <div class="modal-header"><h2>New Event</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Title *</label><input type="text" id="evTitle"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Type</label>
+          <select id="evType"><option value="hearing">Hearing</option><option value="court_date">Court date</option><option value="filing_deadline">Filing deadline</option><option value="meeting">Meeting</option><option value="reminder">Reminder</option></select>
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="evStatus"><option value="scheduled">Scheduled</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Start *</label><input type="datetime-local" id="evStart"></div>
+        <div class="form-group"><label>End</label><input type="datetime-local" id="evEnd"></div>
+      </div>
+      <div class="form-group"><label>Case ID</label><input type="number" id="evCaseId" placeholder="Optional"></div>
+      <div class="form-group"><label>Court</label><input type="text" id="evCourt" placeholder="e.g. Tribunale di Roma"></div>
+      <div class="form-group"><label>Judge</label><input type="text" id="evJudge" placeholder="e.g. Dott. Verdi"></div>
+      <div class="form-group"><label>Notes</label><textarea id="evNotes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-submit" onclick="handleCreate()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+function token() { return localStorage.getItem('jwt') || ''; }
+function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+function loadEvents() {
+  var t = token();
+  if (!t) { document.getElementById('eventList').innerHTML = '<p style="color:var(--text-muted)">Login to view calendar events.</p>'; return; }
+  var params = [];
+  var ft = document.getElementById('filterType').value;
+  var ff = document.getElementById('filterFrom').value;
+  var ft2 = document.getElementById('filterTo').value;
+  if (ft) params.push('event_type=' + ft);
+  if (ff) params.push('date_from=' + ff + 'T00:00:00');
+  if (ft2) params.push('date_to=' + ft2 + 'T23:59:00');
+  var qs = params.length ? '?' + params.join('&') : '';
+  fetch(API + '/api/calendar' + qs, {headers: {'Authorization': 'Bearer ' + t}})
+    .then(r => r.json())
+    .then(events => {
+      if (!events.length) { document.getElementById('eventList').innerHTML = '<p style="color:var(--text-muted)">No events found.</p>'; return; }
+      document.getElementById('eventList').innerHTML = events.map(e => {
+        var start = e.start_datetime ? e.start_datetime.slice(0,16).replace('T', ' ') : '?';
+        var court = e.court_name ? ' at ' + esc(e.court_name) : '';
+        var judge = e.judge_name ? ' — Judge: ' + esc(e.judge_name) : '';
+        var badge = 'badge-' + (e.status === 'confirmed' ? 'green' : e.status === 'completed' ? 'blue' : 'orange');
+        return '<div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
+          '<div><strong>' + esc(e.title) + '</strong><br>' +
+          '<span style="color:var(--text-muted);font-size:var(--text-sm)">' + start + court + judge + '</span></div>' +
+          '<div style="text-align:right"><span class="badge ' + badge + '">' + esc(e.status) + '</span><br>' +
+          '<span style="color:var(--text-faint);font-size:var(--text-xs)">' + esc(e.event_type) + '</span></div></div>' +
+          (e.notes ? '<p style="margin:8px 0 0;color:var(--text-muted);font-size:var(--text-sm)">' + esc(e.notes) + '</p>' : '') + '</div>';
+      }).join('');
+    })
+    .catch(e => { document.getElementById('eventList').innerHTML = '<p style="color:var(--text-muted)">Failed to load: ' + e.message + '</p>'; });
+}
+
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evStart').value = '';
+  document.getElementById('evEnd').value = '';
+  document.getElementById('evCaseId').value = '';
+  document.getElementById('evCourt').value = '';
+  document.getElementById('evJudge').value = '';
+  document.getElementById('evNotes').value = '';
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+function handleCreate() {
+  var title = document.getElementById('evTitle').value.trim();
+  var start = document.getElementById('evStart').value;
+  if (!title || !start) { alert('Title and start time required'); return; }
+  var body = {title:title, start_datetime: start + ':00', event_type: document.getElementById('evType').value, status: document.getElementById('evStatus').value};
+  var end = document.getElementById('evEnd').value;
+  if (end) body.end_datetime = end + ':00';
+  var cid = document.getElementById('evCaseId').value;
+  if (cid) body.caseid = parseInt(cid);
+  var court = document.getElementById('evCourt').value.trim();
+  if (court) body.court_name = court;
+  var judge = document.getElementById('evJudge').value.trim();
+  if (judge) body.judge_name = judge;
+  var notes = document.getElementById('evNotes').value.trim();
+  if (notes) body.notes = notes;
+  fetch(API + '/api/calendar', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()}, body:JSON.stringify(body)})
+    .then(r => r.json()).then(d => { closeModal(); loadEvents(); })
+    .catch(e => alert('Error: ' + e.message));
+}
+
+(function init() { loadEvents(); })();
+</script>
+{% endblock %}

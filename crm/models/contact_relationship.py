@@ -5,6 +5,7 @@ class ContactRelationship(db.Model):
     __tablename__ = "contact_relationships"
 
     id = db.Column(db.Integer, primary_key=True)
+    workspace_id = db.Column(db.Integer, db.ForeignKey("workspaces.id"), nullable=True)
     contact_id_a = db.Column(db.Integer, db.ForeignKey("contacts.id", ondelete="CASCADE"), nullable=False)
     contact_id_b = db.Column(db.Integer, db.ForeignKey("contacts.id", ondelete="CASCADE"), nullable=False)
     relationship_type = db.Column(db.String(100), nullable=False)  # e.g., "spouse", "partner", "employee", "client", "opposing_counsel"

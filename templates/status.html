@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Matter Status – LexFlow{% endblock %}
+{% block title %}Matter Status – aLEXy{% endblock %}
 
 {% block content %}
 <section class="card stack" aria-labelledby="page-title">
@@ -9,10 +9,10 @@
         <h1 id="page-title">Your Legal Matter – Status Update</h1>
         <p class="intro">{{ matter["practice_area"] }} · {{ matter["urgency"] }} priority</p>
         <div class="status-display">
-            <span class="eyebrow" style="margin-bottom: 0;">Current status</span>
+            <span class="eyebrow" style="margin-bottom:0">Current status</span>
             <strong>{{ matter["status"] }}</strong>
         </div>
-        <p style="margin-bottom: 0; color: var(--muted-2);">Request received: {{ matter["created_at"] }}</p>
+        <p style="margin-bottom:0;color:var(--text-muted)">Request received: {{ matter["created_at"] }}</p>
     </header>
 
     <section class="section" aria-labelledby="matter-summary">
@@ -45,7 +45,7 @@
                         <p>
                             Update from your legal team: {{ event["note"] or "Status updated." }}
                         </p>
-                        <p style="margin-bottom: 0; color: var(--muted);">{{ event["event_time"] }}</p>
+                        <p style="margin-bottom:0;color:var(--text-muted)">{{ event["event_time"] }}</p>
                     </li>
                 {% endfor %}
             </ul>
@@ -76,8 +76,7 @@
 
     <footer class="notice">
         This page is private and accessible only via your personal link.
-        Your information is handled in accordance with applicable data protection regulations,
-        including the EU General Data Protection Regulation (GDPR).
+        Your information is handled in accordance with applicable data protection regulations.
     </footer>
 </section>
 {% endblock %}

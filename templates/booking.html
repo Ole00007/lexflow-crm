@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Book a Meeting — LexFlow{% endblock %}
+{% block content %}
+<section class="card stack" aria-labelledby="page-title">
+    <div class="section">
+        <p class="eyebrow">Schedule</p>
+        <h1 id="page-title">Book a Consultation</h1>
+        <p class="intro">Fill in the form below to book a call or meeting. You'll receive a confirmation email with the details.</p>
+    </div>
+    <div class="section">
+        <form method="post" action="{{ url_for('views.book_meeting') }}" style="max-width:600px">
+            <div class="form-group">
+                <label for="workspace">Select practice</label>
+                <select id="workspace" name="workspace" required>
+                    {% for w in workspaces %}
+                    <option value="{{ w.slug }}">{{ w.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="client_name">Your name *</label>
+                    <input type="text" id="client_name" name="client_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="client_email">Email *</label>
+                    <input type="email" id="client_email" name="client_email" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="booking_type">Type</label>
+                    <select id="booking_type" name="booking_type">
+                        <option value="meeting">Meeting</option>
+                        <option value="call">Phone call</option>
+                        <option value="videocall">Video call</option>
+                        <option value="hearing">Hearing</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="booking_time">Date & time *</label>
+                    <input type="datetime-local" id="booking_time" name="booking_time" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="court_name">Location (optional)</label>
+                <input type="text" id="court_name" name="court_name" placeholder="e.g. Tribunale di Roma, or video link">
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes" rows="3" placeholder="Any additional information"></textarea>
+            </div>
+            <div class="actions">
+                <button type="submit" class="button">Book now</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

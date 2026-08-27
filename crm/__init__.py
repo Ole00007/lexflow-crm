@@ -1,10 +1,13 @@
 from flask import Flask, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from pathlib import Path
 from .config import Config
 from .extensions import db, migrate, jwt, cors, limiter
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__,
+                template_folder=str(Path(__file__).resolve().parent.parent / "templates"),
+                static_folder=str(Path(__file__).resolve().parent.parent / "static"))
     app.config.from_object(Config)
 
     db.init_app(app)
@@ -13,6 +16,10 @@ def create_app():
     cors.init_app(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", ["*"])}})
     limiter.init_app(app)
 
+    # Allow both /api/contacts and /api/contacts/ (no 308 redirects)
+    app.url_map.strict_slashes = False
+
+    # API Blueprints
     from .routes.health import health_bp
     from .routes.contacts import contacts_bp
     from .routes.cases import cases_bp
@@ -21,6 +28,10 @@ def create_app():
     from .routes.deadlines import deadlines_bp
     from .routes.admin import admin_bp
     from .routes.webhooks import webhooks_bp
+    from .routes.notes import notes_bp
+    from .routes.activity import activity_bp
+    from .routes.calendar import calendar_bp
+    from .routes.notifications import notifications_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -30,6 +41,14 @@ def create_app():
     app.register_blueprint(deadlines_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(webhooks_bp)
+    app.register_blueprint(notes_bp)
+    app.register_blueprint(activity_bp)
+    app.register_blueprint(calendar_bp)
+    app.register_blueprint(notifications_bp)
+
+    # View Blueprint (serves Jinja2 templates from /dashboard, /kanban, /, etc.)
+    from .routes.views import views_bp
+    app.register_blueprint(views_bp)
 
     # Security headers middleware
     @app.after_request
@@ -58,4 +77,3 @@ def create_app():
         return jsonify({"error": "Internal server error"}), 500
 
     return app
-

@@ -11,8 +11,7 @@
             Review new requests, open matter details, update statuses, and prepare demo screenshots.
         </p>
         <div class="actions">
-            <a class="button" href="{{ url_for('index') }}">New intake</a>
-            <form method="POST" action="{{ url_for('load_demo') }}" style="display:inline"><button type="submit" class="button button-secon
+            <a class="button" href="{{ url_for('views.index') }}">New intake</a>
         </div>
     </div>
 
@@ -31,11 +30,11 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Client</th>
-                    <th>Email</th>
-                    <th>Practice</th>
+                    <th>Title</th>
+                    <th>Contact</th>
+                    <th>Type</th>
                     <th>Status</th>
-                    <th>Urgency</th>
+                    <th>Priority</th>
                     <th>Created</th>
                     <th>Action</th>
                 </tr>
@@ -45,20 +44,20 @@
                     {% for matter in matters %}
                         <tr>
                             <td>{{ matter["id"] }}</td>
-                            <td>{{ matter["client_name"] }}</td>
-                            <td>{{ matter["email"] }}</td>
-                            <td>{{ matter["practice_area"] }}</td>
+                            <td>{{ matter["title"] }}</td>
+                            <td>{{ matter["contactid"] }}</td>
+                            <td>{{ matter["casetype"] }}</td>
                             <td><span class="badge">{{ matter["status"] }}</span></td>
-                            <td>{{ matter["urgency"] }}</td>
-                            <td>{{ matter["created_at"] }}</td>
+                            <td>{{ matter["priority"] }}</td>
+                            <td>{{ matter["createdat"] }}</td>
                             <td>
-                                <a href="{{ url_for('admin_matter', matter_id=matter['id']) }}">Open →</a>
+                                <a href="{{ url_for('views.admin_matter', matter_id=matter['id']) }}">Open →</a>
                             </td>
                         </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="8">No matters yet. Use New intake or Load demo data to start.</td>
+                        <td colspan="8">No matters yet. Use New intake to start.</td>
                     </tr>
                 {% endif %}
             </tbody>

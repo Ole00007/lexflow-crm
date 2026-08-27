@@ -5,6 +5,7 @@ class Task(db.Model):
     __tablename__ = "tasks"
 
     id = db.Column(db.Integer, primary_key=True)
+    workspace_id = db.Column(db.Integer, db.ForeignKey("workspaces.id"), nullable=False)
     caseid = db.Column(db.Integer, db.ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
     userid = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     title = db.Column(db.String(255), nullable=False)
@@ -19,10 +20,12 @@ class Task(db.Model):
 
     case = db.relationship("Case", backref=db.backref("tasks", lazy=True, passive_deletes=True))
     user = db.relationship("User", backref=db.backref("tasks", lazy=True, passive_deletes=True))
+    workspace = db.relationship("Workspace", backref=db.backref("tasks", lazy=True))
 
     def to_dict(self):
         return {
             "id": self.id,
+            "workspace_id": self.workspace_id,
             "caseid": self.caseid,
             "userid": self.userid,
             "title": self.title,
@@ -33,5 +36,5 @@ class Task(db.Model):
             "createdat": self.createdat.isoformat() if self.createdat else None,
             "updatedat": self.updatedat.isoformat() if self.updatedat else None,
             "is_deleted": self.is_deleted,
-            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None
+            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
         }

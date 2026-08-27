@@ -5,12 +5,13 @@ class Deadline(db.Model):
     __tablename__ = "deadlines"
 
     id = db.Column(db.Integer, primary_key=True)
+    workspace_id = db.Column(db.Integer, db.ForeignKey("workspaces.id"), nullable=False)
     caseid = db.Column(db.Integer, db.ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     deadline_date = db.Column(db.Date, nullable=False)
-    deadline_type = db.Column(db.String(50), nullable=False)  # e.g., "filing", "response", "hearing", "discovery"
-    status = db.Column(db.String(50), nullable=False, default="pending")  # pending, completed, missed, waived
+    deadline_type = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(50), nullable=False, default="pending")
     priority = db.Column(db.String(20), nullable=False, default="Medium")
     createdat = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updatedat = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
@@ -18,10 +19,12 @@ class Deadline(db.Model):
     deleted_at = db.Column(db.DateTime, nullable=True)
 
     case = db.relationship("Case", backref=db.backref("deadlines", lazy=True, passive_deletes=True))
+    workspace = db.relationship("Workspace", backref=db.backref("deadlines", lazy=True))
 
     def to_dict(self):
         return {
             "id": self.id,
+            "workspace_id": self.workspace_id,
             "caseid": self.caseid,
             "title": self.title,
             "description": self.description,

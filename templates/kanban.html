@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban — aLEXy</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0E1117;
+  --surface: #161B27;
+  --surface-2: #1E2535;
+  --border: #1E2A3A;
+  --text: #E2E8F0;
+  --text-muted: #94A3B8;
+  --text-faint: #475569;
+  --accent: #3B7DD8;
+  --accent-h: #5A96F0;
+  --accent-glow: rgba(59,125,216,0.2);
+  --teal: #0F9B8E;
+  --teal-h: #14B8A9;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
+  --transition: 180ms cubic-bezier(0.16,1,0.3,1);
+}
+
+html { font-size: 15px; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .5px;
+  margin-right: 8px;
+}
+
+.logo span { color: var(--accent); }
+
+/* ── Login Form ───────────────────────────────────────────────── */
+.login-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 280px;
+  max-width: 460px;
+}
+
+.login-form input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: .85rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.login-form input::placeholder { color: var(--text-muted); }
+.login-form input:focus { border-color: var(--text-muted); }
+
+.btn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), opacity var(--transition), transform .1s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--text-muted);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+
+.btn-add {
+  background: var(--accent-h);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-add:hover:not(:disabled) { background: var(--accent); }
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 7px 12px;
+  font-size: .8rem;
+}
+.btn-logout:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
+
+.user-badge {
+  font-size: .8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Board ─────────────────────────────────────────────────────── */
+.board {
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  flex: 1;
+  overflow-x: auto;
+  align-items: flex-start;
+}
+
+.column {
+  flex: 1;
+  min-width: 260px;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.column.drag-over {
+  border-color: var(--accent-h);
+  box-shadow: 0 0 0 2px rgba(233,196,106,.15);
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.col-header h3 {
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.col-count {
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: .75rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.card-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 60px;
+}
+.card-list::-webkit-scrollbar { width: 4px; }
+.card-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Task Card ─────────────────────────────────────────────────── */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  cursor: grab;
+  transition: background var(--transition), box-shadow var(--transition), transform .15s;
+  position: relative;
+}
+.card:hover { background: color-mix(in srgb, var(--surface-2) 85%, var(--accent-glow)); box-shadow: var(--shadow-sm); }
+.card.dragging { opacity: .4; transform: rotate(1deg); }
+
+.card-priority-bar {
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+}
+.card-priority-bar.low    { background: var(--success); }
+.card-priority-bar.medium  { background: var(--warning); }
+.card-priority-bar.high    { background: var(--danger); }
+.card-priority-bar.urgent  { background: var(--danger); }
+
+.card-title {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+  padding-left: 8px;
+  line-height: 1.35;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding-left: 8px;
+}
+
+.priority-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  line-height: 1.5;
+}
+.badge-low    { background: rgba(64,192,87,.15); color: var(--success); }
+.badge-medium { background: rgba(250,176,5,.15); color: var(--warning); }
+.badge-high   { background: rgba(247,103,7,.15); color: var(--danger); }
+.badge-urgent { background: rgba(224,49,49,.15); color: var(--accent-h); border: 1px solid rgba(233,196,106,.3); }
+
+.meta-item {
+  font-size: .75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.meta-item.overdue { color: var(--danger); font-weight: 600; }
+.meta-subtask {
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: .7rem;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+/* ── Empty Placeholder ────────────────────────────────────────── */
+.empty-state {
+  color: var(--text-muted);
+  font-size: .8rem;
+  text-align: center;
+  padding: 24px 12px;
+  font-style: italic;
+}
+
+/* ── Skeleton Loader ──────────────────────────────────────────── */
+.skeleton-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  overflow: hidden;
+  position: relative;
+}
+.skeleton-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.03) 50%, transparent 100%);
+  animation: shimmer 1.5s infinite;
+}
+.skeleton-line {
+  height: 12px;
+  background: var(--border);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.skeleton-line:last-child { margin-bottom: 0; width: 60%; }
+.skeleton-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.skeleton-dot {
+  width: 40px;
+  height: 16px;
+  background: var(--border);
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ── Modal Overlay ────────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-md);
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  transition: color var(--transition);
+}
+.modal-close:hover { color: var(--text); }
+
+.modal-body { padding: 20px; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: .9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--text-muted);
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-group select { cursor: pointer; }
+.form-group select option { background: var(--bg); color: var(--text); }
+.form-group .hint {
+  font-size: .72rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+.form-row .form-group { flex: 1; }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+
+.btn-submit {
+  background: var(--text-muted);
+  color: #fff;
+}
+.btn-submit:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+
+/* ── Toast Notifications ──────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: .85rem;
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  animation: toastIn .25s ease;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast.error { border-left: 3px solid var(--danger); }
+.toast.success { border-left: 3px solid var(--success); }
+.toast.info    { border-left: 3px solid var(--text-muted); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.toast.removing {
+  animation: toastOut .2s ease forwards;
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(20px); }
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .board {
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+  }
+  .column {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .card-list { min-height: 100px; }
+  .login-form { min-width: 0; }
+  header { padding: 8px 12px; gap: 8px; }
+  .logo { font-size: 1rem; }
+  .modal { max-width: 95%; }
+  .form-row { flex-direction: column; gap: 0; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+  .btn-add span.btn-label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────── -->
+<header>
+  <div class="logo"><span>a</span>LEXy</div>
+
+  <!-- Login form (shown when not authenticated) -->
+  <div class="login-form" id="loginForm">
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+    <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">Login</button>
+  </div>
+
+  <!-- Post-login controls -->
+  <div id="loggedInControls" style="display:none; align-items:center; gap:10px; flex:1; justify-content:flex-end;">
+    <div class="user-badge" id="userBadge"></div>
+    <button class="btn btn-add" onclick="openModal()">
+      <span>+</span> <span class="btn-label">Add Task</span>
+    </button>
+    <button class="btn btn-logout" onclick="handleLogout()">Logout</button>
+  </div>
+</header>
+
+<!-- ── Toast Container ─────────────────────────────────────────── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ── Board ───────────────────────────────────────────────────── -->
+<div class="board" id="board">
+  <div class="column" data-status="Intake">
+    <div class="col-header">
+      <h3>Intake</h3>
+      <span class="col-count" id="count-Intake">0</span>
+    </div>
+    <div class="card-list" id="list-Intake"></div>
+  </div>
+  <div class="column" data-status="Conflict Check">
+    <div class="col-header">
+      <h3>Conflict Check</h3>
+      <span class="col-count" id="count-Conflict Check">0</span>
+    </div>
+    <div class="card-list" id="list-Conflict Check"></div>
+  </div>
+  <div class="column" data-status="Review">
+    <div class="col-header">
+      <h3>Review</h3>
+      <span class="col-count" id="count-Review">0</span>
+    </div>
+    <div class="card-list" id="list-Review"></div>
+  </div>
+  <div class="column" data-status="Engaged">
+    <div class="col-header">
+      <h3>Engaged</h3>
+      <span class="col-count" id="count-Engaged">0</span>
+    </div>
+    <div class="card-list" id="list-Engaged"></div>
+  </div>
+  <div class="column" data-status="Closed">
+    <div class="col-header">
+      <h3>Closed</h3>
+      <span class="col-count" id="count-Closed">0</span>
+    </div>
+    <div class="card-list" id="list-Closed"></div>
+  </div>
+</div>
+
+<!-- ── Add Case Modal ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Case</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="caseTitle">Title *</label>
+        <input type="text" id="caseTitle" placeholder="Case title" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="caseContactId">Contact ID *</label>
+          <input type="number" id="caseContactId" placeholder="Contact ID">
+          <div class="hint">Create a contact first in Contacts</div>
+        </div>
+        <div class="form-group">
+          <label for="casePriority">Priority</label>
+          <select id="casePriority">
+            <option value="Low">Low</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="caseType">Case Type</label>
+          <input type="text" id="caseType" placeholder="e.g. Commercial, Employment, Real Estate">
+        </div>
+        <div class="form-group">
+          <label for="caseDueDate">Due Date</label>
+          <input type="date" id="caseDueDate">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-submit" id="submitCaseBtn" onclick="handleCreateCase()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   State & Helpers
+   ═══════════════════════════════════════════════════════════════ */
+const STATUSES = ['Intake', 'Conflict Check', 'Review', 'Engaged', 'Closed'];
+let allCases = [];
+const API = ''; // same origin
+
+function token() {
+  return localStorage.getItem('jwt') || '';
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function toast(msg, type) {
+  type = type || 'info';
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const icon = type === 'error' ? '✕' : type === 'success' ? '✓' : 'ℹ';
+  el.innerHTML = '<span>' + icon + '</span><span>' + esc(msg) + '</span>';
+  c.appendChild(el);
+  setTimeout(function() {
+    el.classList.add('removing');
+    setTimeout(function() { el.remove(); }, 200);
+  }, 3500);
+}
+
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function isOverdue(dateStr) {
+  if (!dateStr) return false;
+  return dateStr < todayStr();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Auth
+   ═══════════════════════════════════════════════════════════════ */
+function handleLogin() {
+  var email = document.getElementById('loginEmail').value.trim();
+  var pass  = document.getElementById('loginPassword').value;
+  if (!email || !pass) { toast('Enter email and password', 'error'); return; }
+
+  var btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  fetch(API + '/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: email, password: pass})
+  })
+  .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+  .then(function(res) {
+    if (res.ok) {
+      localStorage.setItem('jwt', res.data.access_token);
+      onLoginSuccess(res.data);
+    } else {
+      toast(res.data.error || 'Login failed', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    }
+  })
+  .catch(function(e) { toast('Network error: ' + e.message, 'error'); btn.disabled = false; btn.textContent = 'Login'; });
+}
+
+function onLoginSuccess(data) {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('loggedInControls').style.display = 'flex';
+
+  var u = data.user || {};
+  document.getElementById('userBadge').textContent = '👤 ' + (u.email || 'User');
+
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginBtn').textContent = 'Login';
+
+  loadCases();
+  toast('Welcome, ' + (u.email ? u.email.split('@')[0] : 'user') + '!', 'success');
+}
+
+function handleLogout() {
+  localStorage.removeItem('jwt');
+  allCases = [];
+  document.getElementById('loggedInControls').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'flex';
+  STATUSES.forEach(function(s) {
+    var list = document.getElementById('list-' + s);
+    var count = document.getElementById('count-' + s);
+    list.innerHTML = '';
+    if (count) count.textContent = '0';
+  });
+  toast('Logged out', 'info');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Load Cases
+   ═══════════════════════════════════════════════════════════════ */
+function showSkeletons() {
+  STATUSES.forEach(function(s) {
+    var list = document.getElementById('list-' + s);
+    list.innerHTML = '';
+    for (var i = 0; i < 3; i++) {
+      list.innerHTML += '<div class="skeleton-card">' +
+        '<div class="skeleton-line"></div>' +
+        '<div class="skeleton-line" style="width:70%"></div>' +
+        '<div class="skeleton-meta">' +
+          '<div class="skeleton-dot"></div>' +
+          '<div class="skeleton-dot"></div>' +
+        '</div>' +
+      '</div>';
+    }
+  });
+}
+
+function loadCases() {
+  var t = token();
+  if (!t) {
+    document.getElementById('loggedInControls').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'flex';
+    return;
+  }
+
+  showSkeletons();
+
+  var promises = STATUSES.map(function(s) {
+    return fetch(API + '/api/cases/?status=' + s + '&limit=200', {
+      headers: {'Authorization': 'Bearer ' + t}
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json().then(function(d) { return {status: s, cases: d || []}; });
+    });
+  });
+
+  Promise.all(promises)
+    .then(function(results) {
+      allCases = [];
+      results.forEach(function(r) {
+        allCases = allCases.concat(r.cases);
+        renderColumn(r.status, r.cases);
+      });
+    })
+    .catch(function(e) { toast('Failed to load cases: ' + e.message, 'error'); });
+}
+
+function renderColumn(status, cases) {
+  var list = document.getElementById('list-' + status);
+  var count = document.getElementById('count-' + status);
+  if (!count) return;
+  count.textContent = cases.length;
+
+  if (!cases.length) {
+    list.innerHTML = '<div class="empty-state">No ' + status + ' cases</div>';
+    return;
+  }
+
+  list.innerHTML = cases.map(cardHTML).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Card HTML (for Cases)
+   ═══════════════════════════════════════════════════════════════ */
+function cardHTML(c) {
+  var bc  = 'badge-' + (c.priority || 'medium').toLowerCase();
+  var pri = (c.priority || 'Medium');
+  var due = '';
+  if (c.duedate) {
+    var overdue = isOverdue(c.duedate);
+    var dueIcon = overdue ? '<span class="meta-item overdue">⚠ ' + esc(c.duedate.slice(0,10)) + '</span>'
+                          : '<span class="meta-item">📅 ' + esc(c.duedate.slice(0,10)) + '</span>';
+    due = dueIcon;
+  }
+
+  var ctype = '';
+  if (c.casetype) {
+    ctype = '<span class="meta-item">📁 ' + esc(c.casetype) + '</span>';
+  }
+
+  return '<div class="card" draggable="true" data-id="' + c.id + '">' +
+    '<div class="card-priority-bar ' + esc(pri.toLowerCase()) + '"></div>' +
+    '<div class="card-title">' + esc(c.title || 'Untitled') + '</div>' +
+    '<div class="card-meta">' +
+      '<span class="priority-badge ' + bc + '">' + esc(pri) + '</span>' +
+      ctype + due +
+    '</div>' +
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Drag & Drop
+   ═══════════════════════════════════════════════════════════════ */
+function wireDnD() {
+  document.querySelectorAll('.card').forEach(function(card) {
+    card.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', function() {
+      card.classList.remove('dragging');
+    });
+  });
+
+  document.querySelectorAll('.column').forEach(function(col) {
+    col.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      col.classList.add('drag-over');
+    });
+    col.addEventListener('dragleave', function(e) {
+      // Only remove if we actually left the column
+      if (!col.contains(e.relatedTarget)) {
+        col.classList.remove('drag-over');
+      }
+    });
+    col.addEventListener('drop', function(e) {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      var id = e.dataTransfer.getData('text/plain');
+      var newStatus = col.dataset.status;
+      var card = document.querySelector('.card[data-id="' + id + '"]');
+      if (!card) return;
+
+      var oldStatusCol = card.parentElement.closest('.column');
+      var oldStatus = oldStatusCol ? oldStatusCol.dataset.status : null;
+
+      if (newStatus === oldStatus) {
+        // Same column, do nothing
+        return;
+      }
+
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-submit';
+      btn.style.cssText = 'padding:3px 8px;font-size:.7rem;margin-left:auto;';
+      btn.textContent = 'Saving…';
+      btn.disabled = true;
+      card.appendChild(btn);
+
+      fetch(API + '/api/cases/' + id, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + token(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({status: newStatus})
+      })
+      .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+      .then(function(res) {
+        if (res.ok) {
+          card.remove();
+          // Update counts
+          var oldCount = document.getElementById('count-' + oldStatus);
+          if (oldCount) oldCount.textContent = Math.max(0, parseInt(oldCount.textContent) - 1);
+          var newCount = document.getElementById('count-' + newStatus);
+          if (newCount) newCount.textContent = parseInt(newCount.textContent) + 1;
+          toast('Case moved to ' + newStatus, 'success');
+          // Re-verify column not empty
+          var oldList = oldStatusCol.querySelector('.card-list');
+          if (oldList && !oldList.querySelector('.card')) {
+            oldList.innerHTML = '<div class="empty-state">No ' + oldStatus + ' cases</div>';
+          }
+        } else {
+          toast(res.data.error || 'Failed to update case', 'error');
+        }
+      })
+      .catch(function(err) { toast('Move failed: ' + err.message, 'error'); })
+      .finally(function() { btn.remove(); });
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Add Case Modal
+   ═══════════════════════════════════════════════════════════════ */
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('caseTitle').value = '';
+  document.getElementById('caseContactId').value = '';
+  document.getElementById('caseType').value = '';
+  document.getElementById('casePriority').value = 'Medium';
+  document.getElementById('caseDueDate').value = '';
+  document.getElementById('submitCaseBtn').disabled = false;
+  document.getElementById('submitCaseBtn').textContent = 'Create';
+  document.getElementById('caseTitle').focus();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function handleCreateCase() {
+  var title    = document.getElementById('caseTitle').value.trim();
+  var contactId = document.getElementById('caseContactId').value;
+  var caseType = document.getElementById('caseType').value.trim();
+  var priority = document.getElementById('casePriority').value;
+  var due      = document.getElementById('caseDueDate').value;
+
+  if (!title) { toast('Title is required', 'error'); document.getElementById('caseTitle').focus(); return; }
+  if (!contactId) { toast('Contact ID is required', 'error'); document.getElementById('caseContactId').focus(); return; }
+
+  var btn = document.getElementById('submitCaseBtn');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  var body = {
+    title: title,
+    contactid: parseInt(contactId),
+    priority: priority
+  };
+  if (caseType) body.casetype = caseType;
+  if (due) body.duedate = due;
+
+  fetch(API + '/api/cases/', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + token(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  })
+  .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+  .then(function(res) {
+    if (res.ok) {
+      toast('Case created!', 'success');
+      closeModal();
+      loadCases();
+    } else {
+      toast(res.data.error || 'Failed to create case', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Create';
+    }
+  })
+  .catch(function(e) { toast('Network error: ' + e.message, 'error'); btn.disabled = false; btn.textContent = 'Create'; });
+}
+
+/* Enter key on login */
+document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleLogin();
+});
+document.getElementById('loginEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('loginPassword').focus();
+});
+
+/* Escape closes modal */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   Init
+   ═══════════════════════════════════════════════════════════════ */
+(function init() {
+  var t = token();
+  if (t) {
+    // Try loading cases with existing token
+    showSkeletons();
+    fetch(API + '/api/cases/?limit=1', {
+      headers: {'Authorization': 'Bearer ' + t}
+    })
+    .then(function(r) {
+      if (r.ok) {
+        onLoginSuccess({user: {email: 'Logged in'}});
+      } else {
+        localStorage.removeItem('jwt');
+        document.getElementById('loginForm').style.display = 'flex';
+      }
+    })
+    .catch(function() {
+      localStorage.removeItem('jwt');
+      document.getElementById('loginForm').style.display = 'flex';
+    });
+  } else {
+    document.getElementById('loginForm').style.display = 'flex';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — LexFlow{% endblock %}
+
+{% block content %}
+<section class="card stack" aria-labelledby="page-title">
+    <div class="section">
+        <p class="eyebrow">Welcome to LexFlow</p>
+        <h1 id="page-title">Dashboard</h1>
+        <p class="intro">
+            Legal intake and case management workspace. Track matters, manage cases, and stay on top of your workflow.
+        </p>
+    </div>
+
+    <div class="grid" id="stats-grid">
+        <div class="feature" style="background:linear-gradient(135deg,rgba(59,125,216,0.15),transparent 60%),var(--surface-2)">
+            <h3>Contacts</h3>
+            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ contact_count }}</p>
+        </div>
+        <div class="feature">
+            <h3>Cases</h3>
+            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ case_count }}</p>
+        </div>
+        <div class="feature">
+            <h3>Tasks</h3>
+            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ task_count }}</p>
+        </div>
+        <div class="feature">
+            <h3>Pending</h3>
+            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--warning);margin:0">{{ pending_count }}</p>
+        </div>
+    </div>
+
+    <div class="feature-grid">
+        <div class="feature">
+            <h3>Quick actions</h3>
+            <div class="actions" style="margin-top:var(--space-4)">
+                <a class="button" href="{{ url_for('views.kanban') }}">Kanban board</a>
+                <a class="button button-secondary" href="{{ url_for('views.kanban') }}?open=add">New case</a>
+            </div>
+            <p style="margin-top:var(--space-4);color:var(--text-muted);font-size:var(--text-sm)">
+                Use the kanban board to manage your case pipeline. Drag and drop cases between stages.
+            </p>
+        </div>
+        <div class="feature">
+            <h3>Recent activity</h3>
+            <ul class="timeline" id="recent-tasks" style="margin-top:var(--space-3)">
+                {% if activities %}
+                    {% for a in activities %}
+                    <li>{{ a.summary[:60] }} <span style="color:var(--text-muted);font-size:var(--text-xs)">{{ a.created_at.strftime('%d/%m %H:%M') }}</span></li>
+                    {% endfor %}
+                {% else %}
+                    <li style="color:var(--text-muted);font-size:var(--text-sm)">No activity yet</li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}

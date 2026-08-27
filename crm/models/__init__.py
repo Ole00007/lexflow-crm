@@ -1,3 +1,12 @@
 from .contact import Contact
 from .case import Case
-
+from .user import User
+from .task import Task
+from .deadline import Deadline
+from .contact_relationship import ContactRelationship
+from .note import Note
+from .activity import ActivityLog
+from .event import Event
+from .calendar_event import CalendarEvent
+from .workspace import Workspace
+from .notification import Notification

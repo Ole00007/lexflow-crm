@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>aLEXy — Legal CRM for Modern Practices</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy-deep:    #0d1b2a;
+      --navy-mid:     #1b263b;
+      --navy-light:   #415a77;
+      --white:        #ffffff;
+      --gold:         #c9a84c;
+      --gold-light:   #e8d5a0;
+      --gray-100:     #f8f9fa;
+      --gray-200:     #e9ecef;
+      --gray-400:     #adb5bd;
+      --gray-600:     #6c757d;
+      --gray-800:     #343a40;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md:    0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg:    0 8px 32px rgba(0,0,0,0.12);
+      --radius:       8px;
+      --radius-lg:    12px;
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-800);
+      background: var(--white);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { text-decoration: none; color: inherit; }
+    img { max-width: 100%; display: block; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ===== MOCKUP BANNER ===== */
+    .mockup-banner {
+      background: var(--navy-deep);
+      color: var(--gold-light);
+      text-align: center;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      font-weight: 500;
+    }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 24px;
+    }
+    .navbar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--navy-deep);
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--gold); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .nav-links a {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--navy-deep); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 24px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--navy-deep);
+      color: var(--white);
+    }
+    .btn-primary:hover { background: var(--navy-mid); }
+    .btn-outline {
+      background: transparent;
+      color: var(--navy-deep);
+      border: 1.5px solid var(--navy-deep);
+    }
+    .btn-outline:hover { background: var(--navy-deep); color: var(--white); }
+    .btn-gold {
+      background: var(--gold);
+      color: var(--navy-deep);
+    }
+    .btn-gold:hover { background: #b8963f; }
+    .btn-white {
+      background: var(--white);
+      color: var(--navy-deep);
+    }
+    .btn-white:hover { background: var(--gray-100); }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 80px 0 96px;
+      background: linear-gradient(180deg, var(--white) 0%, var(--gray-100) 100%);
+    }
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .hero-text h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      color: var(--navy-deep);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+    .hero-text p {
+      font-size: 1.1rem;
+      color: var(--gray-600);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      max-width: 480px;
+    }
+    .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-buttons .btn { padding: 12px 28px; font-size: 0.95rem; }
+
+    /* Hero product visual placeholder */
+    .hero-visual {
+      position: relative;
+    }
+    .hero-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      border: 1px solid var(--gray-200);
+    }
+    .hero-card-header {
+      background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-card-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .hero-card-dot:nth-child(1) { background: #ff5f56; }
+    .hero-card-dot:nth-child(2) { background: #ffbd2e; }
+    .hero-card-dot:nth-child(3) { background: #27c93f; }
+    .hero-card-body {
+      padding: 24px;
+      min-height: 280px;
+      background: linear-gradient(135deg, #f0f4f8 0%, #e8ecf1 100%);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .hero-kanban-col {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .hero-kanban-col-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-600);
+      margin-bottom: 8px;
+    }
+    .hero-kanban-card {
+      background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-mid) 100%);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .hero-kanban-card-title {
+      font-size: 0.7rem;
+      color: var(--white);
+      font-weight: 500;
+    }
+    .hero-kanban-card-bar {
+      height: 3px;
+      border-radius: 2px;
+      margin-top: 6px;
+    }
+    .hero-card-accent {
+      position: absolute;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%);
+      top: -30px; right: -30px;
+      z-index: -1;
+    }
+
+    /* ===== FEATURES ===== */
+    .features {
+      padding: 96px 0;
+      background: var(--white);
+    }
+    .section-label {
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--navy-deep);
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .section-subtitle {
+      text-align: center;
+      font-size: 1.05rem;
+      color: var(--gray-600);
+      max-width: 560px;
+      margin: 0 auto 64px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    .feature-card {
+      background: var(--gray-100);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      transition: box-shadow 0.3s, transform 0.3s;
+      border: 1px solid transparent;
+    }
+    .feature-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+      border-color: var(--gray-200);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+    }
+    .feature-icon svg { width: 24px; height: 24px; }
+    .feature-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--navy-deep);
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .feature-screenshot {
+      width: 100%;
+      height: 160px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-screenshot::after {
+      content: 'Preview';
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--gray-400);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    /* Screenshot-specific styles */
+    .screenshot-kanban {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e2e8f0 100%);
+    }
+    .screenshot-kanban::before {
+      content: '';
+      position: absolute;
+      top: 12px; left: 12px; right: 12px; bottom: 12px;
+      border-radius: 6px;
+      border: 1px dashed var(--gray-400);
+      opacity: 0.5;
+    }
+    .screenshot-tasks {
+      background: linear-gradient(135deg, #f0f4f8 0%, #dde4ed 100%);
+    }
+    .screenshot-tasks::before {
+      content: '';
+      position: absolute;
+      top: 16px; left: 20px; right: 20px; bottom: 20px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(201,168,76,0.08) 0%, transparent 100%);
+    }
+    .screenshot-intake {
+      background: linear-gradient(135deg, #fafafa 0%, #e8ecf1 100%);
+    }
+    .screenshot-intake::before {
+      content: '';
+      position: absolute;
+      top: 16px; left: 16px; right: 16px; bottom: 16px;
+      border-radius: 6px;
+      background: repeating-linear-gradient(
+        180deg,
+        transparent 0px,
+        transparent 18px,
+        rgba(108,117,125,0.08) 18px,
+        rgba(108,117,125,0.08) 19px
+      );
+    }
+
+    /* ===== PRODUCT VISUAL ===== */
+    .product-visual {
+      padding: 96px 0;
+      background: var(--gray-100);
+    }
+    .product-visual-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .product-visual-text h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--navy-deep);
+      line-height: 1.25;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+    .product-visual-text p {
+      font-size: 1.05rem;
+      color: var(--gray-600);
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .product-visual-text ul {
+      list-style: none;
+      margin-bottom: 32px;
+    }
+    .product-visual-text ul li {
+      position: relative;
+      padding-left: 28px;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      color: var(--gray-800);
+    }
+    .product-visual-text ul li::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 7px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    .product-mockup {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      border: 1px solid var(--gray-200);
+    }
+    .product-mockup-bar {
+      background: var(--navy-deep);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .product-mockup-bar .bar-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .product-mockup-bar .bar-dot:nth-child(1) { background: #ff5f56; }
+    .product-mockup-bar .bar-dot:nth-child(2) { background: #ffbd2e; }
+    .product-mockup-bar .bar-dot:nth-child(3) { background: #27c93f; }
+    .product-mockup-bar span {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--gray-400);
+      letter-spacing: 0.06em;
+    }
+    .product-mockup-body {
+      padding: 24px;
+      min-height: 340px;
+      background: linear-gradient(180deg, #f0f4f8 0%, #e8ecf1 100%);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .mockup-col {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      min-height: 300px;
+    }
+    .mockup-col-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray-600);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid;
+    }
+    .mockup-col-title.c1 { border-color: var(--navy-light); }
+    .mockup-col-title.c2 { border-color: var(--gold); }
+    .mockup-col-title.c3 { border-color: #27c93f; }
+    .mockup-col-title.c4 { border-color: var(--navy-deep); }
+
+    .mockup-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .mockup-card-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--navy-deep);
+      margin-bottom: 6px;
+    }
+    .mockup-card-meta {
+      font-size: 0.6rem;
+      color: var(--gray-400);
+    }
+    .mockup-card-tag {
+      display: inline-block;
+      font-size: 0.55rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-top: 6px;
+    }
+    .tag-navy { background: var(--navy-deep); color: var(--white); }
+    .tag-gold { background: rgba(201,168,76,0.15); color: #a08530; }
+    .tag-green { background: rgba(39,201,63,0.12); color: #229130; }
+
+    /* ===== TESTIMONIAL ===== */
+    .testimonial {
+      padding: 96px 0;
+      background: var(--white);
+    }
+    .testimonial-card {
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 56px 48px;
+      background: var(--gray-100);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--gray-200);
+      position: relative;
+    }
+    .testimonial-card::before {
+      content: '\201C';
+      position: absolute;
+      top: 20px; left: 40px;
+      font-size: 5rem;
+      color: var(--gold);
+      font-family: Georgia, serif;
+      line-height: 1;
+      opacity: 0.4;
+    }
+    .testimonial-card blockquote {
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--navy-deep);
+      line-height: 1.7;
+      font-style: italic;
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+    }
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .testimonial-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy-deep) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .testimonial-avatar svg { width: 20px; height: 20px; }
+    .testimonial-info strong {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--navy-deep);
+    }
+    .testimonial-info span {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+    }
+
+    /* ===== CTA ===== */
+    .cta-section {
+      padding: 80px 0;
+      background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-mid) 100%);
+    }
+    .cta-inner {
+      text-align: center;
+    }
+    .cta-inner h2 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .cta-inner p {
+      font-size: 1.1rem;
+      color: var(--gray-400);
+      margin-bottom: 36px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--navy-deep);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 32px 0;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer p {
+      font-size: 0.8rem;
+      color: var(--gray-400);
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+    .footer-links a {
+      font-size: 0.8rem;
+      color: var(--gray-400);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--white); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1024px) {
+      .hero-inner,
+      .product-visual-inner {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+      .hero-text { text-align: center; }
+      .hero-text p { margin-left: auto; margin-right: auto; }
+      .hero-buttons { justify-content: center; }
+      .features-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+      .product-mockup-body { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      .nav-links .link-features,
+      .nav-links .link-about,
+      .nav-links .link-contact { display: none; }
+      .hero { padding: 48px 0 64px; }
+      .hero-text h1 { font-size: 2rem; }
+      .hero-card-body { grid-template-columns: 1fr; }
+      .product-mockup-body { grid-template-columns: 1fr; }
+      .section-title { font-size: 1.6rem; }
+      .cta-inner h2 { font-size: 1.75rem; }
+      .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+      .testimonial-card { padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== MOCKUP BANNER ===== -->
+  <div class="mockup-banner">Conceptual Mockup — Not Final</div>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <div class="logo">a<span>LE</span>XY</div>
+      <div class="nav-links">
+        <a href="#features" class="link-features">Features</a>
+        <a href="#about" class="link-about">About</a>
+        <a href="#contact" class="link-contact">Contact</a>
+        <a href="#" class="btn btn-primary">Request Demo</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-inner">
+        <div class="hero-text">
+          <h1>Your firm.<br>Your data.<br>Full control.</h1>
+          <p>Privacy-first legal CRM built for Italian law and audit firms. Pipeline management, task tracking, and client intake — all in one system.</p>
+          <div class="hero-buttons">
+            <a href="#" class="btn btn-primary">Request Demo</a>
+            <a href="#features" class="btn btn-outline">View Features</a>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-card-accent"></div>
+          <div class="hero-card">
+            <div class="hero-card-header">
+              <div class="hero-card-dot"></div>
+              <div class="hero-card-dot"></div>
+              <div class="hero-card-dot"></div>
+            </div>
+            <div class="hero-card-body">
+              <div class="hero-kanban-col">
+                <div class="hero-kanban-col-title">Intake</div>
+                <div class="hero-kanban-card" style="background: linear-gradient(135deg, #415a77 0%, #1b263b 100%);">
+                  <div class="hero-kanban-card-title">Rossi — Mergers</div>
+                  <div class="hero-kanban-card-bar" style="width:60%; background: var(--gold);"></div>
+                </div>
+                <div class="hero-kanban-card" style="background: linear-gradient(135deg, #415a77 0%, #1b263b 100%);">
+                  <div class="hero-kanban-card-title">Bianchi — Tax</div>
+                  <div class="hero-kanban-card-bar" style="width:40%; background: var(--gold);"></div>
+                </div>
+              </div>
+              <div class="hero-kanban-col">
+                <div class="hero-kanban-col-title">In Progress</div>
+                <div class="hero-kanban-card" style="background: linear-gradient(135deg, #c9a84c 0%, #a08530 100%);">
+                  <div class="hero-kanban-card-title">Ferrara — Compliance</div>
+                  <div class="hero-kanban-card-bar" style="width:75%; background: rgba(255,255,255,0.3);"></div>
+                </div>
+                <div class="hero-kanban-card" style="background: linear-gradient(135deg, #415a77 0%, #1b263b 100%);">
+                  <div class="hero-kanban-card-title"> Colombo — IP</div>
+                  <div class="hero-kanban-card-bar" style="width:30%; background: var(--gold);"></div>
+                </div>
+              </div>
+              <div class="hero-kanban-col">
+                <div class="hero-kanban-col-title">Closing</div>
+                <div class="hero-kanban-card" style="background: linear-gradient(135deg, #27c93f 0%, #1e9e30 100%);">
+                  <div class="hero-kanban-card-title">Marchetti — Civil</div>
+                  <div class="hero-kanban-card-bar" style="width:90%; background: rgba(255,255,255,0.3);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES ===== -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-label">Features</div>
+      <h2 class="section-title">Everything your practice needs</h2>
+      <p class="section-subtitle">Three core pillars designed around the daily workflow of Italian legal professionals.</p>
+
+      <div class="features-grid">
+
+        <!-- Kanban Pipeline -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1b263b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="5" height="18" rx="1"/>
+              <rect x="10" y="3" width="5" height="12" rx="1"/>
+              <rect x="17" y="3" width="5" height="15" rx="1"/>
+            </svg>
+          </div>
+          <h3>Kanban Pipeline</h3>
+          <p>Visualize your entire caseload at a glance. Drag cases through stages from intake to closing — never lose track of where a matter stands.</p>
+          <div class="feature-screenshot screenshot-kanban"></div>
+        </div>
+
+        <!-- Task Management -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1b263b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <h3>Task Management</h3>
+          <p>Assign deadlines, set reminders, and track every sub-task. Integrated with your calendar so no filing date or hearing is ever missed.</p>
+          <div class="feature-screenshot screenshot-tasks"></div>
+        </div>
+
+        <!-- Client Intake -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1b263b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <h3>Client Intake</h3>
+          <p>Streamline new client onboarding with structured forms. Capture conflict checks, engagement terms, and initial case details in one flow.</p>
+          <div class="feature-screenshot screenshot-intake"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRODUCT VISUAL ===== -->
+  <section class="product-visual">
+    <div class="container">
+      <div class="product-visual-inner">
+        <div class="product-visual-text">
+          <h2>Move cases from intake to closing. Track every step. Never drop a deadline.</h2>
+          <p>aLEXy gives you a single pane of glass for your practice. See what's happening, what's overdue, and what needs attention — all without toggling between tools.</p>
+          <ul>
+            <li>Drag-and-drop pipeline boards for matters and cases</li>
+            <li>Automated deadline tracking with Italian procedural timelines</li>
+            <li>Role-based access for partners, associates, and paralegals</li>
+            <li>GDPR-compliant data handling from day one</li>
+          </ul>
+          <a href="#" class="btn btn-primary">Request Demo</a>
+        </div>
+
+        <div class="product-mockup">
+          <div class="product-mockup-bar">
+            <div class="bar-dot"></div>
+            <div class="bar-dot"></div>
+            <div class="bar-dot"></div>
+            <span>aLEXy — Pipeline View</span>
+          </div>
+          <div class="product-mockup-body">
+            <!-- Col 1: Intake -->
+            <div class="mockup-col">
+              <div class="mockup-col-title c1">Intake</div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Rossi M&A Due Diligence</div>
+                <div class="mockup-card-meta">Submitted today</div>
+                <span class="mockup-card-tag tag-navy">New</span>
+              </div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Bianchi Tax Advisory</div>
+                <div class="mockup-card-meta">Submitted yesterday</div>
+                <span class="mockup-card-tag tag-gold">Review</span>
+              </div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Conti Family Law</div>
+                <div class="mockup-card-meta">Submitted 2 days ago</div>
+              </div>
+            </div>
+
+            <!-- Col 2: In Progress -->
+            <div class="mockup-col">
+              <div class="mockup-col-title c2">In Progress</div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Ferrara Compliance Audit</div>
+                <div class="mockup-card-meta">Due July 28</div>
+                <span class="mockup-card-tag tag-gold">Active</span>
+              </div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Colombo IP Filing</div>
+                <div class="mockup-card-meta">Due Aug 3</div>
+                <span class="mockup-card-tag tag-green">On Track</span>
+              </div>
+            </div>
+
+            <!-- Col 3: Review -->
+            <div class="mockup-col">
+              <div class="mockup-col-title c3">Review</div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Marchetti Civil Dispute</div>
+                <div class="mockup-card-meta">Hearing July 30</div>
+                <span class="mockup-card-tag tag-gold">Partner Review</span>
+              </div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Esposito Real Estate</div>
+                <div class="mockup-card-meta">Due Aug 5</div>
+              </div>
+            </div>
+
+            <!-- Col 4: Closed -->
+            <div class="mockup-col">
+              <div class="mockup-col-title c4">Closed</div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Garibaldi Contract Rev.</div>
+                <div class="mockup-card-meta">Closed July 15</div>
+              </div>
+              <div class="mockup-card">
+                <div class="mockup-card-title">Moretti Criminal Defense</div>
+                <div class="mockup-card-meta">Closed July 12</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TESTIMONIAL ===== -->
+  <section class="testimonial" id="about">
+    <div class="container">
+      <div class="section-label">Trusted by practitioners</div>
+      <div class="testimonial-card">
+        <blockquote>"We finally have a system that understands how our firm works. Pipeline visibility, deadline tracking, and client management — all in one place, without the bloat."</blockquote>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="testimonial-info">
+            <strong>Partner</strong>
+            <span>Studio Legale — Milan, Italy</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="cta-section" id="contact">
+    <div class="container">
+      <div class="cta-inner">
+        <h2>Ready to modernize your practice?</h2>
+        <p>See aLEXy in action. Book a short demo and discover how Italian firms are streamlining their workflow.</p>
+        <a href="#" class="btn btn-gold" style="padding: 14px 36px; font-size: 1rem;">Request Demo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <p>&copy; 2026 aLEXy — Legal CRM for modern practices. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

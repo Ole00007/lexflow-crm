@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexFlow CRM – Local Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+  h1 { color: #f59e0b; font-size: 24px; margin-bottom: 8px; }
+  .sub { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+  .card h2 { font-size: 16px; color: #f59e0b; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+  .card pre { font-size: 12px; background: #0f172a; padding: 12px; border-radius: 8px; overflow-x: auto; max-height: 300px; overflow-y: auto; color: #a5f3fc; }
+  .row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; }
+  .label { color: #64748b; min-width: 100px; }
+  .value { color: #e2e8f0; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge.green { background: #065f46; color: #6ee7b7; }
+  .badge.blue { background: #1e3a5f; color: #93c5fd; }
+  .badge.purple { background: #3b1f6e; color: #c4b5fd; }
+  .badge.orange { background: #7c3a12; color: #fdba74; }
+  .login-box { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 24px; max-width: 400px; }
+  .login-box h3 { font-size: 14px; margin-bottom: 12px; color: #f59e0b; }
+  .login-box code { display: block; background: #0f172a; padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<h1>⚖️ LexFlow CRM</h1>
+<p class="sub">Local development server — port 5002 • Last refreshed: <span id="timestamp"></span></p>
+
+<div class="login-box">
+  <h3>🔑 Login Credentials</h3>
+  <code>Admin: admin@lexflow.test / Admin@12345</code>
+  <code>Staff:  lawyer@lexflow.test / Lawyer@12345</code>
+  <code style="margin-top:8px;color:#a5f3fc">curl -X POST http://localhost:5002/api/auth/login \<br>  -H "Content-Type: application/json" \<br>  -d '{"email":"admin@lexflow.test","password":"Admin@12345"}'</code>
+</div>
+
+<div class="grid">
+
+<div class="card">
+  <h2>📞 Quick Tests (curl commands to paste)</h2>
+  <pre style="color:#a5f3fc">
+# Health
+curl http://localhost:5002/health
+
+# List contacts
+curl http://localhost:5002/api/contacts
+
+# List cases
+curl http://localhost:5002/api/cases
+
+# All activity
+curl http://localhost:5002/api/activity
+
+# Create contact (use TOKEN from login)
+TOKEN="eyJ..."
+curl -X POST http://localhost:5002/api/contacts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"full_name":"New Client","email":"client@law.it","status":"lead"}'
+
+# Create case
+curl -X POST http://localhost:5002/api/cases \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"contactid":1,"title":"Nuova causa","casetype":"Commercial","priority":"High"}'
+
+# Add note to case
+curl -X POST http://localhost:5002/api/notes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"target_type":"case","target_id":1,"content":"Note test"}'
+
+# Create hearing
+curl -X POST http://localhost:5002/api/calendar \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"caseid":1,"title":"Udienza","event_type":"hearing","court_name":"Tribunale","start_datetime":"2026-09-15T09:00:00","status":"scheduled"}'</pre>
+</div>
+
+<div class="card">
+  <h2>📊 API Endpoints Map</h2>
+  <pre>
+# AUTH
+  POST /api/auth/login        → get JWT token
+  GET  /api/auth/me           → current user info
+
+# CONTACTS (open GET, auth for write)
+  GET  /api/contacts          → list all
+  GET  /api/contacts/:id      → get one
+  POST /api/contacts          → create
+  PUT  /api/contacts/:id      → update
+  DELETE /api/contacts/:id    → soft delete
+
+# CASES (open GET, auth for write)
+  GET  /api/cases             → list all
+  GET  /api/cases/:id         → get one
+  POST /api/cases             → create
+  PUT  /api/cases/:id         → update
+  DELETE /api/cases/:id       → soft delete
+
+# NOTES (JWT required everywhere)
+  GET  /api/notes?target_type=case&target_id=1
+  POST /api/notes
+  PUT  /api/notes/:id
+  DELETE /api/notes/:id
+
+# ACTIVITY (open)
+  GET  /api/activity?target_type=case&target_id=1
+  GET  /api/activity          → all timeline
+
+# CALENDAR (JWT required)
+  GET  /api/calendar?caseid=1&event_type=hearing
+  POST /api/calendar
+  PUT  /api/calendar/:id
+  DELETE /api/calendar/:id
+
+# DEADLINES (JWT required)
+  GET  /api/deadlines?caseid=1
+  POST /api/deadlines
+  PUT  /api/deadlines/:id
+  DELETE /api/deadlines/:id
+
+# ADMIN (JWT + admin role)
+  GET  /api/admin/health
+  GET  /api/admin/stats
+  GET  /api/admin/users
+  PUT  /api/admin/users/:id/role
+  DELETE /api/admin/users/:id
+
+# TASKS (JWT required)
+  GET  /api/tasks
+  POST /api/tasks
+  PUT  /api/tasks/:id
+  DELETE /api/tasks/:id
+
+# WEBHOOKS (chatbot integration)
+  POST /api/webhooks/chatbot/message
+</pre>
+</div>
+
+<div class="card">
+  <h2>📁 Available Data (from tests)</h2>
+  <pre id="live-data">Fetching...</pre>
+</div>
+
+</div>
+
+<script>
+document.getElementById('timestamp').textContent = new Date().toLocaleTimeString();
+
+// Fetch live data from all endpoints
+async function loadData() {
+  try {
+    // Login first
+    const loginRes = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email:'admin@lexflow.test', password:'Admin@12345'})
+    });
+    const { access_token } = await loginRes.json();
+
+    // Fetch all open endpoints
+    const [contacts, cases, activity] = await Promise.all([
+      fetch('/api/contacts').then(r => r.json()),
+      fetch('/api/cases').then(r => r.json()),
+      fetch('/api/activity').then(r => r.json()),
+    ]);
+
+    // Notes + calendar (need JWT)
+    const notesRes = await fetch('/api/notes', {headers:{'Authorization':'Bearer '+access_token}});
+    const notes = await notesRes.json();
+    const calRes = await fetch('/api/calendar', {headers:{'Authorization':'Bearer '+access_token}});
+    const calendar = await calRes.json();
+    const statsRes = await fetch('/api/admin/stats', {headers:{'Authorization':'Bearer '+access_token}});
+    const stats = await statsRes.json();
+
+    let html = '';
+    html += `📞 Contacts: ${contacts.length}\n`;
+    contacts.forEach(c => html += `  [${c.id}] ${c.fullname} (${c.status})\n`);
+    html += `\n📁 Cases: ${cases.length}\n`;
+    cases.forEach(c => html += `  [${c.id}] ${c.title} — ${c.status}/${c.priority}\n`);
+    html += `\n📝 Notes: ${notes.length}\n`;
+    notes.forEach(n => html += `  on ${n.target_type}:${n.target_id} — "${n.content.substring(0,50)}"\n`);
+    html += `\n📋 Activity: ${activity.length} entries\n`;
+    activity.slice(0,5).forEach(a => html += `  ${a.action} — ${a.summary.substring(0,40)}\n`);
+    html += `\n📅 Calendar: ${calendar.length} events\n`;
+    html += `\n📊 Stats:\n`;
+    for (const [k,v] of Object.entries(stats)) html += `  ${k}: ${v}\n`;
+
+    document.getElementById('live-data').textContent = html;
+  } catch(e) {
+    document.getElementById('live-data').textContent = 'Error: ' + e.message;
+  }
+}
+loadData();
+</script>
+</body>
+</html>
