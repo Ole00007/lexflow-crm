@@ -97,6 +97,7 @@ def create_app():
         """Ensure DB schema matches models. Runs once per worker."""
         if not getattr(app, '_schema_checked', False):
             from sqlalchemy import inspect, text
+            from .models.user import User
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             if tables:
@@ -110,9 +111,12 @@ def create_app():
                         conn.execute(text("CREATE SCHEMA public"))
                         conn.commit()
                     db.create_all()
-                    # Re-seed default user after schema refresh
-                    _seed_default_users()
-                    log.info("✓ Tables recreated + seeded")
+                    log.info("✓ Tables recreated")
+            # Always ensure at least one user exists
+            if not User.query.first():
+                _seed_default_users()
+                import logging
+                logging.getLogger(__name__).info("✓ Default user seeded")
             app._schema_checked = True
 
     return app
