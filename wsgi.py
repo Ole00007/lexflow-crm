@@ -1,42 +1,37 @@
-"""WSGI entry point for Flask app.
-Uses the factory pattern from crm/__init__.py
-Auto-runs migrations on startup.
-"""
-import os
-import sys
-import logging
-
+"""WSGI entry point — auto-migrates DB on startup."""
+import os, sys, logging
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 logger.info(f"Python {sys.version}")
 
 try:
-    from crm import create_app, db
-    from flask_migrate import upgrade as flask_upgrade
-    from alembic.config import Config
-    from alembic import command
-
+    from crm import create_app
     app = create_app()
 
     with app.app_context():
-        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "migrations", "alembic.ini"))
-        alembic_cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "migrations"))
-        try:
-            # Stamp to base to clear old migration history
-            command.stamp(alembic_cfg, "base")
-            # Run all migrations up to head
-            command.upgrade(alembic_cfg, "head")
-            logger.info("✓ Migrations applied successfully")
-        except Exception as me:
-            # Fallback: create tables directly matching models
-            logger.warning(f"Migration failed, using db.create_all(): {me}")
+        from crm.extensions import db
+        # Check if workspace table exists — if not, old schema -> recreate
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if 'workspaces' not in inspector.get_table_names():
+            logger.info("Old schema detected — recreating all tables...")
+            db.drop_all()
             db.create_all()
-            logger.info("✓ Tables created via db.create_all()")
+            logger.info("✓ Tables recreated with new schema")
+        else:
+            # Check if workspace_id column exists on cases
+            cols = [c['name'] for c in inspector.get_columns('cases')]
+            if 'workspace_id' not in cols:
+                logger.info("Missing workspace_id — recreating tables...")
+                db.drop_all()
+                db.create_all()
+                logger.info("✓ Tables recreated with new schema")
+            else:
+                logger.info("✓ Schema is current")
 
     logger.info("✓ App initialized successfully")
 except Exception as e:
-    logger.error(f"✗ Failed to create app: {e}", exc_info=True)
+    logger.error(f"✗ Failed: {e}", exc_info=True)
     raise
 
 if __name__ == "__main__":
