@@ -43,7 +43,7 @@
         {% endif %}
     {% endwith %}
 
-    <form id="intake-form" class="section" action="{{ url_for('intake.submit_intake') }}" method="post" enctype="multipart/form-data">
+    <form id="intake-form" class="section" action="{{ url_for('views.submit') }}" method="post" enctype="multipart/form-data">
         <h2>New matter intake</h2>
         <p class="intro">
             Use only the information needed for a first review. Required fields are marked with an asterisk.
@@ -99,7 +99,7 @@
         </p>
         <div class="actions">
             <button type="submit" class="button">Submit intake</button>
-            <a href="{{ url_for('intake.admin_list') }}" class="button button-secondary">Back to admin</a>
+            <a href="{{ url_for('views.admin_list') }}" class="button button-secondary">Back to admin</a>
         </div>
     </form>
 </section>
