@@ -1,8 +1,7 @@
-"""WSGI entry point — auto-migrates DB on startup."""
+"""WSGI entry point — ensures fresh DB schema on every startup."""
 import os, sys, logging
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info(f"Python {sys.version}")
 
 try:
     from crm import create_app
@@ -10,26 +9,12 @@ try:
 
     with app.app_context():
         from crm.extensions import db
-        # Check if workspace table exists — if not, old schema -> recreate
-        from sqlalchemy import inspect
-        inspector = inspect(db.engine)
-        if 'workspaces' not in inspector.get_table_names():
-            logger.info("Old schema detected — recreating all tables...")
-            db.drop_all()
-            db.create_all()
-            logger.info("✓ Tables recreated with new schema")
-        else:
-            # Check if workspace_id column exists on cases
-            cols = [c['name'] for c in inspector.get_columns('cases')]
-            if 'workspace_id' not in cols:
-                logger.info("Missing workspace_id — recreating tables...")
-                db.drop_all()
-                db.create_all()
-                logger.info("✓ Tables recreated with new schema")
-            else:
-                logger.info("✓ Schema is current")
+        logger.info("Recreating all tables from current models...")
+        db.drop_all()
+        db.create_all()
+        logger.info("✓ Tables created successfully")
 
-    logger.info("✓ App initialized successfully")
+    logger.info("✓ App initialized")
 except Exception as e:
     logger.error(f"✗ Failed: {e}", exc_info=True)
     raise
