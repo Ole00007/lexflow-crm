@@ -1,0 +1,12 @@
+node_modules/
+__pycache__/
+*.pyc
+.venv
+venv
+local_venv
+venv.windows.bak
+.venv-test
+.venv.local
+*.egg-info/
+.git/
+local_venv/
