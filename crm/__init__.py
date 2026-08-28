@@ -79,19 +79,24 @@ def create_app():
     # Schema refresh on first request (detects old Railway DB schema)
     @app.before_request
     def _ensure_schema():
-        """Ensure DB schema matches models. Runs once per process."""
+        """Ensure DB schema matches models. Runs once per worker."""
         if not getattr(app, '_schema_checked', False):
             from .extensions import db as _db
-            from sqlalchemy import inspect
+            from sqlalchemy import inspect, text
             inspector = inspect(_db.engine)
             tables = inspector.get_table_names()
             if tables:
                 cols = [c['name'] for c in inspector.get_columns('cases')]
                 if 'workspace_id' not in cols:
                     import logging
-                    logging.getLogger(__name__).info("Old schema — recreating tables...")
-                    _db.drop_all()
+                    logging.getLogger(__name__).info("Old schema — recreating tables with CASCADE...")
+                    # Use CASCADE to drop dependent objects
+                    with _db.engine.connect() as conn:
+                        conn.execute(text("DROP SCHEMA public CASCADE"))
+                        conn.execute(text("CREATE SCHEMA public"))
+                        conn.commit()
                     _db.create_all()
+                    logging.getLogger(__name__).info("✓ Tables recreated")
             app._schema_checked = True
 
     return app
