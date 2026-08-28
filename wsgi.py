@@ -1,25 +1,42 @@
-"""
-WSGI entry point for Flask app - compatible with Gunicorn, Railway, Heroku.
+"""WSGI entry point for Flask app.
 Uses the factory pattern from crm/__init__.py
+Auto-runs migrations on startup.
 """
 import os
 import sys
 import logging
 
-# Basic logging to stderr for debugging
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 logger.info(f"Python {sys.version}")
-logger.info(f"DATABASE_URL: {os.environ.get('DATABASE_URL', 'NOT SET')[:50]}")
 
 try:
-    from crm import create_app
+    from crm import create_app, db
+    from flask_migrate import upgrade as flask_upgrade
+    from alembic.config import Config
+    from alembic import command
+
     app = create_app()
+
+    with app.app_context():
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "migrations", "alembic.ini"))
+        alembic_cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "migrations"))
+        try:
+            # Stamp to base to clear old migration history
+            command.stamp(alembic_cfg, "base")
+            # Run all migrations up to head
+            command.upgrade(alembic_cfg, "head")
+            logger.info("✓ Migrations applied successfully")
+        except Exception as me:
+            # Fallback: create tables directly matching models
+            logger.warning(f"Migration failed, using db.create_all(): {me}")
+            db.create_all()
+            logger.info("✓ Tables created via db.create_all()")
+
     logger.info("✓ App initialized successfully")
 except Exception as e:
     logger.error(f"✗ Failed to create app: {e}", exc_info=True)
-    # Re-raise so Gunicorn sees the error in logs
     raise
 
 if __name__ == "__main__":
