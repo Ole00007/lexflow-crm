@@ -3,6 +3,8 @@ Workspace middleware — enforces multi-tenant data isolation.
 """
 from flask import g
 from flask_jwt_extended import get_jwt_identity
+from .extensions import db
+from .models.user import User
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,17 +15,14 @@ def get_current_workspace_id():
     try:
         uid = get_jwt_identity()
         if uid:
-            from ..extensions import db
-            from ..models.user import User
             user = db.session.get(User, int(uid))
             if user:
                 g.current_workspace_id = user.workspace_id
                 return user.workspace_id
             else:
-                # Don't silently pass - log the issue
-                logger.warning(f"User {uid} not found in database (get_jwt_identity returned '{uid}', type={type(uid).__name__})")
+                logger.warning(f"User {uid} not found in DB")
     except Exception as e:
-        logger.warning(f"Error in get_current_workspace_id: {e}")
+        logger.warning(f"get_current_workspace_id error: {e}")
     g.current_workspace_id = None
     return None
 
@@ -32,9 +31,6 @@ def workspace_filter(query, model):
     """Apply workspace filtering to a query.
     Superadmin users bypass the filter (see all data).
     """
-    from ..extensions import db
-    from ..models.user import User
-
     try:
         uid = get_jwt_identity()
         if uid:
@@ -42,7 +38,7 @@ def workspace_filter(query, model):
             if user and user.role == 'superadmin':
                 return query
     except Exception as e:
-        logger.warning(f"Error in workspace_filter: {e}")
+        logger.warning(f"workspace_filter error: {e}")
 
     workspace_id = getattr(g, 'current_workspace_id', None) or get_current_workspace_id()
     if workspace_id:
