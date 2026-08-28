@@ -51,6 +51,13 @@ def create_contact():
     if not data.get('full_name'):
         return jsonify({'error': 'full_name is required'}), 400
 
+    # Debug: check if JWT identity works
+    try:
+        uid = get_jwt_identity()
+        return jsonify({'debug_uid': uid, 'uid_type': type(uid).__name__}), 200
+    except Exception as e:
+        return jsonify({'debug_error': str(e)}), 200
+
     wid = get_current_workspace_id()
     if wid is None:
         return jsonify({'error': 'Authentication required to create contacts'}), 401
