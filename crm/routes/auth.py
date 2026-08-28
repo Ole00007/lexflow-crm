@@ -70,7 +70,7 @@ def seed_production():
 
     # Users
     users_data = [
-        ('olesya00007a@yahoo.com', 'Test12345!', 'superadmin', workspaces[0].id),
+        ('olesya00007@yahoo.com', 'Test12345!', 'superadmin', workspaces[0].id),
         ('avibe@lexflow.test', 'Avibe@12345', 'admin', workspaces[0].id),
         ('pagliano@lexflow.test', 'Pag@12345', 'admin', workspaces[2].id),
         ('romanelli@lexflow.test', 'Rom@12345', 'admin', workspaces[3].id),
