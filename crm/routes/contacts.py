@@ -43,6 +43,7 @@ def get_contact(contact_id):
     return jsonify(contact.to_dict()), 200
 
 @contacts_bp.post('')
+@jwt_required(optional=True)
 def create_contact():
     data = request.get_json()
     if not data:
