@@ -1,7 +1,5 @@
-"""
-Health and diagnostic routes for debugging deployment issues.
-"""
-from flask import Blueprint, jsonify
+"""Health and diagnostic routes for debugging deployment issues."""
+from flask import Blueprint, jsonify, redirect, url_for
 import os
 import sys
 
@@ -32,15 +30,4 @@ def diagnostic():
         "environment": env_vars,
     }), 200
 
-@health_bp.route('/', methods=['GET'])
-def root():
-    """Root endpoint."""
-    return jsonify({
-        "api": "LexFlow CRM",
-        "version": "1.0.0",
-        "status": "running",
-        "endpoints": {
-            "health": "/health",
-            "diagnostic": "/diagnostic",
-        }
-    }), 200
+# Root route removed — views_bp serves the intake form at /
