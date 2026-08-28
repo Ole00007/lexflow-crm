@@ -3,6 +3,9 @@ Workspace middleware — enforces multi-tenant data isolation.
 """
 from flask import g
 from flask_jwt_extended import get_jwt_identity
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_current_workspace_id():
@@ -16,8 +19,11 @@ def get_current_workspace_id():
             if user:
                 g.current_workspace_id = user.workspace_id
                 return user.workspace_id
-    except Exception:
-        pass
+            else:
+                # Don't silently pass - log the issue
+                logger.warning(f"User {uid} not found in database (get_jwt_identity returned '{uid}', type={type(uid).__name__})")
+    except Exception as e:
+        logger.warning(f"Error in get_current_workspace_id: {e}")
     g.current_workspace_id = None
     return None
 
@@ -25,7 +31,6 @@ def get_current_workspace_id():
 def workspace_filter(query, model):
     """Apply workspace filtering to a query.
     Superadmin users bypass the filter (see all data).
-    Example:  query = workspace_filter(Contact.query, Contact).filter_by(...)
     """
     from ..extensions import db
     from ..models.user import User
@@ -36,8 +41,8 @@ def workspace_filter(query, model):
             user = db.session.get(User, int(uid))
             if user and user.role == 'superadmin':
                 return query
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Error in workspace_filter: {e}")
 
     workspace_id = getattr(g, 'current_workspace_id', None) or get_current_workspace_id()
     if workspace_id:
