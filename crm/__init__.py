@@ -9,8 +9,20 @@ def _seed_default_users():
     """Seed admin user and workspace for fresh DB."""
     from .models.workspace import Workspace
     from .models.user import User
-    if User.query.first():
-        return  # Already seeded
+    # If user exists but workspace FK is stale, update it
+    user = User.query.filter_by(email="olesya00007@yahoo.com").first()
+    if user:
+        # Check if their workspace exists
+        ws = Workspace.query.get(user.workspace_id)
+        if not ws:
+            # Workspace was deleted — create a new one and reassign
+            ws = Workspace(slug="lexflow", name="LexFlow Default", description="Default workspace", is_active=True)
+            db.session.add(ws)
+            db.session.flush()
+            user.workspace_id = ws.id
+            db.session.commit()
+        return
+    # No user — create fresh
     ws = Workspace(slug="lexflow", name="LexFlow Default", description="Default workspace", is_active=True)
     db.session.add(ws)
     db.session.flush()
