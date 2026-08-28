@@ -4,6 +4,22 @@ from pathlib import Path
 from .config import Config
 from .extensions import db, migrate, jwt, cors, limiter
 
+
+def _seed_default_users():
+    """Seed admin user and workspace for fresh DB."""
+    from .models.workspace import Workspace
+    from .models.user import User
+    if User.query.first():
+        return  # Already seeded
+    ws = Workspace(slug="lexflow", name="LexFlow Default", description="Default workspace", is_active=True)
+    db.session.add(ws)
+    db.session.flush()
+    user = User(email="olesya00007@yahoo.com", role="superadmin", workspace_id=ws.id)
+    user.set_password("Test12345!")
+    db.session.add(user)
+    db.session.commit()
+
+
 def create_app():
     app = Flask(__name__,
                 template_folder=str(Path(__file__).resolve().parent.parent / "templates"),
@@ -16,7 +32,6 @@ def create_app():
     cors.init_app(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", ["*"])}})
     limiter.init_app(app)
 
-    # Allow both /api/contacts and /api/contacts/ (no 308 redirects)
     app.url_map.strict_slashes = False
 
     # API Blueprints
@@ -46,7 +61,7 @@ def create_app():
     app.register_blueprint(calendar_bp)
     app.register_blueprint(notifications_bp)
 
-    # View Blueprint (serves Jinja2 templates from /dashboard, /kanban, /, etc.)
+    # View Blueprint
     from .routes.views import views_bp
     app.register_blueprint(views_bp)
 
@@ -81,22 +96,23 @@ def create_app():
     def _ensure_schema():
         """Ensure DB schema matches models. Runs once per worker."""
         if not getattr(app, '_schema_checked', False):
-            from .extensions import db as _db
             from sqlalchemy import inspect, text
-            inspector = inspect(_db.engine)
+            inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             if tables:
                 cols = [c['name'] for c in inspector.get_columns('cases')]
                 if 'workspace_id' not in cols:
                     import logging
-                    logging.getLogger(__name__).info("Old schema — recreating tables with CASCADE...")
-                    # Use CASCADE to drop dependent objects
-                    with _db.engine.connect() as conn:
+                    log = logging.getLogger(__name__)
+                    log.info("Old schema — recreating tables with CASCADE...")
+                    with db.engine.connect() as conn:
                         conn.execute(text("DROP SCHEMA public CASCADE"))
                         conn.execute(text("CREATE SCHEMA public"))
                         conn.commit()
-                    _db.create_all()
-                    logging.getLogger(__name__).info("✓ Tables recreated")
+                    db.create_all()
+                    # Re-seed default user after schema refresh
+                    _seed_default_users()
+                    log.info("✓ Tables recreated + seeded")
             app._schema_checked = True
 
     return app
