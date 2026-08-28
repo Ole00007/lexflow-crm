@@ -41,3 +41,46 @@ def get_current_user():
     if user.workspace:
         user_data['workspace'] = user.workspace.to_dict()
     return jsonify(user_data), 200
+
+
+@auth_bp.post('/seed')
+def seed_production():
+    """Seed initial users and workspaces. Only works if no users exist."""
+    from ..models.workspace import Workspace
+    from datetime import datetime
+
+    if User.query.first():
+        return jsonify({'error': 'Database already has users'}), 400
+
+    # Workspaces
+    ws_data = [
+        ('lexflow', 'LexFlow Default', 'Default workspace'),
+        ('avibeagency', 'AVIBE Agency', ''),
+        ('pagliano', 'Avvocato Pagliano', ''),
+        ('romanelli-studio', 'Studio Romanelli', ''),
+        ('romanelli-audit', 'Romanelli Audit', ''),
+        ('tommasoferro', 'Avv. Tommaso Ferro', ''),
+    ]
+    workspaces = []
+    for slug, name, desc in ws_data:
+        ws = Workspace(slug=slug, name=name, description=desc, is_active=True)
+        db.session.add(ws)
+        db.session.flush()
+        workspaces.append(ws)
+
+    # Users
+    users_data = [
+        ('olesya00007a@yahoo.com', 'Test12345!', 'superadmin', workspaces[0].id),
+        ('avibe@lexflow.test', 'Avibe@12345', 'admin', workspaces[0].id),
+        ('pagliano@lexflow.test', 'Pag@12345', 'admin', workspaces[2].id),
+        ('romanelli@lexflow.test', 'Rom@12345', 'admin', workspaces[3].id),
+        ('audit@lexflow.test', 'Audit@12345', 'admin', workspaces[4].id),
+        ('ferro@lexflow.test', 'Ferro@12345', 'admin', workspaces[5].id),
+    ]
+    for email, pw, role, wid in users_data:
+        user = User(email=email, role=role, workspace_id=wid)
+        user.set_password(pw)
+        db.session.add(user)
+
+    db.session.commit()
+    return jsonify({'success': True, 'users_created': len(users_data), 'workspaces_created': len(ws_data)}), 201
