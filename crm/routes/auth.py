@@ -45,12 +45,14 @@ def get_current_user():
 
 @auth_bp.post('/seed')
 def seed_production():
-    """Seed initial users and workspaces. Only works if no users exist."""
+    """Seed initial users and workspaces."""
     from ..models.workspace import Workspace
     from datetime import datetime
 
-    if User.query.first():
-        return jsonify({'error': 'Database already has users'}), 400
+    # Clear existing data first
+    User.query.delete()
+    Workspace.query.delete()
+    db.session.commit()
 
     # Workspaces
     ws_data = [
