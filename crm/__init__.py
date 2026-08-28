@@ -76,4 +76,22 @@ def create_app():
     def server_error(error):
         return jsonify({"error": "Internal server error"}), 500
 
+    # Schema refresh on first request (detects old Railway DB schema)
+    @app.before_request
+    def _ensure_schema():
+        """Ensure DB schema matches models. Runs once per process."""
+        if not getattr(app, '_schema_checked', False):
+            from .extensions import db as _db
+            from sqlalchemy import inspect
+            inspector = inspect(_db.engine)
+            tables = inspector.get_table_names()
+            if tables:
+                cols = [c['name'] for c in inspector.get_columns('cases')]
+                if 'workspace_id' not in cols:
+                    import logging
+                    logging.getLogger(__name__).info("Old schema — recreating tables...")
+                    _db.drop_all()
+                    _db.create_all()
+            app._schema_checked = True
+
     return app

@@ -1,4 +1,4 @@
-"""WSGI entry point — ensures fresh DB schema on every startup."""
+"""WSGI entry point — uses create_app() from crm package."""
 import os, sys, logging
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -6,14 +6,6 @@ logger = logging.getLogger(__name__)
 try:
     from crm import create_app
     app = create_app()
-
-    with app.app_context():
-        from crm.extensions import db
-        logger.info("Recreating all tables from current models...")
-        db.drop_all()
-        db.create_all()
-        logger.info("✓ Tables created successfully")
-
     logger.info("✓ App initialized")
 except Exception as e:
     logger.error(f"✗ Failed: {e}", exc_info=True)
