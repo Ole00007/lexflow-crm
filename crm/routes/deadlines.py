@@ -3,18 +3,15 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..extensions import db
 from ..models.deadline import Deadline
 from ..models.case import Case
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 from ..activity_logger import log_activity
 from datetime import date, datetime
 
 deadlines_bp = Blueprint('deadlines', __name__, url_prefix='/api/deadlines')
 
 def _filtered_query():
-    q = Deadline.query.filter_by(is_deleted=False)
-    wid = get_current_workspace_id()
-    if wid is not None:
-        q = q.filter_by(workspace_id=wid)
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    return workspace_filter(Deadline.query.filter_by(is_deleted=False), Deadline)
 
 @deadlines_bp.get('/')
 @jwt_required()

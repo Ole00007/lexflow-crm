@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 
 from ..extensions import db
 from ..models.attachment import Attachment
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 
 attachments_bp = Blueprint('attachments', __name__, url_prefix='/api/attachments')
 
@@ -49,11 +49,8 @@ def _is_allowed(filename, mimetype):
 
 
 def _filtered_query():
-    q = Attachment.query.order_by(Attachment.created_at.desc())
-    wid = get_current_workspace_id()
-    if wid is not None:
-        q = q.filter_by(workspace_id=wid)
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    return workspace_filter(Attachment.query, Attachment).order_by(Attachment.created_at.desc())
 
 
 def _get_attachment(attachment_id):

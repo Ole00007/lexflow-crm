@@ -4,17 +4,14 @@ from ..extensions import db
 from ..models.task import Task
 from ..models.case import Case
 from ..models.user import User
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 from ..activity_logger import log_activity
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/api/tasks')
 
 def _filtered_query():
-    q = Task.query.filter_by(is_deleted=False)
-    wid = get_current_workspace_id()
-    if wid is not None:
-        q = q.filter_by(workspace_id=wid)
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    return workspace_filter(Task.query.filter_by(is_deleted=False), Task)
 
 @tasks_bp.get('/')
 @jwt_required()

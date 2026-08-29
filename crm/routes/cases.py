@@ -4,7 +4,7 @@ from ..extensions import db
 from ..models.case import Case
 from ..models.contact import Contact
 from ..activity_logger import log_activity
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 from datetime import date, datetime
 
 cases_bp = Blueprint("cases", __name__, url_prefix="/api/cases")
@@ -17,11 +17,8 @@ def _get_actor_id():
         return None
 
 def _filtered_query():
-    q = Case.query.filter_by(is_deleted=False)
-    wid = get_current_workspace_id()
-    if wid is not None:
-        q = q.filter_by(workspace_id=wid)
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    return workspace_filter(Case.query.filter_by(is_deleted=False), Case)
 
 @cases_bp.get('')
 @jwt_required(optional=True)

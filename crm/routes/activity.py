@@ -2,17 +2,14 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from ..extensions import db, limiter
 from ..models.activity import ActivityLog
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 
 activity_bp = Blueprint('activity', __name__, url_prefix='/api/activity')
 VALID_TARGET_TYPES = {"case", "contact", "task"}
 
 def _filtered_query():
-    q = ActivityLog.query.order_by(ActivityLog.created_at.desc())
-    wid = get_current_workspace_id()
-    if wid is not None:
-        q = q.filter_by(workspace_id=wid)
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    return workspace_filter(ActivityLog.query, ActivityLog).order_by(ActivityLog.created_at.desc())
 
 @activity_bp.get('/')
 @jwt_required(optional=True)

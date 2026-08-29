@@ -5,16 +5,14 @@ from ..models.calendar_event import CalendarEvent
 from ..models.case import Case
 from ..models.contact import Contact
 from ..activity_logger import log_activity
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 from datetime import datetime
 
 calendar_bp = Blueprint('calendar', __name__, url_prefix='/api/calendar')
 
 def _filtered_query():
-    q = CalendarEvent.query.filter_by(is_deleted=False)
-    wid = get_current_workspace_id()
-    if wid is not None: q = q.filter_by(workspace_id=wid)
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    return workspace_filter(CalendarEvent.query.filter_by(is_deleted=False), CalendarEvent)
 
 @calendar_bp.get('')
 @jwt_required()

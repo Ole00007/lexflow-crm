@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..extensions import db, limiter
 from ..models.note import Note
 from ..activity_logger import log_activity
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 from ..models.case import Case
 from ..models.contact import Contact
 from ..models.task import Task
@@ -18,11 +18,9 @@ def _resolve_target(target_type, target_id):
     return model_cls.query.filter_by(id=target_id, is_deleted=False).first()
 
 def _filtered_query():
-    q = Note.query.order_by(Note.created_at.desc())
-    wid = get_current_workspace_id()
-    if wid is not None:
-        q = q.filter_by(workspace_id=wid)
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    q = workspace_filter(Note.query, Note)
+    return q.order_by(Note.created_at.desc())
 
 @notes_bp.get('/')
 @jwt_required()

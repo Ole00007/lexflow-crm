@@ -4,7 +4,7 @@ from ..extensions import db
 from ..models.contact import Contact
 from ..models.user import User
 from ..activity_logger import log_activity
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, workspace_filter
 from datetime import datetime
 
 contacts_bp = Blueprint('contacts', __name__, url_prefix='/api/contacts')
@@ -17,16 +17,8 @@ def _get_actor_id():
         return None
 
 def _filtered_query():
-    q = Contact.query.filter_by(is_deleted=False)
-    try:
-        uid = get_jwt_identity()
-        if uid:
-            user = db.session.get(User, int(uid))
-            if user and user.workspace_id:
-                q = q.filter_by(workspace_id=user.workspace_id)
-    except Exception:
-        pass
-    return q
+    # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
+    return workspace_filter(Contact.query.filter_by(is_deleted=False), Contact)
 
 @contacts_bp.get('')
 @jwt_required(optional=True)
