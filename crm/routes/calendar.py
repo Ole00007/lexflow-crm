@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..extensions import db, limiter
 from ..models.calendar_event import CalendarEvent
 from ..models.case import Case
@@ -57,7 +57,7 @@ def create_event():
         end_datetime=datetime.fromisoformat(data['end_datetime']) if data.get('end_datetime') and isinstance(data['end_datetime'], str) else data.get('end_datetime'),
         is_all_day=data.get('is_all_day', False), status=data.get('status', 'scheduled'), notes=data.get('notes'))
     db.session.add(event); db.session.commit()
-    log_activity(1, 'case' if event.caseid else 'contact', event.caseid or event.contactid or 0,
+    log_activity(int(get_jwt_identity()), 'case' if event.caseid else 'contact', event.caseid or event.contactid or 0,
                  'event_created', f"Calendar event '{event.title}' created ({event.event_type})")
     return jsonify(event.to_dict()), 201
 
@@ -75,6 +75,8 @@ def update_event(event_id):
     if 'end_datetime' in data:
         event.end_datetime = datetime.fromisoformat(data['end_datetime']) if isinstance(data['end_datetime'], str) else data['end_datetime']
     db.session.commit()
+    log_activity(int(get_jwt_identity()), 'case' if event.caseid else 'contact', event.caseid or event.contactid or 0,
+                 'event_updated', f"Calendar event '{event.title}' updated ({event.event_type})")
     return jsonify(event.to_dict()), 200
 
 @calendar_bp.delete('/<int:event_id>')
@@ -84,4 +86,6 @@ def delete_event(event_id):
     if not event: return jsonify({'error': 'Event not found'}), 404
     event.is_deleted = True; event.deleted_at = datetime.utcnow()
     db.session.commit()
+    log_activity(int(get_jwt_identity()), 'case' if event.caseid else 'contact', event.caseid or event.contactid or 0,
+                 'event_deleted', f"Calendar event '{event.title}' deleted")
     return jsonify({'deleted': True}), 200

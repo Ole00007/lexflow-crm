@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..extensions import db
 from ..models.deadline import Deadline
 from ..models.case import Case
 from ..workspace import get_current_workspace_id
+from ..activity_logger import log_activity
 from datetime import date, datetime
 
 deadlines_bp = Blueprint('deadlines', __name__, url_prefix='/api/deadlines')
@@ -55,6 +56,8 @@ def create_deadline():
     )
     db.session.add(deadline)
     db.session.commit()
+    actor_id = int(get_jwt_identity())
+    log_activity(actor_id, "case", deadline.caseid, "deadline_added", f"Deadline '{deadline.title}' added")
     return jsonify(deadline.to_dict()), 201
 
 @deadlines_bp.put('/<int:deadline_id>')
@@ -72,6 +75,8 @@ def update_deadline(deadline_id):
     if 'deadline_date' in data:
         deadline.deadline_date = date.fromisoformat(data['deadline_date']) if isinstance(data['deadline_date'], str) else data['deadline_date']
     db.session.commit()
+    actor_id = int(get_jwt_identity())
+    log_activity(actor_id, "case", deadline.caseid, "deadline_updated", f"Deadline '{deadline.title}' updated")
     return jsonify(deadline.to_dict()), 200
 
 @deadlines_bp.delete('/<int:deadline_id>')
@@ -83,4 +88,6 @@ def delete_deadline(deadline_id):
     deadline.is_deleted = True
     deadline.deleted_at = datetime.utcnow()
     db.session.commit()
+    actor_id = int(get_jwt_identity())
+    log_activity(actor_id, "case", deadline.caseid, "deadline_deleted", f"Deadline '{deadline.title}' deleted")
     return jsonify({'deleted': True}), 200

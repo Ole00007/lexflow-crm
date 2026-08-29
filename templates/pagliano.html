@@ -1542,7 +1542,7 @@
       </ul>
 
       <div class="header-actions">
-        <a class="login-btn" href="https://web-production-ab54f.up.railway.app/" aria-label="Area riservata – Accedi">Login</a>
+        <a class="login-btn" href="/dashboard" aria-label="Area riservata – Accedi">Login</a>
         <button class="theme-toggle" id="themeToggle" title="Cambia tema" aria-label="Toggle dark/light theme">
           🌙
         </button>
@@ -2081,8 +2081,8 @@
         // Build FormData
         var fd = new FormData(form);
 
-        // POST to /api/intake
-        fetch('https://web-production-ab54f.up.railway.app/api/intake', {
+        // POST to /api/intake (relative — same host as this page = LexFlow CRM)
+        fetch('/api/intake/pagliano', {
           method: 'POST',
           body: fd,
           // No Content-Type header — let browser set it for FormData
