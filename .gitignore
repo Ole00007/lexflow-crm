@@ -1,0 +1,5 @@
+# Local databases — never commit
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3

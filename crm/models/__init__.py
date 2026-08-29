@@ -10,3 +10,4 @@ from .event import Event
 from .calendar_event import CalendarEvent
 from .workspace import Workspace
 from .notification import Notification
+from .view import View
