@@ -11,3 +11,4 @@ from .calendar_event import CalendarEvent
 from .workspace import Workspace
 from .notification import Notification
 from .view import View
+from .attachment import Attachment
