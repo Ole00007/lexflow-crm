@@ -135,6 +135,10 @@ def create_app():
                 _seed_default_users()
                 import logging
                 logging.getLogger(__name__).info("✓ Default user seeded")
+            # Create any missing tables (e.g. new models added after prod was first
+            # deployed). db.create_all() is checkfirst+additive — it only creates
+            # tables that don't exist and never alters/drops existing data.
+            db.create_all()
             app._schema_checked = True
 
     return app
