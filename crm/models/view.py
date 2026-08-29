@@ -19,7 +19,7 @@ class View(db.Model):
     sort_json = db.Column(db.JSON, nullable=True)
     visible_columns_json = db.Column(db.JSON, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    is_default = db.Column(db.Boolean, nullable=False, default=False, server_default=db.func.false())
+    is_default = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("'0'"))
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
 
