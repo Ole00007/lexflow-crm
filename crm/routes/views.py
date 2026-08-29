@@ -125,7 +125,7 @@ def submit():
     db.session.commit()
 
     # Save uploaded intake documents and create Attachment rows linked to the new case
-    _base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     upload_folder = os.environ.get(
         'UPLOAD_FOLDER',
         os.path.join(_base_dir, 'uploads')
