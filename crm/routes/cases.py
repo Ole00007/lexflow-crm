@@ -23,7 +23,12 @@ def _filtered_query():
 @cases_bp.get('')
 @jwt_required(optional=True)
 def get_cases():
-    cases = _filtered_query().order_by(Case.id.desc()).all()
+    query = _filtered_query()
+    # Kanban fetches per-column: /api/cases?status=Intake etc.
+    status = request.args.get('status')
+    if status:
+        query = query.filter_by(status=status)
+    cases = query.order_by(Case.id.desc()).all()
     return jsonify([c.to_dict() for c in cases]), 200
 
 @cases_bp.get('/<int:case_id>')
