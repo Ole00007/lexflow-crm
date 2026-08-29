@@ -368,6 +368,119 @@ def intake_from_lp(workspace_slug):
     return render_template('pagliano.html', success=True, name=fullname)
 
 
+# ── Chatbot Appointment Booking (public, from landing-page chat widget) ────
+@views_bp.route('/api/appointments', methods=['POST'])
+def create_appointment():
+    """Handle chatbot appointment booking from the landing page chat widget.
+
+    Payload (JSON): fullname, email, phone, event_date (ISO datetime),
+    title, description, location, gdpr_consent, source.
+
+    Creates a Contact + Case + CalendarEvent in the resolved workspace
+    (from source/slug) and sends booking notifications. Public endpoint —
+    no JWT, like the intake endpoint.
+    """
+    import secrets
+    from ..models.user import User
+
+    data = request.get_json(silent=True) or request.form
+    fullname = (data.get('fullname') or data.get('client_name') or '').strip()
+    email = (data.get('email') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    event_date = (data.get('event_date') or data.get('booking_time') or '').strip()
+    title = (data.get('title') or f"Appuntamento — {fullname}").strip()
+    description = (data.get('description') or '').strip()
+    location = (data.get('location') or '').strip()
+    gdpr = data.get('gdpr_consent') in ('true', 'True', '1', 1, True, 'on')
+    source = (data.get('source') or 'chatbot').strip()
+
+    # Resolve workspace from source slug (e.g. 'pagliano_chatbot' -> 'pagliano')
+    slug = source.replace('_chatbot', '').replace('_lp', '').strip()
+    ws = Workspace.query.filter_by(slug=slug, is_active=True).first()
+    if not ws:
+        ws = Workspace.query.filter_by(slug='pagliano', is_active=True).first()
+    if not ws:
+        ws = Workspace.query.first()
+    wid = ws.id
+
+    if not fullname or not email:
+        return jsonify({'error': 'Name and email are required'}), 400
+    if not event_date:
+        return jsonify({'error': 'A date and time are required'}), 400
+
+    # Find or create contact in the workspace
+    contact = Contact.query.filter_by(email=email, workspace_id=wid).first()
+    if not contact:
+        contact = Contact(workspace_id=wid, fullname=fullname, email=email,
+                          phone=phone, source='chatbot', status='lead',
+                          gdpr_consent=gdpr,
+                          gdpr_consent_ts=datetime.utcnow() if gdpr else None)
+        db.session.add(contact)
+        db.session.flush()
+
+    # Auto-create a case if none open for this contact
+    case = Case.query.filter_by(contactid=contact.id, workspace_id=wid, status='Intake', is_deleted=False).first()
+    if not case:
+        case = Case(workspace_id=wid, contactid=contact.id,
+                    title=description[:255] or f"Appuntamento: {fullname}",
+                    casetype='Consultation', status='Intake', priority='Medium',
+                    openedat=date.today())
+        db.session.add(case)
+        db.session.flush()
+
+    # Parse the event datetime
+    try:
+        start_dt = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+        # Normalize naive -> treat as local
+        if start_dt.tzinfo is not None:
+            start_dt = start_dt.replace(tzinfo=None)
+    except ValueError:
+        try:
+            start_dt = datetime.strptime(event_date, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            return jsonify({'error': 'Invalid event_date format'}), 400
+
+    # Create calendar event
+    event = CalendarEvent(
+        workspace_id=wid, caseid=case.id, contactid=contact.id,
+        title=title[:255], description=description or None,
+        event_type='appointment', location=location or None,
+        start_datetime=start_dt, end_datetime=None,
+        status='scheduled', notes=f"Source: {source}")
+    db.session.add(event)
+    db.session.commit()
+
+    # Activity logging
+    log_activity(None, 'contact', contact.id, 'appointment_requested',
+                 f"Appointment requested by {fullname} ({ws.name})")
+    log_activity(None, 'case', case.id, 'appointment_requested',
+                 f"Appointment '{title}' requested via {ws.name} chatbot")
+    log_activity(None, 'case', case.id, 'event_created',
+                 f"Calendar event '{title}' created ({event.event_type})")
+
+    # Notify workspace owner + client
+    owner = User.query.filter_by(workspace_id=wid, role='admin').first()
+    owner_email = owner.email if owner else os.environ.get('ADMIN_EMAIL', '')
+    owner_phone = os.environ.get('ADMIN_PHONE', '')
+    send_booking_notification(
+        client_email=email, client_phone=phone or '',
+        client_name=fullname,
+        owner_email=owner_email, owner_phone=owner_phone or '',
+        booking_type='appointment',
+        booking_time=start_dt.strftime('%d/%m/%Y %H:%M'),
+        notes=description, workspace_name=ws.name,
+        court_name=location
+    )
+
+    return jsonify({
+        'success': True,
+        'appointment': event.to_dict(),
+        'event_id': event.id,
+        'case_id': case.id,
+        'contact_id': contact.id,
+    }), 201
+
+
 from flask import Blueprint, jsonify, g
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
