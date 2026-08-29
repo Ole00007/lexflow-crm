@@ -6,7 +6,7 @@ from .extensions import db, migrate, jwt, cors, limiter
 
 
 def _seed_default_users():
-    """Seed admin user and workspace for fresh DB."""
+    """Seed admin user and workspace for fresh DB (idempotent)."""
     from .models.workspace import Workspace
     from .models.user import User
     # If user exists but workspace FK is stale, update it
@@ -22,10 +22,12 @@ def _seed_default_users():
             user.workspace_id = ws.id
             db.session.commit()
         return
-    # No user — create fresh
-    ws = Workspace(slug="lexflow", name="LexFlow Default", description="Default workspace", is_active=True)
-    db.session.add(ws)
-    db.session.flush()
+    # Reuse existing workspace (migration may have seeded slug 'lexflow' already)
+    ws = Workspace.query.filter_by(slug="lexflow").first()
+    if not ws:
+        ws = Workspace(slug="lexflow", name="LexFlow Default", description="Default workspace", is_active=True)
+        db.session.add(ws)
+        db.session.flush()
     user = User(email="olesya00007@yahoo.com", role="superadmin", workspace_id=ws.id)
     user.set_password("Test12345!")
     db.session.add(user)

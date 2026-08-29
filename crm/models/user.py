@@ -17,7 +17,10 @@ class User(db.Model):
     workspace = db.relationship("Workspace", backref=db.backref("users", lazy=True))
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        # pbkdf2:sha256 works on all Python builds (hashlib.scrypt is missing on
+        # older/macOS system Pythons); existing scrypt hashes still verify via
+        # check_password_hash since the method is embedded in the stored hash.
+        self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
