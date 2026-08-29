@@ -30,8 +30,12 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_EXPIRATION_HOURS", "24")))
     
-    # CORS Configuration
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5000,http://localhost:5001").split(",")
+    # CORS Configuration - allow the landing-page origins (Netlify) + local dev
+    CORS_ORIGINS = os.getenv(
+        "CORS_ORIGINS",
+        "https://verdant-crumble-021449.netlify.app,https://poetic-kleicha-28d058.netlify.app,"
+        "http://localhost:3000,http://localhost:5000,http://localhost:5001,http://localhost:5002,http://localhost:5003"
+    ).split(",")
     
     # Rate Limiting Configuration
     RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")

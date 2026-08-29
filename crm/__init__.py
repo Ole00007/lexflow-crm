@@ -34,6 +34,22 @@ def _seed_default_users():
     db.session.commit()
 
 
+def _ensure_test_users():
+    """Idempotently ensure multi-tenant test users exist (runs on every boot)."""
+    from .models.workspace import Workspace
+    from .models.user import User
+    ws = Workspace.query.filter_by(slug="lexflow").first()
+    if not ws:
+        ws = Workspace.query.first()
+    # Gmail test user (Ole's multi-tenant test login)
+    gmail_user = User.query.filter_by(email="olesya00007@gmail.com").first()
+    if not gmail_user:
+        gmail_user = User(email="olesya00007@gmail.com", role="superadmin", workspace_id=ws.id if ws else None)
+        gmail_user.set_password("Test1")
+        db.session.add(gmail_user)
+    db.session.commit()
+
+
 def create_app():
     app = Flask(__name__,
                 template_folder=str(Path(__file__).resolve().parent.parent / "templates"),
@@ -135,6 +151,9 @@ def create_app():
                 _seed_default_users()
                 import logging
                 logging.getLogger(__name__).info("✓ Default user seeded")
+
+            # Ensure test/multi-tenant users exist on every boot (idempotent)
+            _ensure_test_users()
             # Create any missing tables (e.g. new models added after prod was first
             # deployed). db.create_all() is checkfirst+additive — it only creates
             # tables that don't exist and never alters/drops existing data.
