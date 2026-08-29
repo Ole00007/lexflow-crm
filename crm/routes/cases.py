@@ -38,6 +38,7 @@ def get_case(case_id):
     return jsonify(case.to_dict()), 200
 
 @cases_bp.post('')
+@jwt_required()
 def create_case():
     data = request.get_json()
     if not data:
@@ -74,6 +75,7 @@ def create_case():
     return jsonify(case.to_dict()), 201
 
 @cases_bp.put('/<int:case_id>')
+@jwt_required()
 def update_case(case_id):
     case = _filtered_query().filter_by(id=case_id).first()
     if not case:

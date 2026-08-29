@@ -43,8 +43,11 @@ def create_event():
     if not data: return jsonify({'error': 'No data provided'}), 400
     if not data.get('title') or not data.get('start_datetime'):
         return jsonify({'error': 'title and start_datetime are required'}), 400
+    wid = get_current_workspace_id()
+    if not wid:
+        return jsonify({'error': 'Authentication required'}), 401
     event = CalendarEvent(
-        workspace_id=get_current_workspace_id() or 1,
+        workspace_id=wid,
         caseid=data.get('caseid'), contactid=data.get('contactid'),
         ownerid=data.get('ownerid'), title=data['title'],
         description=data.get('description'), event_type=data.get('event_type', 'hearing'),
