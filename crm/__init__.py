@@ -59,6 +59,7 @@ def create_app():
     from .routes.activity import activity_bp
     from .routes.calendar import calendar_bp
     from .routes.notifications import notifications_bp
+    from .routes.attachments import attachments_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -72,6 +73,7 @@ def create_app():
     app.register_blueprint(activity_bp)
     app.register_blueprint(calendar_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(attachments_bp)
 
     # View Blueprint
     from .routes.views import views_bp

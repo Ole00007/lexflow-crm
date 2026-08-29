@@ -8,6 +8,8 @@ from pathlib import Path
 import os
 import secrets
 from datetime import datetime, date
+from uuid import uuid4
+from werkzeug.utils import secure_filename
 from ..extensions import db
 from ..models.contact import Contact
 from ..models.case import Case
@@ -17,6 +19,7 @@ from ..models.calendar_event import CalendarEvent
 from ..models.note import Note
 from ..models.activity import ActivityLog
 from ..models.workspace import Workspace
+from ..models.attachment import Attachment
 from ..activity_logger import log_activity
 from ..workspace import get_current_workspace_id
 from ..notification_service import send_booking_notification, send_email
@@ -119,6 +122,34 @@ def submit():
     case = Case(workspace_id=wid, contactid=contact.id, title=description[:255] or f"Intake: {client_name}",
                 casetype=practice_area, status='Intake', priority=urgency, openedat=date.today())
     db.session.add(case)
+    db.session.commit()
+
+    # Save uploaded intake documents and create Attachment rows linked to the new case
+    _base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    upload_folder = os.environ.get(
+        'UPLOAD_FOLDER',
+        os.path.join(_base_dir, 'uploads')
+    )
+    os.makedirs(upload_folder, exist_ok=True)
+    for doc in request.files.getlist('documents'):
+        if not doc or not doc.filename:
+            continue
+        original_name = secure_filename(doc.filename) or doc.filename
+        ext = os.path.splitext(original_name)[1].lower()
+        stored_name = uuid4().hex + ext
+        doc.save(os.path.join(upload_folder, stored_name))
+        attachment = Attachment(
+            workspace_id=wid,
+            filename=original_name,
+            stored_name=stored_name,
+            filepath=os.path.join('uploads', stored_name),
+            mime_type=doc.mimetype or 'application/octet-stream',
+            size_bytes=doc.content_length or 0,
+            target_type='case',
+            target_id=case.id,
+            uploaded_by=None,
+        )
+        db.session.add(attachment)
     db.session.commit()
 
     # Notify workspace owner(s)
