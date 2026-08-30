@@ -289,7 +289,22 @@ def case_status(token):
         case = Case.query.filter_by(id=case_id, is_deleted=False).first()
     except ValueError:
         pass
-    return render_template('status.html', matter=case, docs=[], events=[], statuses=STATUSES)
+
+    # Build a plain dict the template can index (matter["..."]), including
+    # the linked contact's name/email so the client-facing page renders.
+    matter = None
+    if case:
+        contact = case.contact if case.contact else None
+        matter = {
+            'id': case.id,
+            'practice_area': case.casetype or 'General',
+            'urgency': case.priority or 'Medium',
+            'status': case.status or 'Intake',
+            'created_at': case.createdat.strftime('%d %b %Y') if case.createdat else '',
+            'client_name': (contact.fullname if contact else case.title or 'Client'),
+            'description': case.title,
+        }
+    return render_template('status.html', matter=matter, docs=[], events=[], statuses=STATUSES)
 
 
 # ── Admin List ─────────────────────────────────────────────────────
