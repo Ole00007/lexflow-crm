@@ -34,6 +34,8 @@ def get_visible_workspace_ids():
     - superadmin → None (meaning all, no filter)
     - normal user → [their own workspace_id] plus any sub-workspaces
       whose parent is their workspace (parent admins see child spaces too).
+    - unauthenticated / unknown → [] (see NOTHING — never None, which would
+      leak every workspace's data to anonymous page loads).
     """
     try:
         uid = get_jwt_identity()
@@ -44,10 +46,10 @@ def get_visible_workspace_ids():
                     return None
                 own = user.workspace_id
                 subs = [w.id for w in Workspace.query.filter_by(parent_workspace_id=own, is_active=True).all()]
-                return [own] + subs if own else None
+                return [own] + subs if own else []
     except Exception as e:
         logger.warning(f"get_visible_workspace_ids error: {e}")
-    return None
+    return []
 
 
 def workspace_filter(query, model):

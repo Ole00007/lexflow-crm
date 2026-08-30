@@ -37,15 +37,17 @@ views_bp = Blueprint('views', __name__)
 @views_bp.route('/dashboard')
 @jwt_required(optional=True)
 def dashboard():
+    from ..models.user import User
     try:
-        ws_ids = get_visible_workspace_ids()
+        uid = get_jwt_identity()
+        user = User.query.filter_by(id=int(uid), is_deleted=False).first() if uid else None
+        ws_ids = get_visible_workspace_ids() if user else []
         c_filter = {'is_deleted': False}
         if ws_ids is not None:
-            c_filter['workspace_id'] = ws_ids  # list → .in_() via filter_by? use query below
+            c_filter['workspace_id'] = ws_ids
         if isinstance(c_filter.get('workspace_id'), list):
-            base = Case.query.filter_by(is_deleted=False).filter(Case.workspace_id.in_(ws_ids))
             contacts = Contact.query.filter_by(is_deleted=False).filter(Contact.workspace_id.in_(ws_ids)).count()
-            cases = base.count()
+            cases = Case.query.filter_by(is_deleted=False).filter(Case.workspace_id.in_(ws_ids)).count()
             tasks = Task.query.filter_by(is_deleted=False).filter(Task.workspace_id.in_(ws_ids)).count()
             pending_tasks = Task.query.filter_by(is_deleted=False, status='pending').filter(Task.workspace_id.in_(ws_ids)).count()
             upcoming_deadlines = Deadline.query.filter_by(is_deleted=False, status='pending').filter(Deadline.workspace_id.in_(ws_ids)).order_by(Deadline.deadline_date).limit(5).all()
@@ -58,9 +60,10 @@ def dashboard():
         recent_activity = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(10).all()
     except Exception:
         contacts = cases = tasks = pending_tasks = 0
-        upcoming_deadlines = []; recent_activity = []
+        upcoming_deadlines = []; recent_activity = []; user = None
     return render_template('dashboard.html', contact_count=contacts, case_count=cases,
-        task_count=tasks, pending_count=pending_tasks, deadlines=upcoming_deadlines, activities=recent_activity)
+        task_count=tasks, pending_count=pending_tasks, deadlines=upcoming_deadlines,
+        activities=recent_activity, current_user=user)
 
 
 # ── Kanban Board ───────────────────────────────────────────────────
@@ -326,21 +329,12 @@ def _is_superadmin():
 
 
 @views_bp.route('/admin/panel')
-@jwt_required()
+@jwt_required(optional=True)
 def superadmin_panel():
-    """Super-admin dashboard: every workspace + its accounts. Superadmin only."""
-    from ..models.user import User
-    if not _is_superadmin():
-        return redirect(url_for('views.index'))
-    workspaces = Workspace.query.filter_by(is_active=True).order_by(Workspace.id).all()
-    panel = []
-    for ws in workspaces:
-        users = User.query.filter_by(workspace_id=ws.id, is_deleted=False).all()
-        panel.append({
-            'workspace': ws,
-            'users': users,
-        })
-    return render_template('admin_panel.html', panel=panel)
+    """Super-admin dashboard: every workspace + its accounts. Superadmin only.
+    The page renders shell always; client-side JS verifies the token via
+    /api/admin/workspaces and redirects non-superadmins to home."""
+    return render_template('admin_panel.html', panel=[])
 
 
 @views_bp.route('/api/admin/workspaces')
