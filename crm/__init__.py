@@ -90,6 +90,27 @@ def _ensure_workspace_users():
             db.session.add(user)
     db.session.commit()
 
+    # Romanelli sub-workspaces (2 for test; 3rd later) — children of romanelli-studio
+    parent_ws = Workspace.query.filter_by(slug="romanelli-studio").first()
+    if parent_ws:
+        subs = [
+            ("romanelli-cl1", "Romanelli Client 1", "cl1@romanelli.test", "cl10826"),
+            ("romanelli-cl2", "Romanelli Client 2", "cl2@romanelli.test", "cl20826"),
+        ]
+        for slug, name, email, pw in subs:
+            sub = Workspace.query.filter_by(slug=slug).first()
+            if not sub:
+                sub = Workspace(parent_workspace_id=parent_ws.id, slug=slug, name=name,
+                                description=f"Sub-workspace under {parent_ws.name}", is_active=True)
+                db.session.add(sub)
+                db.session.flush()
+            sub_user = User.query.filter_by(email=email).first()
+            if not sub_user:
+                sub_user = User(email=email, role="admin", workspace_id=sub.id)
+                sub_user.set_password(pw)
+                db.session.add(sub_user)
+    db.session.commit()
+
 
 def create_app():
     app = Flask(__name__,

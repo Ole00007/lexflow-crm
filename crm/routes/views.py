@@ -21,7 +21,7 @@ from ..models.activity import ActivityLog
 from ..models.workspace import Workspace
 from ..models.attachment import Attachment
 from ..activity_logger import log_activity
-from ..workspace import get_current_workspace_id
+from ..workspace import get_current_workspace_id, get_visible_workspace_ids
 from ..notification_service import send_booking_notification, send_email
 
 # Intake constants
@@ -38,14 +38,23 @@ views_bp = Blueprint('views', __name__)
 @jwt_required(optional=True)
 def dashboard():
     try:
-        wid = get_current_workspace_id()
+        ws_ids = get_visible_workspace_ids()
         c_filter = {'is_deleted': False}
-        if wid: c_filter['workspace_id'] = wid
-        contacts = Contact.query.filter_by(**c_filter).count()
-        cases = Case.query.filter_by(**c_filter).count()
-        tasks = Task.query.filter_by(**c_filter).count()
-        pending_tasks = Task.query.filter_by(**{**c_filter, 'status': 'pending'}).count()
-        upcoming_deadlines = Deadline.query.filter_by(**{**c_filter, 'status': 'pending'}).order_by(Deadline.deadline_date).limit(5).all()
+        if ws_ids is not None:
+            c_filter['workspace_id'] = ws_ids  # list → .in_() via filter_by? use query below
+        if isinstance(c_filter.get('workspace_id'), list):
+            base = Case.query.filter_by(is_deleted=False).filter(Case.workspace_id.in_(ws_ids))
+            contacts = Contact.query.filter_by(is_deleted=False).filter(Contact.workspace_id.in_(ws_ids)).count()
+            cases = base.count()
+            tasks = Task.query.filter_by(is_deleted=False).filter(Task.workspace_id.in_(ws_ids)).count()
+            pending_tasks = Task.query.filter_by(is_deleted=False, status='pending').filter(Task.workspace_id.in_(ws_ids)).count()
+            upcoming_deadlines = Deadline.query.filter_by(is_deleted=False, status='pending').filter(Deadline.workspace_id.in_(ws_ids)).order_by(Deadline.deadline_date).limit(5).all()
+        else:
+            contacts = Contact.query.filter_by(is_deleted=False).count()
+            cases = Case.query.filter_by(is_deleted=False).count()
+            tasks = Task.query.filter_by(is_deleted=False).count()
+            pending_tasks = Task.query.filter_by(is_deleted=False, status='pending').count()
+            upcoming_deadlines = Deadline.query.filter_by(is_deleted=False, status='pending').order_by(Deadline.deadline_date).limit(5).all()
         recent_activity = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(10).all()
     except Exception:
         contacts = cases = tasks = pending_tasks = 0
@@ -59,10 +68,14 @@ def dashboard():
 @jwt_required(optional=True)
 def kanban():
     statuses = ['Intake', 'Conflict Check', 'Review', 'In Progress', 'Waiting Docs', 'To Verify', 'Engaged', 'Closed']
-    wid = get_current_workspace_id()
-    c_filter = {'is_deleted': False}
-    if wid: c_filter['workspace_id'] = wid
-    cases_by_status = {s: Case.query.filter_by(**{**c_filter, 'status': s}).all() for s in statuses}
+    ws_ids = get_visible_workspace_ids()
+    if ws_ids is not None:
+        cases_by_status = {
+            s: Case.query.filter_by(is_deleted=False, status=s).filter(Case.workspace_id.in_(ws_ids)).all()
+            for s in statuses
+        }
+    else:
+        cases_by_status = {s: Case.query.filter_by(is_deleted=False, status=s).all() for s in statuses}
     return render_template('kanban.html', statuses=statuses, cases_by_status=cases_by_status)
 
 
