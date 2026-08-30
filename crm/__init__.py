@@ -139,7 +139,7 @@ def create_app():
         # Per-workspace public site (the client's own website / landing page)
         site_map = {
             "pagliano": os.environ.get("PAGLIANO_SITE_URL", "https://verdant-crumble-021449.netlify.app"),
-            "romanelli-studio": os.environ.get("ROMANELLI_SITE_URL", "https://romanelli-studio.workers.dev"),
+            "romanelli-studio": os.environ.get("ROMANELLI_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"),
             "tommasoferro": os.environ.get("FERRO_SITE_URL", "#"),
             "avibeagency": os.environ.get("AVIBE_SITE_URL", "#"),
         }
