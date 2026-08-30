@@ -58,7 +58,7 @@ def dashboard():
 @views_bp.route('/kanban')
 @jwt_required(optional=True)
 def kanban():
-    statuses = ['Intake', 'Conflict Check', 'Review', 'Engaged', 'Closed']
+    statuses = ['Intake', 'Conflict Check', 'Review', 'In Progress', 'Waiting Docs', 'To Verify', 'Engaged', 'Closed']
     wid = get_current_workspace_id()
     c_filter = {'is_deleted': False}
     if wid: c_filter['workspace_id'] = wid
@@ -85,9 +85,22 @@ def tasks():
     return render_template('tasks.html')
 
 
+@views_bp.route('/settings')
+@jwt_required(optional=True)
+def settings_page():
+    """Account settings — change password and/or email (uses /api/auth/change-credentials)."""
+    return render_template('settings.html')
+
+
 # ── Intake Routes ──────────────────────────────────────────────────
 @views_bp.route('/')
 def index():
+    # Logged-in users land on their workspace home (dashboard) instead of the public intake form
+    try:
+        if get_jwt_identity():
+            return redirect(url_for('views.dashboard'))
+    except Exception:
+        pass
     return render_template('index.html', practices=PRACTICES)
 
 
@@ -283,6 +296,87 @@ def admin_matter(matter_id):
     notes = Note.query.filter_by(target_type='case', target_id=matter_id).order_by(Note.created_at.desc()).all()
     activities = ActivityLog.query.filter_by(target_type='case', target_id=matter_id).order_by(ActivityLog.created_at.desc()).all()
     return render_template('admin_matter.html', matter=case, notes=notes, activities=activities, statuses=STATUSES)
+
+
+# ── Super-Admin Panel (all workspaces + accounts) ─────────────────
+def _is_superadmin():
+    """Return True if the JWT identity maps to a superadmin user."""
+    from ..models.user import User
+    uid = get_jwt_identity()
+    if not uid:
+        return False
+    try:
+        u = User.query.filter_by(id=int(uid), is_deleted=False).first()
+        return bool(u and u.role == 'superadmin')
+    except Exception:
+        return False
+
+
+@views_bp.route('/admin/panel')
+@jwt_required()
+def superadmin_panel():
+    """Super-admin dashboard: every workspace + its accounts. Superadmin only."""
+    from ..models.user import User
+    if not _is_superadmin():
+        return redirect(url_for('views.index'))
+    workspaces = Workspace.query.filter_by(is_active=True).order_by(Workspace.id).all()
+    panel = []
+    for ws in workspaces:
+        users = User.query.filter_by(workspace_id=ws.id, is_deleted=False).all()
+        panel.append({
+            'workspace': ws,
+            'users': users,
+        })
+    return render_template('admin_panel.html', panel=panel)
+
+
+@views_bp.route('/api/admin/workspaces')
+@jwt_required()
+def api_superadmin_workspaces():
+    """JSON list of all workspaces + their accounts (superadmin only).
+    Never returns password hashes — only email + role."""
+    from ..models.user import User
+    if not _is_superadmin():
+        return jsonify({'error': 'Superadmin only'}), 403
+    workspaces = Workspace.query.filter_by(is_active=True).order_by(Workspace.id).all()
+    out = []
+    for ws in workspaces:
+        users = User.query.filter_by(workspace_id=ws.id, is_deleted=False).all()
+        out.append({
+            'workspace': ws.to_dict(),
+            'users': [{'id': u.id, 'email': u.email, 'role': u.role, 'created_at': u.created_at.isoformat() if u.created_at else None} for u in users],
+        })
+    return jsonify(out), 200
+
+
+@views_bp.route('/api/admin/reset-password', methods=['POST'])
+@jwt_required()
+def api_admin_reset_password():
+    """Superadmin resets another user's password. Emails the reset user a
+    notice (never the plaintext over insecure channels)."""
+    from ..models.user import User
+    from ..notification_service import send_email
+    if not _is_superadmin():
+        return jsonify({'error': 'Superadmin only'}), 403
+    data = request.get_json(silent=True) or {}
+    target_email = (data.get('email') or '').strip().lower()
+    new_password = data.get('new_password') or ''
+    if not target_email or len(new_password) < 6:
+        return jsonify({'error': 'email and new_password (min 6 chars) are required'}), 400
+    target = User.query.filter_by(email=target_email, is_deleted=False).first()
+    if not target:
+        return jsonify({'error': 'User not found'}), 404
+    target.set_password(new_password)
+    db.session.commit()
+    ws_name = target.workspace.name if target.workspace else 'LexFlow'
+    send_email(
+        to_email=target_email,
+        subject=f"[{ws_name}] Credentials updated by administrator",
+        html_body=f"<h3>Your {ws_name} credentials were updated by an administrator</h3>"
+                  f"<p>Your login (<b>{target_email}</b>) has a new password.</p>"
+                  f"<p>If you did not request this, contact your administrator immediately.</p>",
+    )
+    return jsonify({'success': True, 'email': target_email}), 200
 
 
 # ── Error handlers ─────────────────────────────────────────────────

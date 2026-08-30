@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Settings — LexFlow{% endblock %}
+{% block content %}
+<h1>Account settings</h1>
+<p class="intro">Change your login email and/or password. You'll receive a confirmation email at both the old and new addresses when these change.</p>
+
+<div class="card" style="max-width:520px">
+    <div class="eyebrow">Change credentials</div>
+    <p class="intro" style="margin-top:var(--space-2)">Current login: <strong>{{ current_user.email if current_user else '—' }}</strong></p>
+
+    <form onsubmit="return saveCreds(event)" style="display:flex;flex-direction:column;gap:var(--space-3)">
+        <label style="font-size:var(--text-sm);font-weight:600">Current password *</label>
+        <input type="password" id="curPw" required autocomplete="current-password" style="padding:var(--space-2) var(--space-3);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">
+
+        <label style="font-size:var(--text-sm);font-weight:600">New email (optional)</label>
+        <input type="email" id="newEmail" placeholder="new@email.com" autocomplete="email" style="padding:var(--space-2) var(--space-3);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">
+
+        <label style="font-size:var(--text-sm);font-weight:600">New password (optional, min 6)</label>
+        <input type="password" id="newPw" placeholder="Leave blank to keep" autocomplete="new-password" style="padding:var(--space-2) var(--space-3);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">
+
+        <button class="button" type="submit">Save changes</button>
+    </form>
+    <p id="msg" style="margin-top:var(--space-3);font-size:var(--text-sm)"></p>
+</div>
+
+<script>
+function token() { return localStorage.getItem('jwt') || ''; }
+function saveCreds(e) {
+    e.preventDefault();
+    var msg = document.getElementById('msg');
+    var cur = document.getElementById('curPw').value;
+    var email = document.getElementById('newEmail').value.trim();
+    var pw = document.getElementById('newPw').value;
+    if (!cur) { msg.textContent = 'Current password is required.'; msg.style.color='var(--warning)'; return false; }
+    var body = {current_password: cur};
+    if (email) body.new_email = email;
+    if (pw) body.new_password = pw;
+    fetch('/api/auth/change-credentials', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token()},
+        body: JSON.stringify(body)
+    })
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
+    .then(function(res){
+        if (res.ok) {
+            msg.textContent = '✓ Credentials updated. Confirmation emails sent.';
+            msg.style.color = 'var(--success)';
+            document.getElementById('curPw').value = '';
+            document.getElementById('newEmail').value = '';
+            document.getElementById('newPw').value = '';
+        } else {
+            msg.textContent = '✕ ' + (res.data.error || 'Failed');
+            msg.style.color = 'var(--warning)';
+        }
+    })
+    .catch(function(err){ msg.textContent = 'Network error: ' + err.message; msg.style.color='var(--warning)'; });
+    return false;
+}
+</script>
+{% endblock %}

@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from pathlib import Path
+import os
 from .config import Config
 from .extensions import db, migrate, jwt, cors, limiter
 
@@ -50,6 +51,46 @@ def _ensure_test_users():
     db.session.commit()
 
 
+def _ensure_workspace_users():
+    """Idempotently create/update the full workspace account roster.
+
+    Runs on every boot. Creates missing users; updates a user's password ONLY
+    when it still matches a known default (i.e. the customer hasn't changed it
+    yet via the change-credentials feature). Never touches a password that the
+    user already changed.
+    """
+    from .models.workspace import Workspace
+    from .models.user import User
+
+    # (email, password, role, workspace_slug, known_previous_defaults)
+    roster = [
+        ("superadmin@lexflow.it", "lexflow0826", "superadmin", "lexflow", ["Test12345!"]),
+        ("olesya00007@yahoo.com", "crm0826", "superadmin", "lexflow", ["Test12345!"]),
+        ("alegra_007@proton.me", "avibe0826", "admin", "avibeagency", []),
+        ("ms.okuneva@internet.ru", "pagliano0826", "admin", "pagliano", []),
+        ("olesya00007@google.com", "Romanelli0826", "admin", "romanelli-studio", []),
+        ("ferro@lexflow.it", "ferro0826", "admin", "tommasoferro", []),
+    ]
+
+    for email, password, role, slug, old_defaults in roster:
+        ws = Workspace.query.filter_by(slug=slug).first()
+        if not ws:
+            ws = Workspace.query.first()
+        user = User.query.filter_by(email=email).first()
+        if user:
+            # Only reset password if it's still a known default (not yet changed by the user)
+            if old_defaults and user.check_password(old_defaults[0]):
+                user.set_password(password)
+                user.role = role
+                if ws:
+                    user.workspace_id = ws.id
+        else:
+            user = User(email=email, role=role, workspace_id=ws.id if ws else None)
+            user.set_password(password)
+            db.session.add(user)
+    db.session.commit()
+
+
 def create_app():
     app = Flask(__name__,
                 template_folder=str(Path(__file__).resolve().parent.parent / "templates"),
@@ -61,6 +102,35 @@ def create_app():
     jwt.init_app(app)
     cors.init_app(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", ["*"])}})
     limiter.init_app(app)
+
+    # Inject current user (and their workspace) into every template
+    @app.context_processor
+    def inject_current_user():
+        from .models.user import User
+        user = None
+        try:
+            uid = get_jwt_identity()
+            if uid:
+                user = User.query.filter_by(id=int(uid), is_deleted=False).first()
+        except Exception:
+            user = None
+
+        # Per-workspace public site (the client's own website / landing page)
+        site_map = {
+            "pagliano": os.environ.get("PAGLIANO_SITE_URL", "https://verdant-crumble-021449.netlify.app"),
+            "romanelli-studio": os.environ.get("ROMANELLI_SITE_URL", "https://romanelli-studio.workers.dev"),
+            "tommasoferro": os.environ.get("FERRO_SITE_URL", "#"),
+            "avibeagency": os.environ.get("AVIBE_SITE_URL", "#"),
+        }
+        main_site_url = "#"
+        if user and user.workspace:
+            main_site_url = site_map.get(user.workspace.slug, "#")
+
+        return {
+            "current_user": user,
+            "main_site_url": main_site_url,
+            "is_superadmin": bool(user and user.role == "superadmin"),
+        }
 
     app.url_map.strict_slashes = False
 
@@ -153,7 +223,7 @@ def create_app():
                 logging.getLogger(__name__).info("✓ Default user seeded")
 
             # Ensure test/multi-tenant users exist on every boot (idempotent)
-            _ensure_test_users()
+            _ensure_workspace_users()
             # Create any missing tables (e.g. new models added after prod was first
             # deployed). db.create_all() is checkfirst+additive — it only creates
             # tables that don't exist and never alters/drops existing data.

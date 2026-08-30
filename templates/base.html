@@ -67,6 +67,10 @@
         .nav-link{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);color:var(--text-muted);font-size:var(--text-sm);font-weight:500}
         .nav-link:hover,.nav-link.active{background:var(--surface-2);color:var(--text)}
         .nav-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+        .ws-badge{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);margin:0 0 var(--space-4);border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-2);font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-h)}
+        .ws-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 3px var(--accent-glow)}
+        .sa-link{color:var(--warning);border:1px solid var(--warning);border-radius:var(--radius-md)}
+        .sa-link:hover,.sa-link.active{background:var(--warning);color:#0f172a}
         .main{flex:1;padding:var(--space-6);max-width:1200px}
         .sidebar-card{border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-4);background:var(--surface-2);font-size:var(--text-sm);color:var(--text-muted);margin-top:auto}
         .sidebar-card h3{font-size:var(--text-base);color:var(--text);margin:0 0 var(--space-1)}
@@ -99,24 +103,48 @@
                 <span class="brand-mark" aria-hidden="true">LF</span>
                 LexFlow
             </a>
+            {% if current_user %}
+            <div class="ws-badge">
+                <span class="ws-dot" aria-hidden="true"></span>
+                <span class="ws-name">{{ current_user.workspace.name if current_user.workspace else 'LexFlow' }}</span>
+            </div>
+            {% endif %}
             <p class="nav-label">Workspace</p>
             <ul class="nav-list">
-                <li><a class="nav-link" href="{{ url_for('views.dashboard') }}">Dashboard</a></li>
-                <li><a class="nav-link" href="{{ url_for('views.contacts') }}">Contacts</a></li>
-                <li><a class="nav-link" href="{{ url_for('views.kanban') }}">Kanban <span class="nav-dot" aria-hidden="true"></span></a></li>
-                <li><a class="nav-link" href="{{ url_for('views.calendar') }}">Calendar</a></li>
-                <li><a class="nav-link" href="{{ url_for('views.tasks') }}">Tasks</a></li>
-                <li><a class="nav-link" href="{{ url_for('views.index') }}">Intake form</a></li>
-                <li><a class="nav-link" href="{{ url_for('views.admin_list') }}">Matters</a></li>
+                {% set ep = request.endpoint or '' %}
+                <li><a class="nav-link{{ ' active' if ep == 'views.dashboard' }}" href="{{ url_for('views.dashboard') }}">Dashboard</a></li>
+                <li><a class="nav-link{{ ' active' if ep == 'views.contacts' }}" href="{{ url_for('views.contacts') }}">Contacts</a></li>
+                <li><a class="nav-link{{ ' active' if ep == 'views.kanban' }}" href="{{ url_for('views.kanban') }}">Kanban <span class="nav-dot" aria-hidden="true"></span></a></li>
+                <li><a class="nav-link{{ ' active' if ep == 'views.calendar' }}" href="{{ url_for('views.calendar') }}">Calendar</a></li>
+                <li><a class="nav-link{{ ' active' if ep == 'views.tasks' }}" href="{{ url_for('views.tasks') }}">Tasks</a></li>
+                <li><a class="nav-link{{ ' active' if ep == 'views.admin_list' }}" href="{{ url_for('views.admin_list') }}">Matters</a></li>
+                {% if current_user %}
+                <li><a class="nav-link{{ ' active' if ep == 'views.settings_page' }}" href="{{ url_for('views.settings_page') }}">⚙ Settings</a></li>
+                <li><a class="nav-link" href="#" onclick="doLogout(event)">Logout</a></li>
+                {% endif %}
+                {% if is_superadmin %}
+                <li style="margin-top:var(--space-3)"><a class="nav-link sa-link{{ ' active' if ep == 'views.superadmin_panel' }}" href="{{ url_for('views.superadmin_panel') }}">🛡 Super Admin</a></li>
+                {% endif %}
             </ul>
             <div class="sidebar-card">
                 <h3>Trusted Legal Intelligence</h3>
                 <p>Private intake, discreet document receipt, and clear client-facing status updates.</p>
+                {% if current_user and main_site_url and main_site_url != '#' %}
+                <p style="margin-top:var(--space-3)"><a class="button button-secondary" href="{{ main_site_url }}" target="_blank" rel="noopener">← Return to main website</a></p>
+                {% endif %}
             </div>
         </aside>
         <main class="main" id="main-content">
             {% block content %}{% endblock %}
         </main>
     </div>
+    <script>
+    function doLogout(e) {
+        if (e) e.preventDefault();
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('lexflow-user');
+        window.location.href = '/';
+    }
+    </script>
 </body>
 </html>

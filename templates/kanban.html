@@ -139,6 +139,46 @@ header {
   gap: 4px;
 }
 
+.kn-nav-link {
+  color: var(--text-muted);
+  font-size: .78rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 9px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.kn-nav-link:hover, .kn-nav-link.active { background: var(--surface-2); color: var(--text); }
+.kn-nav-link.sa { color: var(--warning); border: 1px solid var(--warning); }
+.kn-nav-link.sa:hover { background: var(--warning); color: #0f172a; }
+.ws-chip {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  background: var(--surface-2);
+}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 7px 12px;
+  font-size: .78rem;
+  text-decoration: none;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 900px) {
+  .kanban-nav { display: none !important; }
+}
+
 /* ── Board ─────────────────────────────────────────────────────── */
 .board {
   display: flex;
@@ -523,7 +563,18 @@ header {
 
   <!-- Post-login controls -->
   <div id="loggedInControls" style="display:none; align-items:center; gap:10px; flex:1; justify-content:flex-end;">
+    <nav class="kanban-nav" aria-label="CRM sections" style="display:flex;gap:4px;align-items:center;margin-right:auto;">
+      <a href="/dashboard" class="kn-nav-link">Dashboard</a>
+      <a href="/contacts" class="kn-nav-link">Contacts</a>
+      <a href="/kanban" class="kn-nav-link active">Kanban</a>
+      <a href="/calendar" class="kn-nav-link">Calendar</a>
+      <a href="/tasks" class="kn-nav-link">Tasks</a>
+      <a href="/settings" class="kn-nav-link">⚙</a>
+      <a href="/admin/panel" id="superAdminLink" class="kn-nav-link sa" style="display:none">🛡 Super Admin</a>
+    </nav>
+    <div class="ws-chip" id="wsChip" style="display:none"></div>
     <div class="user-badge" id="userBadge"></div>
+    <a href="#" id="returnSiteLink" class="btn btn-ghost" style="display:none" target="_blank" rel="noopener">← Main site</a>
     <button class="btn btn-add" onclick="openModal()">
       <span>+</span> <span class="btn-label">Add Task</span>
     </button>
@@ -556,6 +607,27 @@ header {
       <span class="col-count" id="count-Review">0</span>
     </div>
     <div class="card-list" id="list-Review"></div>
+  </div>
+  <div class="column" data-status="In Progress">
+    <div class="col-header">
+      <h3>In Progress</h3>
+      <span class="col-count" id="count-In Progress">0</span>
+    </div>
+    <div class="card-list" id="list-In Progress"></div>
+  </div>
+  <div class="column" data-status="Waiting Docs">
+    <div class="col-header">
+      <h3>Waiting Docs</h3>
+      <span class="col-count" id="count-Waiting Docs">0</span>
+    </div>
+    <div class="card-list" id="list-Waiting Docs"></div>
+  </div>
+  <div class="column" data-status="To Verify">
+    <div class="col-header">
+      <h3>To Verify</h3>
+      <span class="col-count" id="count-To Verify">0</span>
+    </div>
+    <div class="card-list" id="list-To Verify"></div>
   </div>
   <div class="column" data-status="Engaged">
     <div class="col-header">
@@ -623,7 +695,7 @@ header {
 /* ═══════════════════════════════════════════════════════════════
    State & Helpers
    ═══════════════════════════════════════════════════════════════ */
-const STATUSES = ['Intake', 'Conflict Check', 'Review', 'Engaged', 'Closed'];
+const STATUSES = ['Intake', 'Conflict Check', 'Review', 'In Progress', 'Waiting Docs', 'To Verify', 'Engaged', 'Closed'];
 let allCases = [];
 const API = ''; // same origin
 
@@ -696,8 +768,33 @@ function onLoginSuccess(data) {
   document.getElementById('loginForm').style.display = 'none';
   document.getElementById('loggedInControls').style.display = 'flex';
 
-  var u = data.user || {};
+  // Accept both login payload {user:{...}} and /api/auth/me payload ({...} directly)
+  var u = (data && data.user) ? data.user : (data || {});
   document.getElementById('userBadge').textContent = '👤 ' + (u.email || 'User');
+
+  // Workspace chip + super-admin link + return-to-site
+  var wsChip = document.getElementById('wsChip');
+  if (u.workspace && u.workspace.name) {
+    wsChip.textContent = '🏢 ' + u.workspace.name;
+    wsChip.style.display = 'inline-block';
+  } else {
+    wsChip.style.display = 'none';
+  }
+  var sa = document.getElementById('superAdminLink');
+  if (sa) sa.style.display = (u.role === 'superadmin') ? 'inline-block' : 'none';
+
+  // Return-to-site: map workspace slug → public site
+  var siteMap = {
+    'pagliano': 'https://verdant-crumble-021449.netlify.app',
+    'romanelli-studio': 'https://romanelli-studio.workers.dev'
+  };
+  var rs = document.getElementById('returnSiteLink');
+  if (rs) {
+    var slug = (u.workspace && u.workspace.slug) || '';
+    var url = siteMap[slug] || '#';
+    if (url !== '#') { rs.href = url; rs.style.display = 'inline-block'; }
+    else rs.style.display = 'none';
+  }
 
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
@@ -713,6 +810,12 @@ function handleLogout() {
   allCases = [];
   document.getElementById('loggedInControls').style.display = 'none';
   document.getElementById('loginForm').style.display = 'flex';
+  var wsChip = document.getElementById('wsChip');
+  if (wsChip) wsChip.style.display = 'none';
+  var sa = document.getElementById('superAdminLink');
+  if (sa) sa.style.display = 'none';
+  var rs = document.getElementById('returnSiteLink');
+  if (rs) rs.style.display = 'none';
   STATUSES.forEach(function(s) {
     var list = document.getElementById('list-' + s);
     var count = document.getElementById('count-' + s);
@@ -985,12 +1088,13 @@ document.addEventListener('keydown', function(e) {
   if (t) {
     // Try loading cases with existing token
     showSkeletons();
-    fetch(API + '/api/cases/?limit=1', {
+    fetch(API + '/api/auth/me', {
       headers: {'Authorization': 'Bearer ' + t}
     })
-    .then(function(r) {
-      if (r.ok) {
-        onLoginSuccess({user: {email: 'Logged in'}});
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+    .then(function(res) {
+      if (res.ok) {
+        onLoginSuccess(res.data);   // real user → populates chip / superadmin / site link
       } else {
         localStorage.removeItem('jwt');
         document.getElementById('loginForm').style.display = 'flex';

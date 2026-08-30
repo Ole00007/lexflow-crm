@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Super Admin — Workspaces & Accounts{% endblock %}
+{% block content %}
+<h1>Super Admin — All Workspaces</h1>
+<p class="intro">Every client workspace and its accounts. You are the only superadmin — this panel is not visible to client users.</p>
+
+{% for item in panel %}
+<div class="card" style="margin-bottom:var(--space-6)">
+    <div class="eyebrow">Workspace #{{ item.workspace.id }}</div>
+    <h2 style="margin:0 0 var(--space-2)">{{ item.workspace.name }} <span class="badge">{{ item.workspace.slug }}</span></h2>
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Email (login)</th><th>Role</th><th>Created</th></tr>
+        </thead>
+        <tbody>
+            {% for u in item.users %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.email }}</td>
+                <td><span class="badge">{{ u.role }}</span></td>
+                <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">No accounts yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+<div class="card">
+    <h2>Reset a user's password</h2>
+    <p class="intro">Email + new password. The user receives a notification email (no plaintext password is sent).</p>
+    <div class="actions" style="margin-top:var(--space-4)">
+        <input type="email" id="resetEmail" placeholder="user@email.com" style="padding:var(--space-2) var(--space-3);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">
+        <input type="password" id="resetPw" placeholder="New password (min 6)" style="padding:var(--space-2) var(--space-3);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text)">
+        <button class="button" id="resetBtn" onclick="doReset()">Reset password</button>
+    </div>
+    <p id="resetMsg" style="margin-top:var(--space-3);font-size:var(--text-sm)"></p>
+</div>
+
+<script>
+function token() { return localStorage.getItem('jwt') || ''; }
+function doReset() {
+    var email = document.getElementById('resetEmail').value.trim();
+    var pw = document.getElementById('resetPw').value;
+    var msg = document.getElementById('resetMsg');
+    var btn = document.getElementById('resetBtn');
+    if (!email || pw.length < 6) { msg.textContent = 'Enter email + password (min 6 chars).'; return; }
+    btn.disabled = true; btn.textContent = '…';
+    fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token()},
+        body: JSON.stringify({email: email, new_password: pw})
+    })
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
+    .then(function(res){
+        if (res.ok) { msg.textContent = '✓ Password reset for ' + email + ' (notification email sent).'; msg.style.color = 'var(--success)'; }
+        else { msg.textContent = '✕ ' + (res.data.error || 'Failed'); msg.style.color = 'var(--warning)'; }
+    })
+    .catch(function(e){ msg.textContent = 'Network error: ' + e.message; msg.style.color = 'var(--warning)'; })
+    .finally(function(){ btn.disabled = false; btn.textContent = 'Reset password'; });
+}
+</script>
+{% endblock %}
