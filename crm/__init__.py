@@ -237,10 +237,24 @@ def create_app():
                         conn.commit()
                     db.create_all()
                     log.info("✓ Tables recreated")
+            # Ensure the new workspaces.parent_workspace_id column exists
+            # (prod DBs predate this column; db.create_all() only creates missing
+            # tables, not columns — so we add it explicitly if missing).
+            import logging
+            log = logging.getLogger(__name__)
+            try:
+                ws_cols = [c['name'] for c in inspector.get_columns('workspaces')]
+                if 'parent_workspace_id' not in ws_cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE workspaces ADD COLUMN parent_workspace_id INTEGER"))
+                        conn.commit()
+                    log.info("✓ Added workspaces.parent_workspace_id")
+            except Exception as e:
+                log.warning(f"ensure parent_workspace_id skipped: {e}")
+
             # Always ensure at least one user exists
             if not User.query.first():
                 _seed_default_users()
-                import logging
                 logging.getLogger(__name__).info("✓ Default user seeded")
 
             # Ensure test/multi-tenant users exist on every boot (idempotent)
