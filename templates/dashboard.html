@@ -15,19 +15,19 @@
     <div class="grid" id="stats-grid">
         <div class="feature" style="background:linear-gradient(135deg,rgba(59,125,216,0.15),transparent 60%),var(--surface-2)">
             <h3>Contacts</h3>
-            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ contact_count }}</p>
+            <p id="stat-contacts" style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ contact_count }}</p>
         </div>
         <div class="feature">
             <h3>Cases</h3>
-            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ case_count }}</p>
+            <p id="stat-cases" style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ case_count }}</p>
         </div>
         <div class="feature">
             <h3>Tasks</h3>
-            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ task_count }}</p>
+            <p id="stat-tasks" style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ task_count }}</p>
         </div>
         <div class="feature">
             <h3>Pending</h3>
-            <p style="font-size:var(--text-3xl);font-weight:700;color:var(--warning);margin:0">{{ pending_count }}</p>
+            <p id="stat-pending" style="font-size:var(--text-3xl);font-weight:700;color:var(--warning);margin:0">{{ pending_count }}</p>
         </div>
     </div>
 
@@ -36,7 +36,7 @@
             <h3>Quick actions</h3>
             <div class="actions" style="margin-top:var(--space-4)">
                 <a class="button" href="{{ url_for('views.kanban') }}">Kanban board</a>
-                <a class="button button-secondary" href="{{ url_for('views.kanban') }}?open=add">New case</a>
+                <a class="button button-secondary" href="{{ url_for('views.intake') }}">New case</a>
             </div>
             <p style="margin-top:var(--space-4);color:var(--text-muted);font-size:var(--text-sm)">
                 Use the kanban board to manage your case pipeline. Drag and drop cases between stages.
@@ -56,4 +56,28 @@
         </div>
     </div>
 </section>
+
+<script>
+(function () {
+  // Live counts: page navigation doesn't send the JWT header, so fetch fresh
+  // stats client-side with the stored token (fixes stuck 0/0/0/0 after login).
+  function setStat(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = (val == null ? '—' : val);
+  }
+  var t = localStorage.getItem('jwt');
+  if (!t) return;
+  fetch('/api/stats', {headers: {'Authorization': 'Bearer ' + t}})
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d && d.authenticated) {
+        setStat('stat-contacts', d.contacts);
+        setStat('stat-cases', d.cases);
+        setStat('stat-tasks', d.tasks);
+        setStat('stat-pending', d.pending);
+      }
+    })
+    .catch(function () { /* keep server-rendered values */ });
+})();
+</script>
 {% endblock %}

@@ -66,6 +66,46 @@ def dashboard():
         activities=recent_activity, current_user=user)
 
 
+@views_bp.route('/api/stats')
+@jwt_required(optional=True)
+def api_stats():
+    """Per-user live stats (contacts/cases/tasks/pending) scoped to visible workspaces.
+    Client-side dashboard fetches this with the stored JWT so counts update after login
+    (page navigation does not carry the Authorization header)."""
+    from ..models.user import User
+    try:
+        uid = get_jwt_identity()
+        user = User.query.filter_by(id=int(uid), is_deleted=False).first() if uid else None
+        if not user:
+            return jsonify({'authenticated': False}), 200
+        ws_ids = get_visible_workspace_ids()
+        if ws_ids is not None:
+            contacts = Contact.query.filter_by(is_deleted=False).filter(Contact.workspace_id.in_(ws_ids)).count()
+            cases = Case.query.filter_by(is_deleted=False).filter(Case.workspace_id.in_(ws_ids)).count()
+            tasks = Task.query.filter_by(is_deleted=False).filter(Task.workspace_id.in_(ws_ids)).count()
+            pending_tasks = Task.query.filter_by(is_deleted=False, status='pending').filter(Task.workspace_id.in_(ws_ids)).count()
+        else:
+            contacts = Contact.query.filter_by(is_deleted=False).count()
+            cases = Case.query.filter_by(is_deleted=False).count()
+            tasks = Task.query.filter_by(is_deleted=False).count()
+            pending_tasks = Task.query.filter_by(is_deleted=False, status='pending').count()
+        return jsonify({
+            'authenticated': True,
+            'workspace': (user.workspace.to_dict() if user.workspace else None),
+            'contacts': contacts, 'cases': cases,
+            'tasks': tasks, 'pending': pending_tasks,
+        }), 200
+    except Exception as e:
+        return jsonify({'authenticated': False, 'error': str(e)}), 500
+
+
+@views_bp.route('/intake')
+def intake():
+    """Intake form — accessible to logged-in users too (so dashboard 'New case' can
+    reach it; the public '/' redirects logged-in users to their dashboard)."""
+    return render_template('index.html', practices=PRACTICES)
+
+
 # ── Kanban Board ───────────────────────────────────────────────────
 @views_bp.route('/kanban')
 @jwt_required(optional=True)
