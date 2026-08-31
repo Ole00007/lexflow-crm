@@ -1,6 +1,86 @@
 {% extends "base.html" %}
 {% block title %}Calendar — LexFlow{% endblock %}
 {% block content %}
+<style>
+  /* ===== Google-style calendar grid (scoped; uses base.html CSS vars) ===== */
+  .cal-wrap{margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden}
+  .cal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+  .cal-nav{display:flex;gap:6px;align-items:center}
+  .cal-btn{padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:var(--text-sm);font-weight:600;cursor:pointer}
+  .cal-btn:hover{background:var(--accent-glow);color:var(--accent-h)}
+  .cal-btn:disabled{opacity:.4;cursor:not-allowed}
+  .cal-btn-danger{color:#e11d48;border-color:rgba(225,29,72,.4)}
+  .cal-btn-danger:hover{background:rgba(225,29,72,.12);color:#e11d48}
+  .cal-title{flex:1;text-align:center;margin:0;font-family:var(--font-display);font-size:var(--text-xl);font-weight:400;color:var(--text);letter-spacing:-.01em}
+  .cal-viewswitch{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+  .cal-viewbtn{padding:6px 14px;border:none;background:var(--surface);color:var(--text-muted);font-size:var(--text-sm);font-weight:600;cursor:pointer}
+  .cal-viewbtn:hover{color:var(--text)}
+  .cal-viewbtn.active{background:var(--accent);color:#fff}
+  #calGridBody{position:relative}
+  .cal-body-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:var(--text-sm)}
+
+  /* --- shared row/cell --- */
+  .cal-row{display:grid}
+  .cal-gutter{background:var(--surface-2);border-right:1px solid var(--border)}
+
+  /* --- month --- */
+  .cal-mon{grid-template-columns:repeat(7,1fr)}
+  .cal-dowcell{padding:8px 6px;text-align:center;font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--surface-2)}
+  .cal-mcell{min-height:104px;padding:4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;overflow:hidden;position:relative}
+  .cal-row .cal-mcell:nth-child(7n){border-right:none}
+  .cal-mon .cal-mcell:nth-last-child(-n+7){border-bottom:none}
+  .cal-mcell.cal-out{background:var(--surface-2);opacity:.55}
+  .cal-mcell.cal-today{background:var(--accent-glow)}
+  .cal-mnum{width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;font-size:var(--text-sm);font-weight:600;color:var(--text-muted);margin-bottom:2px}
+  .cal-today .cal-mnum{background:var(--accent);color:#fff;font-weight:700}
+  .cal-out .cal-mnum{color:var(--text-faint)}
+  .cal-chip{display:block;width:100%;text-align:left;margin:1px 0;padding:1px 6px;border:none;border-left:3px solid var(--chip,#7C8BA1);background:color-mix(in srgb,var(--chip,#7C8BA1) 18%,var(--surface));border-radius:3px;font-size:var(--text-xs);color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cal-chip:hover{background:color-mix(in srgb,var(--chip,#7C8BA1) 32%,var(--surface))}
+  .cal-more{display:block;margin:1px 0;padding:1px 6px;border:none;background:none;font-size:var(--text-xs);font-weight:600;color:var(--text-muted);cursor:pointer}
+  .cal-more:hover{color:var(--accent-h)}
+
+  /* --- week header / axis / day columns --- */
+  .cal-weekhead{grid-template-columns:56px repeat(7,1fr);border-bottom:1px solid var(--border);background:var(--surface-2)}
+  .cal-dayhead{padding:6px 4px;text-align:center;border-left:1px solid var(--border)}
+  .cal-dh-dow{font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+  .cal-dh-num{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;font-size:var(--text-sm);font-weight:600;color:var(--text);margin-top:2px}
+  .cal-dayhead.cal-today .cal-dh-num{background:var(--accent);color:#fff}
+  .cal-weekbody{position:relative;display:grid;grid-template-columns:56px repeat(7,1fr)}
+  .cal-daybody{position:relative;display:grid;grid-template-columns:56px 1fr}
+  .cal-axis{position:relative;height:calc(var(--cal-hour-h,48px) * 24)}
+  .cal-hour{position:absolute;right:8px;transform:translateY(-50%);font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap}
+  .cal-daycol{position:relative;height:calc(var(--cal-hour-h,48px) * 24);border-left:1px solid var(--border);cursor:pointer;
+    background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--cal-hour-h,48px) - 1px),var(--border) calc(var(--cal-hour-h,48px) - 1px),var(--border) var(--cal-hour-h,48px))}
+  .cal-ev{position:absolute;display:block;border:none;border-left:3px solid var(--chip,#7C8BA1);background:color-mix(in srgb,var(--chip,#7C8BA1) 20%,var(--surface));border-radius:4px;padding:2px 6px;font-size:var(--text-xs);color:var(--text);text-align:left;cursor:pointer;overflow:hidden}
+  .cal-ev:hover{background:color-mix(in srgb,var(--chip,#7C8BA1) 34%,var(--surface));box-shadow:var(--shadow-sm)}
+  .cal-ev-time{font-weight:700;display:block}
+  .cal-ev-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cal-ev-detail{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);margin-top:2px}
+  .cal-nowline{position:absolute;left:56px;right:0;height:2px;background:#ef4444;z-index:5;pointer-events:none}
+  .cal-nowline::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:#ef4444}
+
+  /* --- popover --- */
+  .cal-popover{position:fixed;z-index:1000;width:300px;max-width:90vw;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);padding:12px}
+  .cal-pop-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding-left:8px;margin-bottom:8px}
+  .cal-pop-head strong{font-size:var(--text-base);color:var(--text);word-break:break-word}
+  .cal-pop-close{background:none;border:none;color:var(--text-muted);font-size:20px;line-height:1;cursor:pointer}
+  .cal-pop-close:hover{color:var(--text)}
+  .cal-pop-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+
+  /* --- drag & drop (month) --- */
+  .cal-mcell.cal-dragov{outline:2px dashed var(--accent);outline-offset:-2px}
+  .cal-chip[draggable="true"]{cursor:grab}
+  .cal-chip[draggable="true"]:active{cursor:grabbing}
+  @media (max-width:768px){
+    .cal-toolbar{gap:8px;padding:8px}
+    .cal-title{order:3;width:100%}
+    .cal-mcell{min-height:64px;padding:2px}
+    .cal-mnum{width:20px;height:20px;line-height:20px;font-size:var(--text-xs)}
+    .cal-ev-time{display:none}
+    .cal-hour{display:none}
+  }
+</style>
+
 <section class="card stack" aria-labelledby="page-title">
     <div class="section">
         <p class="eyebrow">Schedule</p>
@@ -20,9 +100,32 @@
             </select>
             <input type="date" id="filterFrom" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
             <input type="date" id="filterTo" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
-            <button class="button" onclick="loadEvents()">Filter</button>
+            <button class="button" onclick="loadEvents(); gridRefresh()">Filter</button>
             <button class="button button-secondary" onclick="openModal()">+ New event</button>
         </div>
+
+        <!-- ===== Google-style calendar grid (additive; both views share the same /api/calendar) ===== -->
+        <div id="calendarGrid" class="cal-wrap" aria-label="Calendar grid view">
+            <div class="cal-toolbar">
+                <div class="cal-nav">
+                    <button class="cal-btn" onclick="gridPrev()" title="Previous" aria-label="Previous">&lsaquo;</button>
+                    <button class="cal-btn" onclick="gridToday()">Today</button>
+                    <button class="cal-btn" onclick="gridNext()" title="Next" aria-label="Next">&rsaquo;</button>
+                </div>
+                <h2 id="calTitle" class="cal-title">—</h2>
+                <div class="cal-viewswitch" role="group" aria-label="Calendar view">
+                    <button class="cal-viewbtn" data-view="day" onclick="gridSetView('day')">Day</button>
+                    <button class="cal-viewbtn" data-view="week" onclick="gridSetView('week')">Week</button>
+                    <button class="cal-viewbtn active" data-view="month" onclick="gridSetView('month')">Month</button>
+                </div>
+            </div>
+            <div id="calGridBody"><div class="cal-body-empty">Loading calendar…</div></div>
+            <!-- event detail popover -->
+            <div id="calPopover" class="cal-popover" hidden></div>
+            <!-- "+N more" popover for month view -->
+            <div id="calMorePopover" class="cal-popover" hidden></div>
+        </div>
+
         <div id="eventList" style="display:grid;gap:12px">
             <p style="color:var(--text-muted)">Login to view calendar events.</p>
         </div>
@@ -31,7 +134,7 @@
 
 <div class="modal-overlay" id="modalOverlay" onclick="event.target===this&&closeModal()">
   <div class="modal">
-    <div class="modal-header"><h2>New Event</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h2 id="modalTitle">New Event</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div class="modal-body">
       <div class="form-group"><label>Title *</label><input type="text" id="evTitle"></div>
       <div class="form-row">
@@ -96,6 +199,8 @@ function loadEvents() {
 }
 
 function openModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'New Event';
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('evTitle').value = '';
   document.getElementById('evStart').value = '';
@@ -106,6 +211,8 @@ function openModal() {
   document.getElementById('evNotes').value = '';
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+var editingId = null;
 
 function handleCreate() {
   var title = document.getElementById('evTitle').value.trim();
@@ -122,11 +229,376 @@ function handleCreate() {
   if (judge) body.judge_name = judge;
   var notes = document.getElementById('evNotes').value.trim();
   if (notes) body.notes = notes;
-  fetch(API + '/api/calendar', {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()}, body:JSON.stringify(body)})
-    .then(r => r.json()).then(d => { closeModal(); loadEvents(); })
+  var url = editingId ? API + '/api/calendar/' + editingId : API + '/api/calendar';
+  var method = editingId ? 'PUT' : 'POST';
+  fetch(url, {method: method, headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()}, body:JSON.stringify(body)})
+    .then(r => r.json()).then(d => { closeModal(); loadEvents(); gridRefresh(); })
     .catch(e => alert('Error: ' + e.message));
 }
 
-(function init() { loadEvents(); })();
+/* ===================== Google-style calendar grid ===================== */
+var GridState = { view: 'month', anchor: new Date(), events: [] };
+var CAL_HOUR_H = 48;                 /* px per hour in week/day views */
+var CAL_TYPE_COLORS = { hearing:'#3B7DD8', court_date:'#0F9B8E', filing_deadline:'#F59E0B', deposition:'#8B5CF6', meeting:'#10B981', reminder:'#94A3B8' };
+
+function _pad(n){ return String(n).padStart(2,'0'); }
+function _calDayKey(d){ if(!d) return ''; return d.getFullYear()+'-'+_pad(d.getMonth()+1)+'-'+_pad(d.getDate()); }
+function _calParse(iso){ if(!iso) return null; var d = new Date(iso); return isNaN(d)?null:d; }
+function _calStartOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function _calAddDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function _calAddMonths(d,n){ return new Date(d.getFullYear(), d.getMonth()+n, 1); }
+function _calMonday(d){ var x=_calStartOfDay(d); return _calAddDays(x, -((x.getDay()+6)%7)); }  /* week starts Monday */
+function _calMonthStart(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function _calEventEnd(e){ var en=_calParse(e.end_datetime); if(en) return en; var st=_calParse(e.start_datetime); var d=new Date(st); d.setHours(d.getHours()+1); return d; }
+function _calColor(t){ return CAL_TYPE_COLORS[t] || '#7C8BA1'; }
+function _calHM(d){ if(!d) return ''; return _pad(d.getHours())+':'+_pad(d.getMinutes()); }
+function _calDayRange(){ /* date range sent to the shared API, matching the visible grid period */
+  if (GridState.view==='month'){
+    var start = _calMonday(_calMonthStart(GridState.anchor));
+    return {from: _calDayKey(start)+'T00:00:00', to: _calDayKey(_calAddDays(start,41))+'T23:59:59'};
+  }
+  if (GridState.view==='week'){
+    var mon = _calMonday(GridState.anchor);
+    return {from: _calDayKey(mon)+'T00:00:00', to: _calDayKey(_calAddDays(mon,6))+'T23:59:59'};
+  }
+  var k = _calDayKey(GridState.anchor);
+  return {from: k+'T00:00:00', to: k+'T23:59:59'};
+}
+
+function gridRefresh(){ loadGrid(); }
+
+function loadGrid(){
+  var t = token();
+  if (!t){ GridState.events=[]; renderGrid(); return; }
+  var ft = document.getElementById('filterType').value;
+  var r = _calDayRange();
+  var params = [];
+  if (ft) params.push('event_type='+ft);
+  params.push('date_from='+r.from);
+  params.push('date_to='+r.to);
+  fetch(API + '/api/calendar?' + params.join('&'), {headers: {'Authorization': 'Bearer ' + t}})
+    .then(rr => rr.json())
+    .then(events => { GridState.events = events || []; renderGrid(); })
+    .catch(() => { GridState.events = []; renderGrid(); });
+}
+
+function renderGrid(){
+  var body = document.getElementById('calGridBody');
+  if (!body) return;
+  if (!token()){ body.innerHTML = '<div class="cal-body-empty">Login to view calendar events.</div>'; return; }
+  if (GridState.view==='month') renderMonth();
+  else if (GridState.view==='week') renderWeek();
+  else renderDay();
+  document.querySelectorAll('.cal-viewbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.view===GridState.view); });
+  closePopover();
+  clearInterval(GridState._timer);
+  if (GridState.view!=='month') GridState._timer = setInterval(updateNowLine, 60000);
+}
+
+/* ---------- shared chip ---------- */
+function chipHTML(e){
+  var color = _calColor(e.event_type);
+  return '<button class="cal-chip" style="--chip:'+color+'" data-id="'+e.id+'" draggable="true" ondragstart="calDragStart(event,this)" onclick="calEventClick(event,this)">'+esc(e.title)+'</button>';
+}
+function chipRowHTML(e){
+  var color = _calColor(e.event_type);
+  return '<div class="cal-pop-row"><button class="cal-chip" style="--chip:'+color+'" data-id="'+e.id+'" draggable="true" onclick="calEventClick(event,this)">'+_calHM(_calParse(e.start_datetime))+' — '+esc(e.title)+'</button></div>';
+}
+
+/* ---------- month ---------- */
+function renderMonth(){
+  var anchor = GridState.anchor;
+  var m = anchor.getMonth();
+  document.getElementById('calTitle').textContent = anchor.toLocaleString('en-US',{month:'long',year:'numeric'});
+  var first = _calMonthStart(anchor);
+  var start = _calMonday(first);
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var html = '<div class="cal-row cal-mon">' + days.map(function(d){return '<div class="cal-dowcell">'+d+'</div>';}).join('');
+  var todayKey = _calDayKey(new Date());
+  for (var w=0; w<6; w++){
+    for (var i=0;i<7;i++){
+      var d = _calAddDays(start, w*7+i);
+      var key = _calDayKey(d);
+      var inMonth = d.getMonth()===m;
+      var isToday = key===todayKey;
+      var dayEvents = GridState.events.filter(function(e){ return _calDayKey(_calParse(e.start_datetime))===key; });
+      var shown = dayEvents.slice(0,3).map(chipHTML).join('');
+      var more = dayEvents.length>3
+        ? '<button class="cal-more" data-day="'+key+'" onclick="calMore(event,this)">+'+(dayEvents.length-3)+' more</button>' : '';
+      html += '<div class="cal-mcell'+(inMonth?'':' cal-out')+(isToday?' cal-today':'')+'" data-day="'+key+'"'
+        + ' onclick="calCellClick(event,this)"'
+        + ' ondragover="calDragOver(event)" ondragleave="calDragLeave(event)" ondrop="calDrop(event,this)">'
+        + '<div class="cal-mnum">'+d.getDate()+'</div>'+shown+more+'</div>';
+    }
+  }
+  html += '</div>';
+  document.getElementById('calGridBody').innerHTML = html;
+}
+
+/* ---------- week / day (shared time-grid) ---------- */
+function axisHTML(){
+  var out='';
+  for (var h=0; h<24; h++){
+    var label = h===0 ? '12 AM' : h<12 ? h+' AM' : h===12 ? '12 PM' : (h-12)+' PM';
+    out += '<div class="cal-hour" style="top:'+(h*CAL_HOUR_H)+'px">'+label+'</div>';
+  }
+  return out;
+}
+function nowLineHTML(rStart, rEnd){
+  var n = new Date(), k = _calDayKey(n);
+  if (k < rStart || k > rEnd) return '';
+  var top = (n.getHours()*60+n.getMinutes())/60*CAL_HOUR_H;
+  return '<div class="cal-nowline" style="top:'+top+'px"></div>';
+}
+function updateNowLine(){
+  var el = document.querySelector('.cal-nowline');
+  if (!el) return;
+  var top = (new Date().getHours()*60+new Date().getMinutes())/60*CAL_HOUR_H;
+  el.style.top = top+'px';
+}
+/* Google-style overlap layout: side-by-side columns for overlapping events */
+function layoutOverlaps(list){
+  list.sort(function(a,b){ return a.sMin-b.sMin; });
+  var groups=[];
+  list.forEach(function(o){
+    var placed=false;
+    for (var gi=0; gi<groups.length; gi++){
+      if (o.sMin < groups[gi].end){ groups[gi].events.push(o); groups[gi].end=Math.max(groups[gi].end,o.eMin); placed=true; break; }
+    }
+    if(!placed) groups.push({events:[o], end:o.eMin});
+  });
+  groups.forEach(function(g){
+    var cols=[];
+    g.events.forEach(function(o){
+      var c=0;
+      while (cols[c] && cols[c] > o.sMin) c++;
+      cols[c] = o.eMin;
+      o.col = c;
+    });
+    var n = cols.length;
+    g.events.forEach(function(o){ o.width = 100/n; o.left = o.col*o.width; });
+  });
+}
+function dayColEvents(dayKey, isDayView){
+  var evs = GridState.events
+    .filter(function(e){ return _calDayKey(_calParse(e.start_datetime))===dayKey; })
+    .map(function(e){
+      var s=_calParse(e.start_datetime), en=_calEventEnd(e);
+      var sMin=s.getHours()*60+s.getMinutes(), eMin=en.getHours()*60+en.getMinutes();
+      if (eMin<=sMin) eMin=sMin+60;
+      return {e:e, sMin:sMin, eMin:eMin};
+    });
+  layoutOverlaps(evs);
+  var html='';
+  evs.forEach(function(o){
+    var color=_calColor(o.e.event_type);
+    var top=o.sMin/60*CAL_HOUR_H, hgt=Math.max((o.eMin-o.sMin)/60*CAL_HOUR_H, 18);
+    var detail='';
+    if (isDayView){
+      var bits=[];
+      if (o.e.court_name) bits.push(esc(o.e.court_name));
+      if (o.e.judge_name) bits.push('Judge: '+esc(o.e.judge_name));
+      if (o.e.location) bits.push(esc(o.e.location));
+      if (o.e.notes) bits.push(esc(o.e.notes));
+      detail = bits.length ? '<span class="cal-ev-detail">'+bits.join(' • ')+'</span>' : '';
+    }
+    html += '<button class="cal-ev" style="top:'+top+'px;height:'+hgt+'px;left:'+o.left+'%;width:'+o.width+'%;--chip:'+color+'" data-id="'+o.e.id+'" onclick="calEventClick(event,this)">'
+      + '<span class="cal-ev-time">'+_calHM(_calParse(o.e.start_datetime))+'</span>'
+      + '<span class="cal-ev-title">'+esc(o.e.title)+'</span>'+detail+'</button>';
+  });
+  return html;
+}
+function dayHeadHTML(d){
+  var isToday = _calDayKey(d)===_calDayKey(new Date());
+  return '<div class="cal-dayhead'+(isToday?' cal-today':'')+'">'
+    + '<div class="cal-dh-dow">'+d.toLocaleString('en-US',{weekday:'short'})+'</div>'
+    + '<div class="cal-dh-num">'+d.getDate()+'</div></div>';
+}
+function renderWeek(){
+  var mon = _calMonday(GridState.anchor), sun = _calAddDays(mon,6);
+  var fmt = {month:'short',day:'numeric'};
+  var title = mon.toLocaleString('en-US',fmt)+' – '+sun.toLocaleString('en-US',fmt)+', '+mon.toLocaleString('en-US',{year:'numeric'});
+  document.getElementById('calTitle').textContent = title;
+  var head = '<div class="cal-row cal-weekhead"><div class="cal-gutter"></div>';
+  for (var i=0;i<7;i++) head += dayHeadHTML(_calAddDays(mon,i));
+  head += '</div>';
+  var body = '<div class="cal-weekbody"><div class="cal-gutter cal-axis">'+axisHTML()+'</div>';
+  for (var j=0;j<7;j++){
+    var d = _calAddDays(mon,j), key=_calDayKey(d);
+    body += '<div class="cal-daycol" data-day="'+key+'" onclick="calCellClick(event,this)">'+dayColEvents(key,false)+'</div>';
+  }
+  body += nowLineHTML(_calDayKey(mon), _calDayKey(sun)) + '</div>';
+  document.getElementById('calGridBody').innerHTML = head+body;
+}
+function renderDay(){
+  var d = GridState.anchor, key=_calDayKey(d);
+  document.getElementById('calTitle').textContent = d.toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  var head = '<div class="cal-row cal-weekhead"><div class="cal-gutter"></div>'+dayHeadHTML(d)+'</div>';
+  var body = '<div class="cal-daybody"><div class="cal-gutter cal-axis">'+axisHTML()+'</div>'
+    + '<div class="cal-daycol" data-day="'+key+'" onclick="calCellClick(event,this)">'+dayColEvents(key,true)+'</div>'
+    + nowLineHTML(key, key) + '</div>';
+  document.getElementById('calGridBody').innerHTML = head+body;
+}
+
+/* ---------- navigation ---------- */
+function gridSetView(v){
+  GridState.view = v;
+  loadGrid();
+}
+function gridPrev(){
+  if (GridState.view==='month') GridState.anchor = _calAddMonths(GridState.anchor,-1);
+  else if (GridState.view==='week') GridState.anchor = _calAddDays(GridState.anchor,-7);
+  else GridState.anchor = _calAddDays(GridState.anchor,-1);
+  loadGrid();
+}
+function gridNext(){
+  if (GridState.view==='month') GridState.anchor = _calAddMonths(GridState.anchor,1);
+  else if (GridState.view==='week') GridState.anchor = _calAddDays(GridState.anchor,7);
+  else GridState.anchor = _calAddDays(GridState.anchor,1);
+  loadGrid();
+}
+function gridToday(){ GridState.anchor = new Date(); loadGrid(); }
+
+/* ---------- interactions: click cell -> quick create; click event -> popover ---------- */
+function quickCreate(dayKey, hour, min){
+  openModal();
+  document.getElementById('evStart').value = dayKey+'T'+_pad(hour)+':'+_pad(min);
+}
+function calCellClick(ev, el){
+  if (ev.target.closest('.cal-chip') || ev.target.closest('.cal-more')) return;
+  var dayKey = el.getAttribute('data-day');
+  if (!dayKey) return;
+  if (el.classList.contains('cal-daycol')){
+    var rect = el.getBoundingClientRect();
+    var y = ev.clientY - rect.top;
+    var hour = Math.floor(y / CAL_HOUR_H);
+    var min = Math.round((y - hour*CAL_HOUR_H)/CAL_HOUR_H*60/15)*15;
+    if (min>=60){ min=0; hour++; }
+    hour = Math.max(0, Math.min(23, hour));
+    quickCreate(dayKey, hour, min);
+  } else {
+    quickCreate(dayKey, 9, 0);   /* month cell -> default 9:00 AM */
+  }
+}
+function calEventClick(ev, el){
+  ev.stopPropagation();
+  var id = el.getAttribute('data-id');
+  var e = GridState.events.find(function(x){ return x.id==id; });
+  if (!e) return;
+  showPopover(ev, e);
+}
+function calMore(ev, el){
+  ev.stopPropagation();
+  var dayKey = el.getAttribute('data-day');
+  var evs = GridState.events.filter(function(e){ return _calDayKey(_calParse(e.start_datetime))===dayKey; });
+  var pop = document.getElementById('calMorePopover');
+  pop.innerHTML = '<div class="cal-pop-head"><strong>'+esc(dayKey)+'</strong><button class="cal-pop-close" onclick="closePopover()">&times;</button></div>'
+    + evs.map(chipRowHTML).join('');
+  positionPopover(pop, el);
+}
+function showPopover(ev, e){
+  closePopover();
+  var pop = document.getElementById('calPopover');
+  var s = _calParse(e.start_datetime), en = _calEventEnd(e);
+  var color = _calColor(e.event_type);
+  var rows = '';
+  function row(k,v){ return '<div class="cal-pop-row"><strong>'+k+'</strong><span>'+v+'</span></div>'; }
+  rows += row('Type', esc(e.event_type));
+  rows += row('Status', esc(e.status));
+  rows += row('When', esc(_calHM(s)+' – '+_calHM(en)+' ('+_calDayKey(s)+')'));
+  if (e.court_name) rows += row('Court', esc(e.court_name));
+  if (e.judge_name) rows += row('Judge', esc(e.judge_name));
+  if (e.caseid) rows += row('Case', esc(e.caseid));
+  if (e.location) rows += row('Location', esc(e.location));
+  if (e.description) rows += row('Description', esc(e.description));
+  if (e.notes) rows += row('Notes', esc(e.notes));
+  pop.innerHTML = '<div class="cal-pop-head" style="border-left:4px solid '+color+'"><strong>'+esc(e.title)+'</strong>'
+    + '<button class="cal-pop-close" onclick="closePopover()">&times;</button></div>'
+    + rows
+    + '<div class="cal-pop-actions">'
+    + '<button class="cal-btn cal-btn-danger" onclick="delEvent('+e.id+')">Delete</button>'
+    + '<button class="cal-btn" onclick="editEvent('+e.id+')">Edit</button>'
+    + '</div>';
+  positionPopover(pop, ev.currentTarget || ev);
+}
+function positionPopover(pop, trigger){
+  pop.hidden = false;
+  var r = trigger && trigger.getBoundingClientRect ? trigger.getBoundingClientRect() : null;
+  var x = r ? r.right+8 : 24;
+  var y = r ? r.top : 24;
+  var pw = pop.offsetWidth || 300, ph = pop.offsetHeight || 200;
+  if (x+pw > window.innerWidth-8) x = r ? r.left-pw-8 : 24;
+  if (y+ph > window.innerHeight-8) y = window.innerHeight-ph-8;
+  pop.style.left = Math.max(8,x)+'px';
+  pop.style.top = Math.max(8,y)+'px';
+}
+function closePopover(){
+  var a = document.getElementById('calPopover'); if (a) a.hidden = true;
+  var b = document.getElementById('calMorePopover'); if (b) b.hidden = true;
+}
+document.addEventListener('click', function(ev){
+  if (!ev.target.closest('.cal-popover')) closePopover();
+});
+function editEvent(id){
+  var e = GridState.events.find(function(x){ return x.id==id; });
+  if (!e) return;
+  closePopover();
+  openModal();
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Event';
+  document.getElementById('evTitle').value = e.title || '';
+  document.getElementById('evType').value = e.event_type || 'hearing';
+  document.getElementById('evStatus').value = e.status || 'scheduled';
+  var s = _calParse(e.start_datetime);
+  if (s) document.getElementById('evStart').value = _calDayKey(s)+'T'+_calHM(s);
+  var en = _calParse(e.end_datetime);
+  if (en) document.getElementById('evEnd').value = _calDayKey(en)+'T'+_calHM(en);
+  document.getElementById('evCaseId').value = e.caseid || '';
+  document.getElementById('evCourt').value = e.court_name || '';
+  document.getElementById('evJudge').value = e.judge_name || '';
+  document.getElementById('evNotes').value = e.notes || '';
+}
+function delEvent(id){
+  if (!confirm('Delete this calendar event?')) return;
+  closePopover();
+  fetch(API + '/api/calendar/' + id, {method:'DELETE', headers:{'Authorization':'Bearer '+token()}})
+    .then(r => r.json()).then(() => { loadEvents(); gridRefresh(); })
+    .catch(e => alert('Error: ' + e.message));
+}
+
+/* ---------- drag & drop to move events (month view; HTML5 DnD) ---------- */
+function calDragStart(ev, el){
+  if (GridState.view !== 'month') { ev.preventDefault(); return; }
+  ev.dataTransfer.setData('text/plain', el.getAttribute('data-id'));
+  ev.dataTransfer.effectAllowed = 'move';
+}
+function calDragOver(ev){
+  ev.preventDefault();
+  var t = ev.target.closest('.cal-mcell');
+  if (t) t.classList.add('cal-dragov');
+}
+function calDragLeave(ev){
+  var t = ev.target.closest('.cal-mcell');
+  if (t) t.classList.remove('cal-dragov');
+}
+function calDrop(ev, cell){
+  ev.preventDefault();
+  ev.target.classList && ev.target.classList.remove('cal-dragov');
+  var id = ev.dataTransfer.getData('text/plain');
+  var dayKey = cell.getAttribute('data-day');
+  if (!id || !dayKey) return;
+  var e = GridState.events.find(function(x){ return x.id==id; });
+  if (!e) return;
+  var s = _calParse(e.start_datetime);
+  if (!s) return;
+  var body = { start_datetime: dayKey+'T'+_calHM(s)+':00' };
+  var en = _calEventEnd(e);
+  body.end_datetime = dayKey+'T'+_calHM(en)+':00';
+  fetch(API + '/api/calendar/' + id, {method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()}, body:JSON.stringify(body)})
+    .then(r => r.json()).then(() => { loadEvents(); gridRefresh(); })
+    .catch(err => alert('Error moving event: ' + err.message));
+}
+
+(function init() { loadEvents(); loadGrid(); })();
 </script>
 {% endblock %}
