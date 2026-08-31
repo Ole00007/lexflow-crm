@@ -106,6 +106,24 @@ def intake():
     return render_template('index.html', practices=PRACTICES)
 
 
+@views_bp.route('/login')
+def login():
+    """Branded per-workspace login page (like the legacy ab54f /login): tenant name,
+    AREA RISERVATA, email + password, ← Torna al sito. The tenant is derived from a
+    ?ws= or ?tenant= query param (or defaults to LexFlow). The login form posts to
+    POST /api/auth/login and stores the JWT in localStorage (same as kanban)."""
+    slug = request.args.get('ws') or request.args.get('tenant') or request.args.get('slug') or ''
+    workspace = Workspace.query.filter_by(slug=slug, is_active=True).first() if slug else None
+    tenant = workspace.name if workspace else 'LexFlow'
+    main_url = request.args.get('back') or '#'
+    return render_template('login.html', tenant=tenant, tenant_slug=workspace.slug if workspace else None,
+                           main_site_url=main_url, favicon_url=(
+                               '/static/favicons/romanelli.svg'
+                               if workspace and workspace.slug in ('romanelli-studio', 'romanelli-audit')
+                               else None
+                           ))
+
+
 # ── Kanban Board ───────────────────────────────────────────────────
 @views_bp.route('/kanban')
 @jwt_required(optional=True)

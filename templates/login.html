@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ tenant }} — Area Riservata</title>
+{% if favicon_url %}<link rel="icon" type="image/svg+xml" href="{{ favicon_url }}">{% endif %}
+<style>
+  :root{
+    --font-body:'Inter',system-ui,sans-serif;
+    --font-display:'Instrument Serif',Georgia,serif;
+    --bg:#0E1117;--surface:#161B27;--surface-2:#1E2535;--border:#1E2A3A;
+    --text:#E2E8F0;--text-muted:#94A3B8;--text-faint:#475569;
+    --accent:#3B7DD8;--accent-h:#5A96F0;--accent-glow:rgba(59,125,216,0.2);
+    --radius-lg:16px;--radius-md:10px;--radius-full:9999px;
+  }
+  [data-theme="light"]{
+    --bg:#F8FAFC;--surface:#FFFFFF;--surface-2:#F1F5F9;--border:#E2E8F0;
+    --text:#0F172A;--text-muted:#475569;--text-faint:#94A3B8;
+    --accent:#1D4ED8;--accent-h:#1E40AF;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100vh}
+  body{font-family:var(--font-body);color:var(--text);background:var(--bg);display:grid;place-items:center;padding:24px}
+  a{color:var(--accent);text-decoration:none;font-weight:600}
+  .login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .tenant{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px}
+  .brand{font-family:var(--font-display);font-size:28px;font-weight:400;margin:0 0 2px}
+  .eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 18px}
+  .hint{font-size:13px;color:var(--text-muted);line-height:1.5;margin:0 0 22px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+  input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-2);color:var(--text);font-size:14px;font-family:inherit;margin-bottom:16px;outline:none}
+  input:focus{border-color:var(--accent)}
+  button{width:100%;padding:12px;border:none;border-radius:var(--radius-full);background:var(--accent);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+  button:hover{background:var(--accent-h)}
+  .back{margin-top:18px;font-size:13px;text-align:center}
+  .err{color:#EF4444;font-size:13px;margin:0 0 12px;display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);padding:8px 12px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="tenant">{{ tenant }}</div>
+  <h1 class="brand">{{ tenant }}</h1>
+  <p class="eyebrow">AREA RISERVATA</p>
+  <p class="hint">Inserisci le credenziali per gestire le richieste dei clienti.<br>Accedi per visualizzare l'area riservata.</p>
+  <p class="err" id="errMsg"></p>
+  <form id="loginForm" onsubmit="return doLogin(event)">
+    <label for="email">Email</label>
+    <input type="email" id="email" autocomplete="username" required>
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password" required>
+    <button type="submit">Entra</button>
+  </form>
+  {% if main_site_url and main_site_url != '#' %}
+  <p class="back"><a href="{{ main_site_url }}">← Torna al sito</a></p>
+  {% endif %}
+</div>
+<script>
+function doLogin(e) {
+  e.preventDefault();
+  var email = document.getElementById('email').value.trim();
+  var password = document.getElementById('password').value;
+  var err = document.getElementById('errMsg');
+  err.style.display = 'none';
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: email, password: password})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if (res.ok) {
+      localStorage.setItem('jwt', res.data.access_token);
+      localStorage.setItem('lexflow-user', JSON.stringify(res.data.user || {}));
+      window.location.href = '/dashboard';
+    } else {
+      err.textContent = res.data.error || 'Credenziali non valide. Riprova.';
+      err.style.display = 'block';
+    }
+  })
+  .catch(function(){ err.textContent = 'Errore di rete. Riprova.'; err.style.display = 'block'; });
+  return false;
+}
+</script>
+</body>
+</html>
