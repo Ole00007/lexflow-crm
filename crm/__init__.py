@@ -69,6 +69,7 @@ def _ensure_workspace_users():
         ("alegra_007@proton.me", "avibe0826", "admin", "avibeagency", []),
         ("ms.okuneva@internet.ru", "pagliano0826", "admin", "pagliano", []),
         ("olesya00007@google.com", "Romanelli0826", "admin", "romanelli-studio", []),
+        ("preview@romanelli.test", "Romanelli0826", "admin", "romanelli-studio", []),
         ("ferro@lexflow.it", "ferro0826", "admin", "tommasoferro", []),
     ]
 
