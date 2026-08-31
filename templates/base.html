@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}LexFlow – Legal Intake &amp; Status Suite{% endblock %}</title>
-    {% if favicon_url %}<link rel="icon" type="image/svg+xml" href="{{ favicon_url }}">{% endif %}
+    <link rel="icon" type="image/svg+xml" id="appFavicon" href="{% if favicon_url %}{{ favicon_url }}{% else %}/static/favicon.svg{% endif %}">
     <script>
         (function () {
             try {
@@ -156,6 +156,88 @@
         localStorage.removeItem('lexflow-user');
         window.location.href = '/';
     }
+    </script>
+    <script>
+    /* Client-side secure-workspace enhancer: on page navigation the JWT lives in
+       localStorage (not a header), so server-rendered templates can't know who's
+       logged in. This fetches /api/workspace and dynamically applies:
+         - the per-workspace favicon (matches the tenant's landing-page favicon)
+         - the "🛡 <Tenant> Secure Workspace" banner at the top of the page
+         - the workspace badge in the sidebar (clickable → own panel)
+         - the "← Return to main website" link when a public site is known */
+    (function () {
+      var faviconMap = {
+        'romanelli-studio': '/static/favicons/romanelli.svg',
+        'romanelli-audit': '/static/favicons/romanelli.svg',
+        'pagliano': '/static/favicons/pagliano.svg',
+      };
+      var siteMap = {
+        'pagliano': 'https://verdant-crumble-021449.netlify.app',
+        'romanelli-studio': 'https://romanelli-studio.olesya00007.workers.dev',
+        'romanelli-audit': 'https://romanelli-studio.olesya00007.workers.dev',
+      };
+      var labelBySlug = function (slug) {
+        var m = {
+          'lexflow': 'LexFlow Secure Workspace',
+          'avibeagency': 'Avibe Agency Secure Workspace',
+          'pagliano': 'Avv.Pagl Secure Workspace',
+          'romanelli-studio': 'Romanelli-Studio Secure Workspace',
+          'romanelli-audit': 'Romanelli Audit Secure Workspace',
+          'romanelli-cl1': 'Romanelli Client 1 Secure Workspace',
+          'romanelli-cl2': 'Romanelli Client 2 Secure Workspace',
+          'tommasoferro': 'Ferro-Studio Secure Workspace',
+        };
+        return m[slug] || null;
+      };
+      function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+      function applyWs(ws) {
+        if (!ws) return;
+        var slug = ws.slug || '';
+        // favicon
+        var fi = document.getElementById('appFavicon');
+        if (fi && faviconMap[slug]) fi.setAttribute('href', faviconMap[slug]);
+        // secure banner (only if server didn't already render it)
+        var banner = document.querySelector('.secure-ws-banner');
+        var lbl = labelBySlug(slug);
+        if (lbl && !banner) {
+          var sec = document.createElement('div');
+          sec.className = 'secure-ws-banner';
+          sec.innerHTML = '<span class="sws-shield" aria-hidden="true">🛡</span><span class="sws-label">' + esc(lbl) + '</span>';
+          var main = document.getElementById('main-content');
+          if (main) main.insertBefore(sec, main.firstChild);
+        }
+        // workspace badge (sidebar) — clickable → own panel
+        var badge = document.querySelector('.ws-badge');
+        var name = ws.name || 'LexFlow';
+        if (!badge) {
+          var b = document.createElement('a');
+          b.className = 'ws-badge';
+          b.href = '/workspace';
+          b.title = 'Open workspace panel';
+          b.innerHTML = '<span class="ws-dot" aria-hidden="true"></span><span class="ws-name">' + esc(name) + '</span>';
+          var brand = document.querySelector('.brand');
+          if (brand && brand.parentNode) brand.parentNode.insertBefore(b, brand.nextSibling);
+        } else {
+          var wn = badge.querySelector('.ws-name');
+          if (wn) wn.textContent = name;
+        }
+        // return-to-site link
+        if (siteMap[slug]) {
+          var rs = document.getElementById('returnSiteLink');
+          if (rs) { rs.href = siteMap[slug]; rs.style.display = 'inline-block'; }
+        }
+      }
+
+      var t = localStorage.getItem('jwt');
+      if (!t) return;
+      fetch('/api/workspace', { headers: { 'Authorization': 'Bearer ' + t } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (Array.isArray(data) && data.length && data[0].workspace) applyWs(data[0].workspace);
+        })
+        .catch(function () { /* non-fatal */ });
+    })();
     </script>
 </body>
 </html>
