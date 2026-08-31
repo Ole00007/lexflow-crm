@@ -140,16 +140,25 @@ def create_app():
         site_map = {
             "pagliano": os.environ.get("PAGLIANO_SITE_URL", "https://verdant-crumble-021449.netlify.app"),
             "romanelli-studio": os.environ.get("ROMANELLI_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"),
+            "romanelli-audit": os.environ.get("ROMANELLI_AUDIT_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"),
             "tommasoferro": os.environ.get("FERRO_SITE_URL", "#"),
             "avibeagency": os.environ.get("AVIBE_SITE_URL", "#"),
         }
+        # Per-workspace favicon (matches each tenant's landing-page favicon)
+        favicon_map = {
+            "romanelli-studio": "/static/favicons/romanelli.svg",
+            "romanelli-audit": "/static/favicons/romanelli.svg",
+        }
         main_site_url = "#"
+        favicon_url = None
         if user and user.workspace:
             main_site_url = site_map.get(user.workspace.slug, "#")
+            favicon_url = favicon_map.get(user.workspace.slug)
 
         return {
             "current_user": user,
             "main_site_url": main_site_url,
+            "favicon_url": favicon_url,
             "is_superadmin": bool(user and user.role == "superadmin"),
         }
 
