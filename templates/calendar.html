@@ -165,10 +165,18 @@
 const API = '';
 function token() { return localStorage.getItem('jwt') || ''; }
 function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+function loginNoticeHTML() {
+  return '<div class="cal-login-prompt">'
+    + '<div class="cal-login-card">'
+    + '<h3>🔒 Calendar — Sign in to view</h3>'
+    + '<p>Your calendar is private to your workspace. Log in to see hearings, deadlines and meetings in the grid and list views below.</p>'
+    + '<a class="cal-login-btn" href="/login?ws=romanelli-studio&back=/calendar">Log in to your Secure Workspace</a>'
+    + '</div></div>';
+}
 
 function loadEvents() {
   var t = token();
-  if (!t) { document.getElementById('eventList').innerHTML = '<p style="color:var(--text-muted)">Login to view calendar events.</p>'; return; }
+  if (!t) { document.getElementById('eventList').innerHTML = loginNoticeHTML(); return; }
   var params = [];
   var ft = document.getElementById('filterType').value;
   var ff = document.getElementById('filterFrom').value;
