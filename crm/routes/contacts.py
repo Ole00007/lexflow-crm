@@ -24,7 +24,32 @@ def _filtered_query():
 @jwt_required(optional=True)
 def get_contacts():
     contacts = _filtered_query().order_by(Contact.id.desc()).all()
-    return jsonify([c.to_dict() for c in contacts]), 200
+    out = []
+    for c in contacts:
+        d = c.to_dict()
+        d['suggested_status'] = _suggest_contact_status(c)
+        out.append(d)
+    return jsonify(out), 200
+
+
+def _suggest_contact_status(contact):
+    """Suggested contact status — a HINT only. Staff always makes the final call.
+    - has an open (non-Closed) case  -> 'active'
+    - all cases Closed / none open    -> 'passive'
+    - no cases at all                 -> 'lead'
+    """
+    from ..models.case import Case
+    try:
+        open_cases = Case.query.filter_by(contactid=contact.id, is_deleted=False) \
+            .filter(Case.status != 'Closed').count()
+        total_cases = Case.query.filter_by(contactid=contact.id, is_deleted=False).count()
+        if open_cases and open_cases > 0:
+            return 'active'
+        if total_cases and total_cases > 0:
+            return 'passive'
+        return 'lead'
+    except Exception:
+        return 'lead'
 
 @contacts_bp.get('/<int:contact_id>')
 @jwt_required(optional=True)

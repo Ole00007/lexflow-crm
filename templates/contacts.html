@@ -1,11 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Contacts — LexFlow{% endblock %}
 {% block content %}
+<style>
+.contact-card{border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.contact-left{min-width:0}
+.contact-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-suggest{font-size:var(--text-xs);color:var(--text-muted);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:2px 8px;background:var(--surface)}
+.status-select{padding:5px 8px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:var(--text-sm);font-family:inherit}
+.badge{border-radius:var(--radius-sm);padding:2px 8px;font-size:var(--text-xs);font-weight:600}
+.badge.lead{background:var(--accent-glow);color:var(--accent-h)}
+.badge.active{background:rgba(16,185,129,.15);color:#10B981}
+.badge.passive{background:rgba(148,163,184,.15);color:#94A3B8}
+</style>
 <section class="card stack" aria-labelledby="page-title">
     <div class="section">
         <p class="eyebrow">CRM</p>
         <h1 id="page-title">Contacts</h1>
-        <p class="intro">Manage your contacts across all practices.</p>
+        <p class="intro">Manage your contacts across all practices. Status is set manually by staff — a suggested status is shown as a hint only.</p>
     </div>
     <div class="section" style="padding-top:0">
         <div id="contactList" style="display:grid;gap:8px">
@@ -17,19 +28,51 @@
 const API = '';
 function token() { return localStorage.getItem('jwt') || ''; }
 function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+function badgeCls(st) { return 'badge ' + (st === 'active' ? 'active' : st === 'passive' ? 'passive' : 'lead'); }
+
+function render(contacts) {
+  if (!contacts.length) { document.getElementById('contactList').innerHTML = '<p style="color:var(--text-muted)">No contacts yet.</p>'; return; }
+  document.getElementById('contactList').innerHTML = contacts.map(c => {
+    var st = c.status || 'lead';
+    var sug = c.suggested_status || 'lead';
+    var sugTxt = {lead:'suggest lead', active:'suggest active', passive:'suggest passive'}[sug] || 'suggest ' + sug;
+    var sugNote = (sug === st) ? '' : ' <span class="status-suggest">' + sugTxt + '</span>';
+    return '<div class="contact-card">' +
+      '<div class="contact-left"><strong>' + esc(c.fullname) + '</strong><br>' +
+      '<span style="color:var(--text-muted);font-size:var(--text-sm)">' + esc(c.email||'') + ' · ' + esc(c.company||'') + '</span></div>' +
+      '<div class="contact-right">' +
+        '<span class="' + badgeCls(st) + '">' + esc(st) + '</span>' + sugNote +
+        '<select class="status-select" onchange="setStatus(' + c.id + ', this.value, this)">' +
+          '<option value="lead"' + (st==='lead'?' selected':'') + '>lead</option>' +
+          '<option value="active"' + (st==='active'?' selected':'') + '>active</option>' +
+          '<option value="passive"' + (st==='passive'?' selected':'') + '>passive</option>' +
+        '</select>' +
+      '</div></div>';
+  }).join('');
+}
+
+function setStatus(id, status, sel) {
+  sel.disabled = true;
+  fetch(API + '/api/contacts/' + id, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token()},
+    body: JSON.stringify({status: status})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if (res.ok) { load(); }
+    else { sel.disabled = false; alert(res.data.error || 'Failed to update status'); }
+  })
+  .catch(function(e){ sel.disabled = false; alert('Network error: ' + e.message); });
+}
+
 function load() {
   var t = token();
   if (!t) { document.getElementById('contactList').innerHTML = '<p style="color:var(--text-muted)"><a href="/kanban">Login</a> to view contacts.</p>'; return; }
   fetch(API + '/api/contacts', {headers:{'Authorization':'Bearer '+t}})
   .then(r=>r.json())
-  .then(contacts => {
-    if (!contacts.length) { document.getElementById('contactList').innerHTML = '<p style="color:var(--text-muted)">No contacts yet.</p>'; return; }
-    document.getElementById('contactList').innerHTML = contacts.map(c => 
-      '<div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2);display:flex;justify-content:space-between;align-items:center">' +
-      '<div><strong>' + esc(c.fullname) + '</strong><br><span style="color:var(--text-muted);font-size:var(--text-sm)">' + esc(c.email||'') + ' · ' + esc(c.company||'') + '</span></div>' +
-      '<div><span class="badge">' + esc(c.stat||'lead') + '</span></div></div>'
-    ).join('')
-  })
+  .then(render)
   .catch(e => document.getElementById('contactList').innerHTML = '<p style="color:var(--text-muted)">Failed to load: ' + e.message + '</p>');
 }
 load();
