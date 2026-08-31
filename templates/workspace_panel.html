@@ -7,6 +7,14 @@
   <div id="wsBody" style="display:none">
     <!-- workspace + sub-workspaces + accounts injected by JS -->
   </div>
+
+  <div class="card" style="margin-top:var(--space-6)">
+    <h2>Cases in this workspace</h2>
+    <p class="intro">Use the case ID (e.g. R-01) when creating a task. Click a row to open it.</p>
+    <div id="caseList" style="display:grid;gap:6px">
+      <p style="color:var(--text-muted)">Loading cases…</p>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -47,6 +55,20 @@ function initWs() {
     body.style.display = 'block';
   })
   .catch(function(e){ status.textContent = 'Error: ' + e.message; });
+
+  // Visible case list with per-workspace IDs
+  fetch('/api/cases', {headers: {'Authorization': 'Bearer ' + t}})
+  .then(function(r){ return r.json(); })
+  .then(function(cases){
+    var el = document.getElementById('caseList');
+    if (!cases || !cases.length) { el.innerHTML = '<p style="color:var(--text-muted)">No cases in this workspace yet.</p>'; return; }
+    el.innerHTML = cases.map(function(c){
+      return '<a href="/kanban" style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--surface-2);color:var(--text);text-decoration:none">' +
+        '<span><strong>' + esc(c.display_id || c.case_no || '#' + c.id) + '</strong> · ' + esc(c.title || '') + '</span>' +
+        '<span class="badge">' + esc(c.status || 'Intake') + '</span></a>';
+    }).join('');
+  })
+  .catch(function(e){ document.getElementById('caseList').innerHTML = '<p style="color:var(--text-muted)">Could not load cases.</p>'; });
 }
 initWs();
 </script>

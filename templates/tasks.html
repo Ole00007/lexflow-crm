@@ -58,8 +58,11 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="taskCaseId">Case ID *</label>
-          <input type="number" id="taskCaseId" placeholder="Case ID">
+          <label for="taskCaseId">Case *</label>
+          <select id="taskCaseId" required>
+            <option value="">— select a case (R-01, …) —</option>
+          </select>
+          <div class="hint">Your workspace's cases, with their case IDs</div>
         </div>
         <div class="form-group">
           <label for="taskPriority">Priority</label>
@@ -127,19 +130,36 @@ function load() {
   .catch(function(){ document.getElementById('taskList').innerHTML = '<p style="color:var(--text-muted)">Failed to load tasks.</p>'; });
 }
 
+function loadCases() {
+  var t = token();
+  if (!t) return;
+  fetch(API + '/api/cases', {headers:{'Authorization':'Bearer '+t}})
+  .then(r=>r.json())
+  .then(cases => {
+    var sel = document.getElementById('taskCaseId');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— select a case —</option>' + (cases || []).map(function(c){
+      var label = (c.display_id || c.case_no || '#' + c.id) + ' · ' + (c.title || '').slice(0,40);
+      return '<option value="' + c.id + '">' + esc(label) + '</option>';
+    }).join('');
+  })
+  .catch(function(){});
+}
+
 function openModal() {
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('taskTitle').value = '';
   document.getElementById('taskCaseId').value = '';
   document.getElementById('taskDesc').value = '';
   document.getElementById('taskDue').value = '';
+  loadCases();  // refresh the case picker with this workspace's cases (R-01, …)
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
 function handleCreate() {
   var title = document.getElementById('taskTitle').value.trim();
   var caseid = parseInt(document.getElementById('taskCaseId').value, 10);
-  if (!title || !caseid) { alert('Title and Case ID are required'); return; }
+  if (!title || !caseid) { alert('Title and Case are required — pick a case from the list'); return; }
   var body = {
     title: title,
     caseid: caseid,

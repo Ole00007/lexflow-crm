@@ -56,6 +56,9 @@ def create_case():
     if not contact:
         return jsonify({"error": "Contact not found"}), 404
 
+    from ..__init__ import _next_case_no
+    case_no = _next_case_no(wid or 1)
+
     case = Case(
         workspace_id=wid or 1,
         contactid=data.get("contactid"),
@@ -67,6 +70,7 @@ def create_case():
         openedat=date.fromisoformat(data["openedat"]) if data.get("openedat") else date.today(),
         duedate=date.fromisoformat(data["duedate"]) if data.get("duedate") else None,
         assignedto=data.get("assignedto"),
+        case_no=case_no,
     )
     db.session.add(case)
     db.session.commit()

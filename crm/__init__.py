@@ -112,6 +112,44 @@ def _ensure_workspace_users():
     db.session.commit()
 
 
+def _seed_code_prefixes():
+    """Idempotently set each workspace's per-tenant case-ID prefix (R, P, A, F, L…).
+    Only fills workspaces that don't have a code_prefix yet — never overwrites."""
+    from .models.workspace import Workspace
+    default_prefixes = {
+        "lexflow": "L", "avibeagency": "A", "pagliano": "P",
+        "romanelli-studio": "R", "romanelli-audit": "RA", "romanelli-cl1": "R1",
+        "romanelli-cl2": "R2", "tommasoferro": "F",
+    }
+    changed = False
+    for ws in Workspace.query.filter_by(is_active=True).all():
+        if not ws.code_prefix and ws.slug in default_prefixes:
+            ws.code_prefix = default_prefixes[ws.slug]
+            changed = True
+    if changed:
+        db.session.commit()
+
+
+def _next_case_no(workspace_id, code_prefix=None):
+    """Compute the next per-workspace case display number, e.g. R-01, R-02…
+    New cases only. Returns e.g. 'R-07'. Falls back to the legacy #id scheme
+    if no prefix is set (frontend shows display_id)."""
+    from .models.case import Case
+    from .models.workspace import Workspace
+    if not code_prefix:
+        ws = Workspace.query.get(workspace_id)
+        code_prefix = ws.code_prefix if ws else None
+    if not code_prefix:
+        return None
+    # count existing numbered cases in this workspace to compute the next seq
+    count = Case.query.filter(
+        Case.workspace_id == workspace_id,
+        Case.is_deleted == False,
+        Case.case_no.isnot(None),
+    ).count()
+    return f"{code_prefix}-{count + 1:02d}"
+
+
 def create_app():
     app = Flask(__name__,
                 template_folder=str(Path(__file__).resolve().parent.parent / "templates"),
@@ -277,6 +315,30 @@ def create_app():
                     log.info("✓ Added workspaces.parent_workspace_id")
             except Exception as e:
                 log.warning(f"ensure parent_workspace_id skipped: {e}")
+
+            # Ensure the new cases.case_no and workspaces.code_prefix columns exist
+            # (additive — same pattern as parent_workspace_id above).
+            try:
+                case_cols = [c['name'] for c in inspector.get_columns('cases')]
+                if 'case_no' not in case_cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE cases ADD COLUMN case_no VARCHAR(20)"))
+                        conn.commit()
+                    log.info("✓ Added cases.case_no")
+            except Exception as e:
+                log.warning(f"ensure case_no skipped: {e}")
+            try:
+                ws_cols2 = [c['name'] for c in inspector.get_columns('workspaces')]
+                if 'code_prefix' not in ws_cols2:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE workspaces ADD COLUMN code_prefix VARCHAR(5)"))
+                        conn.commit()
+                    log.info("✓ Added workspaces.code_prefix")
+            except Exception as e:
+                log.warning(f"ensure code_prefix skipped: {e}")
+
+            # Seed per-tenant code_prefix for case IDs (additive; only fills blank)
+            _seed_code_prefixes()
 
             # Always ensure at least one user exists
             if not User.query.first():
