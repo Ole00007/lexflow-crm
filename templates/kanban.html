@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kanban — aLEXy</title>
+<title>Kanban — Secure Workspace</title>
+<link rel="icon" type="image/svg+xml" id="appFavicon" href="/static/favicon.svg">
 <style>
 /* ── Reset & Base ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -815,13 +816,21 @@ function onLoginSuccess(data) {
     'pagliano': 'https://verdant-crumble-021449.netlify.app',
     'romanelli-studio': 'https://romanelli-studio.olesya00007.workers.dev'
   };
+  var faviconMap = {
+    'pagliano': '/static/favicons/pagliano.svg',
+    'romanelli-studio': '/static/favicons/romanelli.svg',
+    'romanelli-audit': '/static/favicons/romanelli.svg'
+  };
   var rs = document.getElementById('returnSiteLink');
+  var slug = (u.workspace && u.workspace.slug) || '';
   if (rs) {
-    var slug = (u.workspace && u.workspace.slug) || '';
     var url = siteMap[slug] || '#';
     if (url !== '#') { rs.href = url; rs.style.display = 'inline-block'; }
     else rs.style.display = 'none';
   }
+  // Per-workspace favicon (matches tenant landing page)
+  var faviconEl = document.getElementById('appFavicon');
+  if (faviconEl && faviconMap[slug]) faviconEl.setAttribute('href', faviconMap[slug]);
 
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
