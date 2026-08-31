@@ -92,6 +92,14 @@
         <label for="taskDesc">Description</label>
         <textarea id="taskDesc" rows="3" placeholder="Optional details"></textarea>
       </div>
+      <div class="form-group">
+        <label>Attach documents</label>
+        <div id="dropZone" style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:16px;text-align:center;cursor:pointer;color:var(--text-muted);font-size:var(--text-sm)">
+          📎 Drag &amp; drop files here, or <b>click to browse</b>
+        </div>
+        <input type="file" id="taskFiles" multiple hidden>
+        <div id="fileNames" style="margin-top:8px;display:flex;flex-direction:column;gap:4px"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
@@ -152,9 +160,42 @@ function openModal() {
   document.getElementById('taskCaseId').value = '';
   document.getElementById('taskDesc').value = '';
   document.getElementById('taskDue').value = '';
+  selectedFiles = [];
+  document.getElementById('fileNames').innerHTML = '';
+  document.getElementById('taskFiles').value = '';
   loadCases();  // refresh the case picker with this workspace's cases (R-01, …)
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+/* ── File upload (button + drag-and-drop) ─────────────────────── */
+var selectedFiles = [];
+var dropZone = document.getElementById('dropZone');
+var fileInput = document.getElementById('taskFiles');
+if (dropZone && fileInput) {
+  dropZone.addEventListener('click', function(){ fileInput.click(); });
+  fileInput.addEventListener('change', function(){ addFiles(fileInput.files); });
+  ['dragenter','dragover'].forEach(function(ev){
+    dropZone.addEventListener(ev, function(e){ e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    dropZone.addEventListener(ev, function(e){ e.preventDefault(); dropZone.style.borderColor = 'var(--border)'; });
+  });
+  dropZone.addEventListener('drop', function(e){
+    if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+  });
+}
+function addFiles(files) {
+  if (!files) return;
+  for (var i = 0; i < files.length; i++) selectedFiles.push(files[i]);
+  var el = document.getElementById('fileNames');
+  el.innerHTML = selectedFiles.map(function(f, idx){
+    return '<span style="font-size:var(--text-sm);color:var(--text-muted)">📎 ' + esc(f.name) + ' (' + Math.round(f.size/1024) + ' KB) <a href="#" onclick="removeFile(' + idx + ');return false" style="color:var(--warning)">✕</a></span>';
+  }).join('');
+}
+function removeFile(idx) {
+  selectedFiles.splice(idx, 1);
+  addFiles([]);  // re-render
+}
 
 function handleCreate() {
   var title = document.getElementById('taskTitle').value.trim();
@@ -178,15 +219,31 @@ function handleCreate() {
   })
   .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
   .then(function(res){
-    if (res.ok) {
-      closeModal();
-      load();
-      toast('Task created!', 'success');
-    } else {
-      alert(res.data.error || 'Failed to create task');
+    if (!res.ok) { alert(res.data.error || 'Failed to create task'); return; }
+    var taskId = res.data.id;
+    if (selectedFiles.length) {
+      return uploadFiles(taskId).then(function(){
+        closeModal(); load();
+        toast('Task created with ' + selectedFiles.length + ' document(s)', 'success');
+      });
     }
+    closeModal(); load(); toast('Task created!', 'success');
   })
   .catch(function(e){ alert('Network error: ' + e.message); });
+}
+
+function uploadFiles(taskId) {
+  var t = token();
+  var uploads = selectedFiles.map(function(f){
+    var fd = new FormData();
+    fd.append('file', f);
+    fd.append('target_type', 'task');
+    fd.append('target_id', taskId);
+    return fetch(API + '/api/attachments/', {method:'POST', headers:{'Authorization':'Bearer '+t}, body: fd})
+      .then(function(r){ return r.ok; })
+      .catch(function(){ return false; });
+  });
+  return Promise.all(uploads);
 }
 
 function delTask(id) {

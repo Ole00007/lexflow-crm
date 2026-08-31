@@ -30,7 +30,7 @@ ALLOWED_MIME_TYPES = {
     'text/plain': ('.txt',),
     'application/octet-stream': None,  # generic — rely on extension check
 }
-VALID_TARGET_TYPES = {"case", "contact"}
+VALID_TARGET_TYPES = {"case", "contact", "task"}
 
 
 def _is_allowed(filename, mimetype):
