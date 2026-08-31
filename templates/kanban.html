@@ -163,6 +163,23 @@ header {
   white-space: nowrap;
   background: var(--surface-2);
 }
+.board-head {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 16px;
+}
+.secure-ws-chip {
+  font-size: .8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 18px;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 3px var(--accent-glow, rgba(59,125,216,0.15));
+}
 .btn-ghost {
   background: transparent;
   border: 1px solid var(--border);
@@ -572,7 +589,7 @@ header {
       <a href="/settings" class="kn-nav-link">⚙</a>
       <a href="/admin/panel" id="superAdminLink" class="kn-nav-link sa" style="display:none">🛡 Super Admin</a>
     </nav>
-    <div class="ws-chip" id="wsChip" style="display:none"></div>
+    <a href="/workspace" id="wsChip" class="ws-chip" style="display:none"></a>
     <div class="user-badge" id="userBadge"></div>
     <a href="#" id="returnSiteLink" class="btn btn-ghost" style="display:none" target="_blank" rel="noopener">← Main site</a>
     <button class="btn btn-add" onclick="openModal()">
@@ -586,6 +603,9 @@ header {
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- ── Board ───────────────────────────────────────────────────── -->
+<div class="board-head">
+  <span id="secureWsLabel" class="secure-ws-chip" style="display:none"></span>
+</div>
 <div class="board" id="board">
   <div class="column" data-status="Intake">
     <div class="col-header">
@@ -772,6 +792,13 @@ function onLoginSuccess(data) {
   var u = (data && data.user) ? data.user : (data || {});
   document.getElementById('userBadge').textContent = '👤 ' + (u.email || 'User');
 
+  // Secure Workspace heading (B1) + workspace chip link (B5)
+  var wsLabel = document.getElementById('secureWsLabel');
+  if (wsLabel && u.workspace && u.workspace.name) {
+    wsLabel.textContent = '🛡 ' + u.workspace.name + ' — Secure Workspace';
+    wsLabel.style.display = 'inline-block';
+  }
+
   // Workspace chip + super-admin link + return-to-site
   var wsChip = document.getElementById('wsChip');
   if (u.workspace && u.workspace.name) {
@@ -816,6 +843,8 @@ function handleLogout() {
   if (sa) sa.style.display = 'none';
   var rs = document.getElementById('returnSiteLink');
   if (rs) rs.style.display = 'none';
+  var wsLabel = document.getElementById('secureWsLabel');
+  if (wsLabel) wsLabel.style.display = 'none';
   STATUSES.forEach(function(s) {
     var list = document.getElementById('list-' + s);
     var count = document.getElementById('count-' + s);

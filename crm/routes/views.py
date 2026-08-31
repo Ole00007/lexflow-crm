@@ -383,6 +383,50 @@ def _is_superadmin():
         return False
 
 
+@views_bp.route('/workspace')
+@jwt_required(optional=True)
+def workspace_panel():
+    """Scoped workspace panel — shows the CURRENT user's own workspace (not
+    superadmin's global view). Parent admins see their sub-workspaces too."""
+    from ..models.user import User
+    user = None
+    try:
+        uid = get_jwt_identity()
+        user = User.query.filter_by(id=int(uid), is_deleted=False).first() if uid else None
+    except Exception:
+        user = None
+    if not user:
+        return redirect(url_for('views.index'))
+    return render_template('workspace_panel.html', current_user=user)
+
+
+@views_bp.route('/api/workspace')
+@jwt_required()
+def api_workspace():
+    """Scoped workspace JSON: the current user's own workspace + visible
+    sub-workspaces + their accounts. Never returns password hashes."""
+    from ..models.user import User
+    uid = get_jwt_identity()
+    user = User.query.filter_by(id=int(uid), is_deleted=False).first() if uid else None
+    if not user:
+        return jsonify({'error': 'Not found'}), 404
+
+    # own workspace + any sub-workspaces whose parent is this user's workspace
+    ws_ids = get_visible_workspace_ids()
+    if ws_ids is None:
+        ws_ids = [user.workspace_id]
+    workspaces = Workspace.query.filter(Workspace.id.in_(ws_ids), Workspace.is_active == True).order_by(Workspace.id).all()
+    out = []
+    for ws in workspaces:
+        users = User.query.filter_by(workspace_id=ws.id, is_deleted=False).all()
+        out.append({
+            'workspace': ws.to_dict(),
+            'users': [{'id': u.id, 'email': u.email, 'role': u.role,
+                       'created_at': u.created_at.isoformat() if u.created_at else None} for u in users],
+        })
+    return jsonify(out), 200
+
+
 @views_bp.route('/admin/panel')
 @jwt_required(optional=True)
 def superadmin_panel():

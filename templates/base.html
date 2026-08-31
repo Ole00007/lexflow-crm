@@ -68,7 +68,11 @@
         .nav-link{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);color:var(--text-muted);font-size:var(--text-sm);font-weight:500}
         .nav-link:hover,.nav-link.active{background:var(--surface-2);color:var(--text)}
         .nav-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
-        .ws-badge{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);margin:0 0 var(--space-4);border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-2);font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-h)}
+        .ws-badge{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);margin:0 0 var(--space-4);border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-2);font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-h);text-decoration:none}
+        .ws-badge:hover{border-color:var(--accent);background:var(--accent-glow)}
+        .secure-ws-banner{display:flex;align-items:center;gap:var(--space-2);margin:0 0 var(--space-5);padding:var(--space-2) var(--space-4);border:1px solid var(--border);border-radius:var(--radius-full);background:var(--surface-2);font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)}
+        .secure-ws-banner .sws-shield{color:var(--accent)}
+        .secure-ws-banner .sws-label{color:var(--text)}
         .ws-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 3px var(--accent-glow)}
         .sa-link{color:var(--warning);border:1px solid var(--warning);border-radius:var(--radius-md)}
         .sa-link:hover,.sa-link.active{background:var(--warning);color:#0f172a}
@@ -105,10 +109,10 @@
                 LexFlow
             </a>
             {% if current_user %}
-            <div class="ws-badge">
+            <a class="ws-badge" href="{{ url_for('views.workspace_panel') }}" title="Open workspace panel">
                 <span class="ws-dot" aria-hidden="true"></span>
                 <span class="ws-name">{{ current_user.workspace.name if current_user.workspace else 'LexFlow' }}</span>
-            </div>
+            </a>
             {% endif %}
             <p class="nav-label">Workspace</p>
             <ul class="nav-list">
@@ -136,6 +140,12 @@
             </div>
         </aside>
         <main class="main" id="main-content">
+            {% if secure_label %}
+            <div class="secure-ws-banner">
+                <span class="sws-shield" aria-hidden="true">🛡</span>
+                <span class="sws-label">{{ secure_label }}</span>
+            </div>
+            {% endif %}
             {% block content %}{% endblock %}
         </main>
     </div>

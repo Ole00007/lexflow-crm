@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Workspace — {{ current_user.workspace.name if current_user and current_user.workspace else 'Secure Workspace' }}{% endblock %}
+{% block content %}
+<div id="wsShell">
+  <h1>{{ current_user.workspace.name if current_user and current_user.workspace else 'Secure Workspace' }} <span class="badge">Secure Workspace</span></h1>
+  <p class="intro" id="statusLine">Loading your workspace…</p>
+  <div id="wsBody" style="display:none">
+    <!-- workspace + sub-workspaces + accounts injected by JS -->
+  </div>
+</div>
+
+<script>
+function token() { return localStorage.getItem('jwt') || ''; }
+function esc(s) { var d=document.createElement('div'); d.textContent = s==null?'':String(s); return d.innerHTML; }
+
+function initWs() {
+  var status = document.getElementById('statusLine');
+  var body = document.getElementById('wsBody');
+  var t = token();
+  if (!t) {
+    status.textContent = 'Please log in first — redirecting…';
+    setTimeout(function(){ window.location.href = '/'; }, 800);
+    return;
+  }
+  fetch('/api/workspace', {headers: {'Authorization': 'Bearer ' + t}})
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if (!res.ok || !Array.isArray(res.data)) {
+      status.textContent = 'Could not load workspace.';
+      return;
+    }
+    status.textContent = 'This is your workspace and the accounts in it.';
+    var html = '';
+    res.data.forEach(function(item){
+      var ws = item.workspace || {};
+      html += '<div class="card" style="margin-bottom:var(--space-6)">'
+        + '<div class="eyebrow">Workspace #' + ws.id + '</div>'
+        + '<h2 style="margin:0 0 var(--space-2)">' + esc(ws.name) + ' <span class="badge">' + esc(ws.slug) + '</span></h2>'
+        + (ws.parent_workspace_id ? '<p class="intro">Sub-workspace of #' + ws.parent_workspace_id + '</p>' : '')
+        + '<table><thead><tr><th>ID</th><th>Email (login)</th><th>Role</th></tr></thead><tbody>';
+      (item.users || []).forEach(function(u){
+        html += '<tr><td>' + u.id + '</td><td>' + esc(u.email) + '</td><td><span class="badge">' + esc(u.role) + '</span></td></tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    body.innerHTML = html;
+    body.style.display = 'block';
+  })
+  .catch(function(e){ status.textContent = 'Error: ' + e.message; });
+}
+initWs();
+</script>
+{% endblock %}

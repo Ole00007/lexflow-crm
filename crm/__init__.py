@@ -149,16 +149,33 @@ def create_app():
             "romanelli-studio": "/static/favicons/romanelli.svg",
             "romanelli-audit": "/static/favicons/romanelli.svg",
         }
+        # Per-tenant 'Secure Workspace' heading label (what the user sees on top)
+        secure_label_map = {
+            "lexflow": "LexFlow Secure Workspace",
+            "avibeagency": "Avibe Agency Secure Workspace",
+            "pagliano": "Avv.Pagl Secure Workspace",
+            "romanelli-studio": "Romanelli-Studio Secure Workspace",
+            "romanelli-audit": "Romanelli Audit Secure Workspace",
+            "romanelli-cl1": "Romanelli Client 1 Secure Workspace",
+            "romanelli-cl2": "Romanelli Client 2 Secure Workspace",
+            "tommasoferro": "Ferro-Studio Secure Workspace",
+        }
         main_site_url = "#"
         favicon_url = None
+        secure_label = None
         if user and user.workspace:
             main_site_url = site_map.get(user.workspace.slug, "#")
             favicon_url = favicon_map.get(user.workspace.slug)
+            secure_label = secure_label_map.get(
+                user.workspace.slug,
+                f"{user.workspace.name} Secure Workspace",
+            )
 
         return {
             "current_user": user,
             "main_site_url": main_site_url,
             "favicon_url": favicon_url,
+            "secure_label": secure_label,
             "is_superadmin": bool(user and user.role == "superadmin"),
         }
 
