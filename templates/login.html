@@ -72,7 +72,7 @@ function doLogin(e) {
     if (res.ok) {
       localStorage.setItem('jwt', res.data.access_token);
       localStorage.setItem('lexflow-user', JSON.stringify(res.data.user || {}));
-      window.location.href = '/dashboard';
+      window.location.href = '/kanban';
     } else {
       err.textContent = res.data.error || 'Credenziali non valide. Riprova.';
       err.style.display = 'block';
