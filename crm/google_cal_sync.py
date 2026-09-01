@@ -23,6 +23,7 @@ import logging
 import json
 import urllib.request
 import urllib.error
+import urllib.parse
 from datetime import datetime, timezone
 
 from .extensions import db
@@ -148,3 +149,140 @@ def sync_google_to_lexflow():
              created, existing, skipped, lex.slug)
     return {"ok": True, "created": created, "existing": existing, "skipped": skipped,
             "workspace": lex.slug}
+
+
+def push_lexflow_to_google():
+    """Push (write) LexFlow workspace calendar events back to Google Calendar.
+
+    REQUIRED: OAuth 2.0 credentials — an API key cannot create/modify events on
+    a (private) Google Calendar. Needs:
+      - GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET (OAuth app)
+      - GOOGLE_CALENDAR_REFRESH_TOKEN (owner authorized once)
+      - GOOGLE_CALENDAR_ID (target calendar)
+    Until configured, returns a clear "needs OAuth" result and does nothing.
+    Events imported from Google (notes 'gcal:<id>') are skipped to avoid an
+    echo loop; existing LexFlow events without a google id are inserted.
+    """
+    lex = _lexflow_workspace()
+    if not lex:
+        return {"ok": False, "error": "no lexflow workspace"}
+
+    client_id = os.environ.get("GOOGLE_CALENDAR_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("GOOGLE_CALENDAR_CLIENT_SECRET", "").strip()
+    refresh_token = os.environ.get("GOOGLE_CALENDAR_REFRESH_TOKEN", "").strip()
+    calendar_id = os.environ.get("GOOGLE_CALENDAR_ID", "").strip()
+    if not (client_id and client_secret and refresh_token and calendar_id):
+        return {
+            "ok": False,
+            "error": ("push needs OAuth (GOOGLE_CALENDAR_CLIENT_ID / CLIENT_SECRET / "
+                      "REFRESH_TOKEN / GOOGLE_CALENDAR_ID not configured). An API key "
+                      "cannot write a private Google Calendar — set up the 2FA-safe "
+                      "OAuth flow to enable push."),
+        }
+
+    # 1) refresh access token
+    access, err = _oauth_access_token(client_id, client_secret, refresh_token)
+    if err:
+        return {"ok": False, "error": err}
+
+    events = CalendarEvent.query.filter_by(
+        workspace_id=lex.id, is_deleted=False).all()
+    inserted = updated = skipped = 0
+    for ev in events:
+        if ev.notes and ev.notes.startswith("gcal:"):
+            skipped += 1  # came from Google — don't echo back
+            continue
+        payload = _event_payload(ev)
+        if not payload:
+            skipped += 1
+            continue
+        if ev.notes and ev.notes.startswith("gcalpush:"):
+            gid = ev.notes[len("gcalpush:"):]
+            err = _gcal_request("PUT", calendar_id, gid, payload, access)
+            if err:
+                return {"ok": False, "error": f"update {gid}: {err}"}
+            updated += 1
+        else:
+            gid, err = _gcal_insert(calendar_id, payload, access)
+            if err:
+                return {"ok": False, "error": f"insert {ev.title}: {err}"}
+            ev.notes = f"gcalpush:{gid}"
+            db.session.commit()
+            inserted += 1
+
+    return {"ok": True, "inserted": inserted, "updated": updated,
+            "skipped": skipped, "workspace": lex.slug}
+
+
+def _oauth_access_token(client_id, client_secret, refresh_token):
+    """Exchange the refresh token for a short-lived access token."""
+    data = urllib.parse.urlencode({
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "refresh_token": refresh_token,
+        "grant_type": "refresh_token",
+    }).encode()
+    req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token", data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            tok = json.loads(resp.read().decode()).get("access_token")
+        if not tok:
+            return None, "OAuth: no access_token in response"
+        return tok, None
+    except urllib.error.HTTPError as e:
+        return None, f"OAuth token error HTTP {e.code}: {e.read().decode()[:300]}"
+    except Exception as e:  # noqa: BLE001
+        return None, f"OAuth token error: {e}"
+
+
+def _event_payload(ev):
+    """Build a Google Calendar event resource from a LexFlow event."""
+    if not ev.start_datetime:
+        return None
+    if ev.is_all_day:
+        start = {"date": ev.start_datetime.strftime("%Y-%m-%d")}
+        end = {"date": (ev.end_datetime or ev.start_datetime).strftime("%Y-%m-%d")}
+    else:
+        start = {"dateTime": ev.start_datetime.isoformat()}
+        end = {"dateTime": (ev.end_datetime or ev.start_datetime).isoformat()}
+    return {
+        "summary": ev.title,
+        "description": ev.description or "",
+        "location": ev.location or "",
+        "start": start,
+        "end": end,
+    }
+
+
+def _gcal_insert(calendar_id, payload, access):
+    url = (f"{API_BASE}/{urllib.request.quote(calendar_id, safe='')}/events")
+    req = urllib.request.Request(
+        url, data=json.dumps(payload).encode(),
+        headers={"Authorization": "Bearer " + access,
+                 "Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read().decode()).get("id"), None
+    except urllib.error.HTTPError as e:
+        return None, f"HTTP {e.code}: {e.read().decode()[:300]}"
+    except Exception as e:  # noqa: BLE001
+        return None, str(e)
+
+
+def _gcal_request(method, calendar_id, event_id, payload, access):
+    url = (f"{API_BASE}/{urllib.request.quote(calendar_id, safe='')}/events/"
+           f"{urllib.request.quote(event_id, safe='')}")
+    req = urllib.request.Request(
+        url, data=json.dumps(payload).encode(),
+        headers={"Authorization": "Bearer " + access,
+                 "Content-Type": "application/json"}, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            resp.read()
+        return None
+    except urllib.error.HTTPError as e:
+        return f"HTTP {e.code}: {e.read().decode()[:300]}"
+    except Exception as e:  # noqa: BLE001
+        return str(e)
