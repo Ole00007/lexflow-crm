@@ -70,6 +70,29 @@ def create_task():
     db.session.commit()
     actor_id = int(get_jwt_identity())
     log_activity(actor_id, "task", task.id, "created", f"Task '{task.title}' created")
+
+    # Optional: also reflect the task on the workspace calendar (uses due date).
+    if data.get('add_to_calendar') and task.duedate:
+        from ..models.calendar_event import CalendarEvent
+        from datetime import datetime, time
+        start = datetime.combine(task.duedate, time(9, 0))
+        end = start.replace(hour=10)
+        ev = CalendarEvent(
+            workspace_id=task.workspace_id,
+            caseid=task.caseid,
+            title=task.title,
+            description=task.description,
+            event_type='meeting',
+            start_datetime=start,
+            end_datetime=end,
+            is_all_day=False,
+            status='scheduled',
+            notes=f"task:{task.id}",
+        )
+        db.session.add(ev)
+        db.session.commit()
+        log_activity(actor_id, "case" if task.caseid else "task", task.caseid or task.id,
+                     "event_created", f"Calendar event '{task.title}' created from task")
     return jsonify(task.to_dict()), 201
 
 @tasks_bp.put('/<int:task_id>')

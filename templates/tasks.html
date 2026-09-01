@@ -92,6 +92,10 @@
         <label for="taskDesc">Description</label>
         <textarea id="taskDesc" rows="3" placeholder="Optional details"></textarea>
       </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <input type="checkbox" id="taskAddCal" style="width:auto;margin:0" checked>
+        <label for="taskAddCal" style="margin:0;text-transform:none;letter-spacing:0">Also add to calendar (uses due date)</label>
+      </div>
       <div class="form-group">
         <label>Attach documents</label>
         <div id="dropZone" style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:16px;text-align:center;cursor:pointer;color:var(--text-muted);font-size:var(--text-sm)">
@@ -163,6 +167,8 @@ function openModal() {
   selectedFiles = [];
   document.getElementById('fileNames').innerHTML = '';
   document.getElementById('taskFiles').value = '';
+  var cb = document.getElementById('taskAddCal');
+  if (cb) cb.checked = true;  // default: reflect task on calendar (uses due date)
   loadCases();  // refresh the case picker with this workspace's cases (R-01, …)
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
@@ -211,6 +217,8 @@ function handleCreate() {
   if (due) body.duedate = due;
   var desc = document.getElementById('taskDesc').value.trim();
   if (desc) body.description = desc;
+  var addCal = document.getElementById('taskAddCal');
+  if (addCal && addCal.checked) body.add_to_calendar = true;
 
   fetch(API + '/api/tasks/', {
     method: 'POST',
