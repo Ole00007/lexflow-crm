@@ -526,6 +526,22 @@ def api_admin_reset_password():
     return jsonify({'success': True, 'email': target_email}), 200
 
 
+@views_bp.route('/api/admin/google-cal-sync', methods=['POST'])
+@jwt_required()
+def api_admin_google_cal_sync():
+    """Superadmin-only: trigger one Google Calendar -> LexFlow (ws7) sync.
+    Events are imported ONLY into the 'lexflow' workspace — never into any
+    client workspace (Romanelli, Pagliano, ...). Returns the sync summary.
+    NOTE: with only an API key, Google only exposes calendars the owner made
+    public; a private calendar needs OAuth. The sync reports the real result."""
+    from ..google_cal_sync import sync_google_to_lexflow
+    if not _is_superadmin():
+        return jsonify({'error': 'Superadmin only'}), 403
+    result = sync_google_to_lexflow()
+    status = 200 if result.get('ok') else 502
+    return jsonify(result), status
+
+
 # ── Error handlers ─────────────────────────────────────────────────
 @views_bp.app_errorhandler(404)
 def not_found(e):
