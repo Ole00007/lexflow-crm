@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 
 from ..extensions import db
 from ..models.attachment import Attachment
-from ..workspace import get_current_workspace_id, workspace_filter
+from ..workspace import get_current_workspace_id, get_visible_workspace_ids, workspace_filter
 
 attachments_bp = Blueprint('attachments', __name__, url_prefix='/api/attachments')
 
@@ -54,10 +54,18 @@ def _filtered_query():
 
 
 def _get_attachment(attachment_id):
+    """Fetch an attachment by id, scoped to what the current user may see.
+    Superadmin (get_visible_workspace_ids() is None) sees all; a normal user
+    only attachments in their own (+ visible sub-) workspaces; anonymous/empty
+    scope sees nothing."""
     q = Attachment.query.filter_by(id=attachment_id)
-    wid = get_current_workspace_id()
-    if wid is not None:
-        q = q.filter_by(workspace_id=wid)
+    try:
+        vis = get_visible_workspace_ids()
+    except Exception:
+        vis = get_current_workspace_id()
+    if vis is not None:
+        ids = vis if isinstance(vis, (list, tuple, set)) else [vis]
+        q = q.filter(Attachment.workspace_id.in_(ids))
     return q.first()
 
 
