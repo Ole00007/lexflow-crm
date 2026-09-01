@@ -193,7 +193,21 @@ def submit():
         flash('Name, email, and practice area are required.', 'error')
         return redirect(url_for('views.index'))
 
-    wid = get_current_workspace_id() or 1
+    # Resolve workspace: authenticated user's workspace, else from ?ws= slug,
+    # else the 'lexflow' workspace, else the first active workspace. NEVER fall
+    # back to a hardcoded id (prod workspace ids start at 7, id 1 does not exist
+    # and caused ForeignKeyViolation on contacts.workspace_id_fkey).
+    wid = get_current_workspace_id()
+    if not wid:
+        slug = (request.args.get('ws') or request.form.get('ws') or '').strip()
+        ws = Workspace.query.filter_by(slug=slug, is_active=True).first() if slug else None
+        if not ws:
+            ws = Workspace.query.filter_by(slug='lexflow', is_active=True).first()
+        if not ws:
+            ws = Workspace.query.filter_by(is_active=True).order_by(Workspace.id).first()
+        wid = ws.id if ws else None
+    if not wid:
+        return jsonify({'error': 'No workspace available for intake'}), 503
     token = secrets.token_hex(8).upper()
     now = datetime.utcnow()
 
@@ -367,18 +381,34 @@ def case_status(token):
 
 # ── Admin List ─────────────────────────────────────────────────────
 @views_bp.route('/admin')
+@jwt_required(optional=True)
 def admin_list():
-    wid = get_current_workspace_id()
+    # Only authenticated users may list matters; anonymous → login page.
+    uid = get_jwt_identity()
+    if not uid:
+        return redirect(url_for('views.login'))
+    vis = get_visible_workspace_ids()  # None=superadmin(all), list=scoped, [] = nothing
     query = Case.query.filter_by(is_deleted=False)
-    if wid: query = query.filter_by(workspace_id=wid)
+    if vis is not None:
+        query = query.filter(Case.workspace_id.in_(vis))
     cases = query.order_by(Case.id.desc()).all()
     return render_template('admin.html', matters=cases)
 
 
 @views_bp.route('/admin/matter/<int:matter_id>', methods=['GET', 'POST'])
+@jwt_required(optional=True)
 def admin_matter(matter_id):
+    # Only authenticated users may view/edit a matter; anonymous → login.
+    uid = get_jwt_identity()
+    if not uid:
+        return redirect(url_for('views.login'))
     case = Case.query.filter_by(id=matter_id, is_deleted=False).first()
-    if not case: abort(404)
+    if not case:
+        abort(404)
+    # Scope check: a non-superadmin must only see cases in their visible workspaces.
+    vis = get_visible_workspace_ids()
+    if vis is not None and case.workspace_id not in vis:
+        abort(404)
     if request.method == 'POST':
         case.status = request.form.get('status', case.status)
         db.session.commit()

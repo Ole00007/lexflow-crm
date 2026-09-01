@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from datetime import datetime, date
 from ..extensions import db
 from ..models.task import Task
 from ..models.case import Case
@@ -8,6 +9,23 @@ from ..workspace import get_current_workspace_id, workspace_filter
 from ..activity_logger import log_activity
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/api/tasks')
+
+def _safe_date(value):
+    """Parse a date string strictly (YYYY-MM-DD). Returns a date or None.
+    Prevents malformed values (e.g. year 92026) from reaching the DB and
+    crashing GET /api/tasks during result conversion."""
+    if not value:
+        return None
+    if isinstance(value, date):
+        return value
+    s = str(value).strip()
+    try:
+        d = datetime.strptime(s[:10], '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return None
+    if not (1900 <= d.year <= 2100):
+        return None
+    return d
 
 def _filtered_query():
     # superadmin sees all workspaces (workspace_filter bypasses for superadmin)
@@ -46,7 +64,7 @@ def create_task():
         description=data.get('description'),
         status=data.get('status', 'pending'),
         priority=data.get('priority', 'Medium'),
-        duedate=data.get('duedate')
+        duedate=_safe_date(data.get('duedate'))
     )
     db.session.add(task)
     db.session.commit()
@@ -65,7 +83,7 @@ def update_task(task_id):
         if field in data:
             setattr(task, field, data[field])
     if 'duedate' in data:
-        task.duedate = data['duedate']
+        task.duedate = _safe_date(data['duedate'])
     if 'userid' in data:
         task.userid = data['userid']
     db.session.commit()

@@ -352,6 +352,24 @@ def create_app():
             # deployed). db.create_all() is checkfirst+additive — it only creates
             # tables that don't exist and never alters/drops existing data.
             db.create_all()
+
+            # Heal out-of-range task dates (e.g. a task whose duedate has year
+            # 92026). These crash GET /api/tasks with "year XXXX is out of range"
+            # during result conversion. Reset the bad date to NULL so the list
+            # renders. Runs on boot, idempotent, additive.
+            try:
+                from sqlalchemy import text as _text
+                with db.engine.connect() as conn:
+                    conn.execute(_text(
+                        "UPDATE tasks SET duedate = NULL "
+                        "WHERE duedate IS NOT NULL "
+                        "AND (EXTRACT(YEAR FROM duedate) < 1900 "
+                        "     OR EXTRACT(YEAR FROM duedate) > 2100)"
+                    ))
+                    conn.commit()
+            except Exception as e:
+                logging.getLogger(__name__).warning(f"heal task dates skipped: {e}")
+
             app._schema_checked = True
 
     return app

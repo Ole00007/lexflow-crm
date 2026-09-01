@@ -23,6 +23,11 @@ class Task(db.Model):
     workspace = db.relationship("Workspace", backref=db.backref("tasks", lazy=True))
 
     def to_dict(self):
+        def _iso(v):
+            try:
+                return v.isoformat() if v else None
+            except Exception:
+                return None
         return {
             "id": self.id,
             "workspace_id": self.workspace_id,
@@ -32,9 +37,9 @@ class Task(db.Model):
             "description": self.description,
             "status": self.status,
             "priority": self.priority,
-            "duedate": self.duedate.isoformat() if self.duedate else None,
-            "createdat": self.createdat.isoformat() if self.createdat else None,
-            "updatedat": self.updatedat.isoformat() if self.updatedat else None,
+            "duedate": _iso(self.duedate),
+            "createdat": _iso(self.createdat),
+            "updatedat": _iso(self.updatedat),
             "is_deleted": self.is_deleted,
-            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
+            "deleted_at": _iso(self.deleted_at),
         }

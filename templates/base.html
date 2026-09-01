@@ -157,6 +157,24 @@
         window.location.href = '/';
     }
     </script>
+    <div id="toastContainer" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px"></div>
+    <script>
+    /* Global toast — used by tasks/calendar/contacts pages (kanban has its own
+       standalone copy). Missing here caused "toast is not defined" on /tasks. */
+    function esc(s) { var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+    function toast(msg, type) {
+      type = type || 'info';
+      var c = document.getElementById('toastContainer');
+      if (!c) return;
+      var el = document.createElement('div');
+      el.className = 'toast ' + type;
+      var icon = type === 'error' ? '✕' : type === 'success' ? '✓' : 'ℹ';
+      el.innerHTML = '<span>' + icon + '</span><span>' + esc(msg) + '</span>';
+      el.style.cssText = 'background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 14px;font-size:var(--text-sm);box-shadow:var(--shadow-md);display:flex;gap:8px;align-items:center';
+      c.appendChild(el);
+      setTimeout(function () { if (el && el.parentNode) el.parentNode.removeChild(el); }, 3500);
+    }
+    </script>
     <script>
     /* Client-side secure-workspace enhancer: on page navigation the JWT lives in
        localStorage (not a header), so server-rendered templates can't know who's
@@ -180,7 +198,7 @@
         var m = {
           'lexflow': 'LexFlow Secure Workspace',
           'avibeagency': 'Avibe Agency Secure Workspace',
-          'pagliano': 'Avv.Pagl Secure Workspace',
+          'pagliano': 'Pagliano Secure Workspace',
           'romanelli-studio': 'Romanelli-Studio Secure Workspace',
           'romanelli-audit': 'Romanelli Audit Secure Workspace',
           'romanelli-cl1': 'Romanelli Client 1 Secure Workspace',
