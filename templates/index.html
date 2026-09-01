@@ -44,6 +44,7 @@
     {% endwith %}
 
     <form id="intake-form" class="section" action="{{ url_for('views.submit') }}" method="post" enctype="multipart/form-data">
+        <input type="hidden" id="ws_slug" name="ws" value="">
         <h2>New matter intake</h2>
         <p class="intro">
             Use only the information needed for a first review. Required fields are marked with an asterisk.
@@ -103,4 +104,20 @@
         </div>
     </form>
 </section>
+<script>
+/* If a workspace user is logged in (JWT in localStorage), pin the intake to
+   their workspace so /submit routes the new contact+case there (Romanelli →
+   romanelli-studio, not the LexFlow default). Anonymous stays as-is. */
+(function () {
+  try {
+    var raw = localStorage.getItem('lexflow-user');
+    if (raw) {
+      var u = JSON.parse(raw);
+      var slug = (u && u.workspace && u.workspace.slug) || '';
+      var el = document.getElementById('ws_slug');
+      if (el && slug) el.value = slug;
+    }
+  } catch (e) { /* non-fatal */ }
+})();
+</script>
 {% endblock %}
