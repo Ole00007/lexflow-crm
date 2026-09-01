@@ -354,6 +354,7 @@ def book_meeting():
 
 # ── Status Page ────────────────────────────────────────────────────
 @views_bp.route('/status/<token>')
+@jwt_required(optional=True)
 def case_status(token):
     case = None
     try:
@@ -361,6 +362,15 @@ def case_status(token):
         case = Case.query.filter_by(id=case_id, is_deleted=False).first()
     except ValueError:
         pass
+
+    # SECURITY (audit 2026-09-01): if an authenticated user (staff) opens a
+    # status page, scope it to their visible workspaces — a Romanelli admin
+    # must NOT be able to view a Pagliano case by guessing its id. Anonymous
+    # clients keep the public tracking link (that is the feature's purpose).
+    if get_jwt_identity():
+        vis = get_visible_workspace_ids()
+        if vis is not None and (not case or case.workspace_id not in vis):
+            abort(404)
 
     # Build a plain dict the template can index (matter["..."]), including
     # the linked contact's name/email so the client-facing page renders.
