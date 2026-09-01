@@ -529,17 +529,27 @@ def api_admin_reset_password():
 @views_bp.route('/api/admin/google-cal-sync', methods=['POST'])
 @jwt_required()
 def api_admin_google_cal_sync():
-    """Superadmin-only: trigger one Google Calendar -> LexFlow (ws7) sync.
-    Events are imported ONLY into the 'lexflow' workspace — never into any
-    client workspace (Romanelli, Pagliano, ...). Returns the sync summary.
-    NOTE: with only an API key, Google only exposes calendars the owner made
-    public; a private calendar needs OAuth. The sync reports the real result."""
-    from ..google_cal_sync import sync_google_to_lexflow
+    """Superadmin-only: trigger a Google Calendar <-> LexFlow (ws7) sync.
+    Body {direction: 'pull'|'push'|'both'} (default 'pull'). Events are scoped
+    ONLY to the 'lexflow' workspace — never any client workspace.
+    NOTE: with only an API key, Google exposes only calendars the owner made
+    public; a private calendar needs OAuth. Push REQUIRES OAuth (API key cannot
+    write). The sync reports the real result either way."""
+    from ..google_cal_sync import sync_google_to_lexflow, push_lexflow_to_google
     if not _is_superadmin():
         return jsonify({'error': 'Superadmin only'}), 403
-    result = sync_google_to_lexflow()
-    status = 200 if result.get('ok') else 502
-    return jsonify(result), status
+    direction = (request.get_json(silent=True) or {}).get('direction', 'pull')
+    results = {}
+    status = 200
+    if direction in ('pull', 'both'):
+        results['pull'] = sync_google_to_lexflow()
+        if not results['pull'].get('ok'):
+            status = 502
+    if direction in ('push', 'both'):
+        results['push'] = push_lexflow_to_google()
+        if not results['push'].get('ok'):
+            status = 502 if direction != 'both' else max(status, 200)
+    return jsonify(results), status
 
 
 # ── Error handlers ─────────────────────────────────────────────────
