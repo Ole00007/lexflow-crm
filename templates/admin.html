@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin – LexFlow{% endblock %}
+{% block title %}Matters – LexFlow{% endblock %}
 
 {% block content %}
 <section class="card stack" aria-labelledby="page-title">
@@ -11,7 +11,7 @@
             Review new requests, open matter details, update statuses, and prepare demo screenshots.
         </p>
         <div class="actions">
-            <a class="button" href="{{ url_for('views.index') }}">New intake</a>
+            <a class="button" href="{{ url_for('views.intake') }}">New intake</a>
         </div>
     </div>
 
@@ -39,29 +39,53 @@
                     <th>Action</th>
                 </tr>
             </thead>
-            <tbody>
-                {% if matters %}
-                    {% for matter in matters %}
-                        <tr>
-                            <td>{{ matter["id"] }}</td>
-                            <td>{{ matter["title"] }}</td>
-                            <td>{{ matter["contactid"] }}</td>
-                            <td>{{ matter["casetype"] }}</td>
-                            <td><span class="badge">{{ matter["status"] }}</span></td>
-                            <td>{{ matter["priority"] }}</td>
-                            <td>{{ matter["createdat"] }}</td>
-                            <td>
-                                <a href="{{ url_for('views.admin_matter', matter_id=matter['id']) }}">Open →</a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="8">No matters yet. Use New intake to start.</td>
-                    </tr>
-                {% endif %}
+            <tbody id="mattersBody">
+                <tr><td colspan="8" style="color:var(--text-muted)">Loading…</td></tr>
             </tbody>
         </table>
     </div>
 </section>
+<script>
+/* Matters are scoped to the logged-in user's workspace(s). The JWT lives in
+   localStorage (not the request header on page navigation), so the server
+   cannot render the list here — we fetch it client-side with the stored token.
+   Anonymous users see a login prompt instead of any data. */
+(function () {
+  function token() { return localStorage.getItem('jwt') || ''; }
+  function esc(s) { var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+  function fmtDate(iso) { if (!iso) return ''; try { return iso.slice(0, 10); } catch (e) { return ''; } }
+
+  var t = token();
+  var body = document.getElementById('mattersBody');
+  if (!t) {
+    body.innerHTML = '<tr><td colspan="8"><p style="color:var(--text-muted)">Please <a href="/login">log in</a> to view your matters.</p></td></tr>';
+    return;
+  }
+  fetch('/api/cases', { headers: { 'Authorization': 'Bearer ' + t } })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+    .then(function (res) {
+      if (!res.ok) throw new Error('failed');
+      var cases = res.data || [];
+      if (!cases.length) {
+        body.innerHTML = '<tr><td colspan="8">No matters yet. Use New intake to start.</td></tr>';
+        return;
+      }
+      body.innerHTML = cases.map(function (c) {
+        return '<tr>'
+          + '<td>' + esc(c.display_id || c.case_no || c.id) + '</td>'
+          + '<td>' + esc(c.title || '') + '</td>'
+          + '<td>' + esc(c.contactid == null ? '' : c.contactid) + '</td>'
+          + '<td>' + esc(c.casetype || '') + '</td>'
+          + '<td><span class="badge">' + esc(c.status || '') + '</span></td>'
+          + '<td>' + esc(c.priority || '') + '</td>'
+          + '<td>' + esc(fmtDate(c.createdat)) + '</td>'
+          + '<td><a href="/admin/matter/' + esc(c.id) + '">Open →</a></td>'
+          + '</tr>';
+      }).join('');
+    })
+    .catch(function () {
+      body.innerHTML = '<tr><td colspan="8" style="color:var(--danger)">Could not load matters. Please log in again.</td></tr>';
+    });
+})();
+</script>
 {% endblock %}

@@ -68,6 +68,7 @@ def workspace_filter(query, model):
         logger.warning(f"workspace_filter error: {e}")
 
     ids = get_visible_workspace_ids()
-    if ids:
+    if ids is not None:
+        # superadmin → None (see all); normal user → [own, subs]; anonymous/unknown → [] (see NOTHING)
         return query.filter(model.workspace_id.in_(ids))
     return query

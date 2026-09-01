@@ -1,15 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Matter #{{ matter["id"] }} – LexFlow{% endblock %}
+{% block title %}Matter #{{ matter_id }} – LexFlow{% endblock %}
 
 {% block content %}
 <section class="card stack" aria-labelledby="page-title">
     <div class="section">
         <p class="eyebrow">Staff matter detail</p>
-        <h1 id="page-title">Case #{{ matter["id"] }}</h1>
-        <p class="intro">
-            Review case details, update status, and manage notes.
-        </p>
+        <h1 id="page-title">Case #{{ matter_id }}</h1>
+        <p class="intro" id="pageSub">Loading…</p>
         <div class="actions">
             <a class="button button-secondary" href="{{ url_for('views.admin_list') }}">Back to list</a>
         </div>
@@ -17,29 +15,22 @@
 
     <section class="section" aria-labelledby="matter-info">
         <h2 id="matter-info">Case info</h2>
-        <div class="meta-list">
-            <p><strong>ID:</strong> {{ matter["id"] }}</p>
-            <p><strong>Status:</strong> <span class="badge">{{ matter["status"] }}</span></p>
-            <p><strong>Title:</strong> {{ matter["title"] }}</p>
-            <p><strong>Contact ID:</strong> {{ matter["contactid"] }}</p>
-            <p><strong>Case type:</strong> {{ matter["casetype"] or "—" }}</p>
-            <p><strong>Priority:</strong> {{ matter["priority"] }}</p>
-            <p><strong>Created:</strong> {{ matter["createdat"] }}</p>
-            <p><strong>Updated:</strong> {{ matter["updatedat"] }}</p>
-        </div>
+        <div class="meta-list" id="matterInfo"><p style="color:var(--text-muted)">Loading…</p></div>
     </section>
 
     <section class="section" aria-labelledby="matter-update">
         <h2 id="matter-update">Update case</h2>
-        <form action="{{ url_for('views.admin_matter', matter_id=matter['id']) }}" method="post">
+        <form id="statusForm">
             <p>
                 <label for="status">Status</label>
-                <select id="status" name="status">
-                    {% for status in statuses %}
-                        <option value="{{ status }}" {% if status == matter["status"] %}selected{% endif %}>
-                            {{ status }}
-                        </option>
-                    {% endfor %}
+                <select id="status">
+                    <option>New intake</option>
+                    <option>Conflict check</option>
+                    <option>Lawyer review</option>
+                    <option>Waiting client docs</option>
+                    <option>Quoted</option>
+                    <option>Engaged</option>
+                    <option>Closed</option>
                 </select>
             </p>
             <div class="actions">
@@ -48,32 +39,107 @@
         </form>
     </section>
 
-    {% if activities %}
     <section class="section" aria-labelledby="matter-events">
         <h2 id="matter-events">Activity log</h2>
-        <ul class="timeline">
-            {% for a in activities %}
-                <li>
-                    <p>{{ a["summary"] }}</p>
-                    <p style="margin-bottom:0;color:var(--text-muted)">{{ a["created_at"] }}</p>
-                </li>
-            {% endfor %}
-        </ul>
+        <ul class="timeline" id="activityList"><li style="color:var(--text-muted)">Loading…</li></ul>
     </section>
-    {% endif %}
 
-    {% if notes %}
     <section class="section" aria-labelledby="matter-notes">
         <h2 id="matter-notes">Notes</h2>
-        <ul>
-            {% for note in notes %}
-                <li>
-                    <p>{{ note["content"] }}</p>
-                    <p style="margin-bottom:0;color:var(--text-muted)">{{ note["created_at"] }}</p>
-                </li>
-            {% endfor %}
-        </ul>
+        <ul id="notesList"><li style="color:var(--text-muted)">Loading…</li></ul>
     </section>
-    {% endif %}
 </section>
+<script>
+/* Matter detail is scoped to the logged-in user's workspace(s). The JWT lives
+   in localStorage (not the request header on navigation), so we fetch the case,
+   notes and activity client-side with the stored token. A foreign/unauthorized
+   case returns 404 from the API; anonymous users see a login prompt. */
+(function () {
+  var CASE_ID = {{ matter_id }};
+  function token() { return localStorage.getItem('jwt') || ''; }
+  function esc(s) { var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+  function fmtDate(iso) { if (!iso) return ''; try { return iso.replace('T', ' ').slice(0, 16); } catch (e) { return ''; } }
+  function headers() { return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
+
+  var t = token();
+  if (!t) {
+    document.getElementById('pageSub').innerHTML = 'Please <a href="/login">log in</a> to view this matter.';
+    document.getElementById('matterInfo').innerHTML = '';
+    document.getElementById('activityList').innerHTML = '';
+    document.getElementById('notesList').innerHTML = '';
+    return;
+  }
+
+  function renderCase(c) {
+    document.getElementById('pageSub').textContent = c.title || '';
+    document.getElementById('matterInfo').innerHTML =
+      '<p><strong>ID:</strong> ' + esc(c.display_id || c.case_no || c.id) + '</p>' +
+      '<p><strong>Status:</strong> <span class="badge">' + esc(c.status || '') + '</span></p>' +
+      '<p><strong>Title:</strong> ' + esc(c.title || '') + '</p>' +
+      '<p><strong>Contact ID:</strong> ' + esc(c.contactid == null ? '' : c.contactid) + '</p>' +
+      '<p><strong>Case type:</strong> ' + esc(c.casetype || '—') + '</p>' +
+      '<p><strong>Priority:</strong> ' + esc(c.priority || '') + '</p>' +
+      '<p><strong>Created:</strong> ' + esc(fmtDate(c.createdat)) + '</p>' +
+      '<p><strong>Updated:</strong> ' + esc(fmtDate(c.updatedat)) + '</p>';
+    var sel = document.getElementById('status');
+    if (c.status) sel.value = c.status;
+  }
+
+  // Case detail (scoped)
+  fetch('/api/cases/' + CASE_ID, { headers: headers() })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        document.getElementById('pageSub').innerHTML = '<span style="color:var(--danger)">Case not found or not accessible.</span>';
+        document.getElementById('matterInfo').innerHTML = '';
+        return;
+      }
+      renderCase(res.data);
+    })
+    .catch(function () {
+      document.getElementById('pageSub').innerHTML = '<span style="color:var(--danger)">Could not load case.</span>';
+    });
+
+  // Activity log (scoped)
+  fetch('/api/activity?target_type=case&target_id=' + CASE_ID, { headers: headers() })
+    .then(function (r) { return r.json(); })
+    .then(function (acts) {
+      var el = document.getElementById('activityList');
+      if (!acts || !acts.length) { el.innerHTML = '<li style="color:var(--text-muted)">No activity yet.</li>'; return; }
+      el.innerHTML = acts.map(function (a) {
+        return '<li><p>' + esc(a.summary || '') + '</p><p style="margin-bottom:0;color:var(--text-muted)">' + esc(fmtDate(a.created_at)) + '</p></li>';
+      }).join('');
+    })
+    .catch(function () { document.getElementById('activityList').innerHTML = '<li style="color:var(--text-muted)">Could not load activity.</li>'; });
+
+  // Notes (scoped)
+  fetch('/api/notes?target_type=case&target_id=' + CASE_ID, { headers: headers() })
+    .then(function (r) { return r.json(); })
+    .then(function (notes) {
+      var el = document.getElementById('notesList');
+      if (!notes || !notes.length) { el.innerHTML = '<li style="color:var(--text-muted)">No notes yet.</li>'; return; }
+      el.innerHTML = notes.map(function (n) {
+        return '<li><p>' + esc(n.content || '') + '</p><p style="margin-bottom:0;color:var(--text-muted)">' + esc(fmtDate(n.created_at)) + '</p></li>';
+      }).join('');
+    })
+    .catch(function () { document.getElementById('notesList').innerHTML = '<li style="color:var(--text-muted)">Could not load notes.</li>'; });
+
+  // Status update via PUT /api/cases/<id>
+  document.getElementById('statusForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var sel = document.getElementById('status');
+    fetch('/api/cases/' + CASE_ID, {
+      method: 'PUT',
+      headers: headers(),
+      body: JSON.stringify({ status: sel.value })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.status) { renderCase(d); }
+        else if (d && d.error) { alert(d.error); }
+      })
+      .catch(function () { alert('Could not update status'); });
+  });
+})();
+</script>
 {% endblock %}

@@ -393,38 +393,21 @@ def case_status(token):
 @views_bp.route('/admin')
 @jwt_required(optional=True)
 def admin_list():
-    # Only authenticated users may list matters; anonymous → login page.
-    uid = get_jwt_identity()
-    if not uid:
-        return redirect(url_for('views.login'))
-    vis = get_visible_workspace_ids()  # None=superadmin(all), list=scoped, [] = nothing
-    query = Case.query.filter_by(is_deleted=False)
-    if vis is not None:
-        query = query.filter(Case.workspace_id.in_(vis))
-    cases = query.order_by(Case.id.desc()).all()
-    return render_template('admin.html', matters=cases)
+    # Server-rendered shell only. On normal navigation the JWT lives in
+    # localStorage (not the request header), so the server cannot know the
+    # user here — the page's client-side JS fetches /api/cases with the stored
+    # token and renders the user's OWN matters (anonymous → login prompt).
+    return render_template('admin.html', matters=[])
 
 
 @views_bp.route('/admin/matter/<int:matter_id>', methods=['GET', 'POST'])
 @jwt_required(optional=True)
 def admin_matter(matter_id):
-    # Only authenticated users may view/edit a matter; anonymous → login.
-    uid = get_jwt_identity()
-    if not uid:
-        return redirect(url_for('views.login'))
-    case = Case.query.filter_by(id=matter_id, is_deleted=False).first()
-    if not case:
-        abort(404)
-    # Scope check: a non-superadmin must only see cases in their visible workspaces.
-    vis = get_visible_workspace_ids()
-    if vis is not None and case.workspace_id not in vis:
-        abort(404)
-    if request.method == 'POST':
-        case.status = request.form.get('status', case.status)
-        db.session.commit()
-    notes = Note.query.filter_by(target_type='case', target_id=matter_id).order_by(Note.created_at.desc()).all()
-    activities = ActivityLog.query.filter_by(target_type='case', target_id=matter_id).order_by(ActivityLog.created_at.desc()).all()
-    return render_template('admin_matter.html', matter=case, notes=notes, activities=activities, statuses=STATUSES)
+    # Server-rendered shell only. The JWT is in localStorage (not the request
+    # header on navigation), so the server cannot scope here — the page's
+    # client-side JS fetches /api/cases/<id>, notes and activity with the stored
+    # token (404 for foreign/unauthorized cases; login prompt if anonymous).
+    return render_template('admin_matter.html', matter_id=matter_id)
 
 
 # ── Super-Admin Panel (all workspaces + accounts) ─────────────────
