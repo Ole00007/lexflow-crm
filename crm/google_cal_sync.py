@@ -43,11 +43,16 @@ def _lexflow_workspace():
 
 
 def _fetch_google_events(api_key, calendar_id, max_results):
-    """Call the Calendar API v3 list endpoint. Returns (events, error)."""
-    url = (f"{API_BASE}/{urllib.request.quote(calendar_id, safe='')}/events"
+    """Call the Calendar API v3 list endpoint. Returns (events, error).
+
+    calendar_id is an email-like id (e.g. user@gmail.com). Google expects the
+    raw '@' in the path segment — URL-encoding it to %40 can yield a 404, so we
+    deliberately do NOT quote the calendar_id here."""
+    time_min = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    url = (f"{API_BASE}/{calendar_id}/events"
            f"?key={api_key}&maxResults={max_results}"
            f"&orderBy=startTime&singleEvents=true"
-           f"&timeMin={urllib.request.quote(datetime.now(timezone.utc).isoformat())}")
+           f"&timeMin={time_min}")
     req = urllib.request.Request(url)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
