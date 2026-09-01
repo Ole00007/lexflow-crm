@@ -79,6 +79,22 @@
     .cal-ev-time{display:none}
     .cal-hour{display:none}
   }
+  /* ── Modal (New Event) — local styles, base.html has none ── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:480px;box-shadow:var(--shadow-md);animation:modalIn .2s ease}
+  @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .modal-header h2{font-size:1.05rem;font-weight:700;color:var(--text);margin:0}
+  .modal-close{background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;line-height:1;padding:4px}
+  .modal-close:hover{color:var(--text)}
+  .modal-body{padding:20px}
+  .form-group{margin-bottom:14px}
+  .form-group label{display:block;font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);color:var(--text);font-size:.9rem;font-family:inherit;outline:none}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:.72rem;color:var(--text-faint);margin-top:4px}
 </style>
 
 <section class="card stack" aria-labelledby="page-title">

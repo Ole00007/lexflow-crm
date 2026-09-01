@@ -107,17 +107,22 @@
 <script>
 /* If a workspace user is logged in (JWT in localStorage), pin the intake to
    their workspace so /submit routes the new contact+case there (Romanelli →
-   romanelli-studio, not the LexFlow default). Anonymous stays as-is. */
+   romanelli-studio, not the LexFlow default). We resolve the workspace from
+   the JWT via /api/workspace (the login stores only 'jwt', not 'lexflow-user').
+   Anonymous stays as-is. */
 (function () {
-  try {
-    var raw = localStorage.getItem('lexflow-user');
-    if (raw) {
-      var u = JSON.parse(raw);
-      var slug = (u && u.workspace && u.workspace.slug) || '';
+  var jwt = null;
+  try { jwt = localStorage.getItem('jwt') || ''; } catch (e) {}
+  if (!jwt) return;
+  fetch('/api/workspace', { headers: { 'Authorization': 'Bearer ' + jwt } })
+    .then(function (r) { return r.json(); })
+    .then(function (list) {
       var el = document.getElementById('ws_slug');
-      if (el && slug) el.value = slug;
-    }
-  } catch (e) { /* non-fatal */ }
+      if (!el) return;
+      var ws = (list && list.length && list[0].workspace) || null;
+      if (ws && ws.slug) el.value = ws.slug;
+    })
+    .catch(function () { /* non-fatal */ });
 })();
 </script>
 {% endblock %}
