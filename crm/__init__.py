@@ -251,6 +251,10 @@ def create_app():
     app.register_blueprint(saved_views_bp)
     app.register_blueprint(attachments_bp)
 
+    # Google Calendar OAuth
+    from .routes.google_oauth_routes import google_oauth_bp
+    app.register_blueprint(google_oauth_bp)
+
     # View Blueprint
     from .routes.views import views_bp
     app.register_blueprint(views_bp)

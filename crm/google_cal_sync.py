@@ -96,24 +96,41 @@ def _event_type_mapping(summary):
 
 
 def sync_google_to_lexflow():
-    """Run one sync pass. Returns a dict summary for the caller/logs."""
+    """Run one sync pass. Returns a dict summary for the caller/logs.
+
+    Prefers OAuth (private calendar support); falls back to the API key only
+    when no OAuth refresh token is stored."""
     lex = _lexflow_workspace()
     if not lex:
         log.warning("google-cal-sync: no 'lexflow' workspace — skipping")
         return {"ok": False, "error": "no lexflow workspace"}
 
-    api_key = os.environ.get("GOOGLE_CALENDAR_API_KEY", "").strip()
     calendar_id = os.environ.get("GOOGLE_CALENDAR_ID", "").strip()
-    if not api_key:
-        return {"ok": False, "error": "GOOGLE_CALENDAR_API_KEY not set"}
     if not calendar_id:
         return {"ok": False, "error": "GOOGLE_CALENDAR_ID not set — calendar skipped"}
 
     max_results = int(os.environ.get("GOOGLE_CALENDAR_MAX", "200"))
-    items, err = _fetch_google_events(api_key, calendar_id, max_results)
-    if err:
-        log.warning("google-cal-sync: %s", err)
-        return {"ok": False, "error": err}
+
+    # Prefer OAuth when we have a stored refresh token (private calendars).
+    from .google_oauth import get_refresh_token, oauth_calendar_request
+    if get_refresh_token():
+        qs = (f"?maxResults={max_results}&orderBy=startTime&singleEvents=true"
+              f"&timeMin={datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
+        items, err = oauth_calendar_request("GET", calendar_id, qs)
+        if err:
+            log.warning("google-cal-sync (oauth): %s", err)
+            return {"ok": False, "error": err}
+        items = items.get("items", []) if items else []
+        log.info("google-cal-sync: used OAuth (private calendar ok)")
+    else:
+        api_key = os.environ.get("GOOGLE_CALENDAR_API_KEY", "").strip()
+        if not api_key:
+            return {"ok": False, "error": ("no OAuth refresh token and "
+                                           "GOOGLE_CALENDAR_API_KEY not set")}
+        items, err = _fetch_google_events(api_key, calendar_id, max_results)
+        if err:
+            log.warning("google-cal-sync (apikey): %s", err)
+            return {"ok": False, "error": err}
 
     created = skipped = existing = 0
     for ev in items:
