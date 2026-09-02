@@ -10,6 +10,11 @@ def is_admin(user_id):
     user = User.query.filter_by(id=user_id, is_deleted=False).first()
     return user and user.role == 'admin'
 
+def is_superadmin(user_id):
+    """Check if user has superadmin role (cross-tenant admin endpoints require this)."""
+    user = User.query.filter_by(id=user_id, is_deleted=False).first()
+    return user and user.role == 'superadmin'
+
 @admin_bp.get('/health')
 @limiter.limit("100 per hour")
 def admin_health():
@@ -20,11 +25,16 @@ def admin_health():
 @jwt_required()
 @limiter.limit("50 per hour")
 def list_all_users():
-    """List all users - admin only"""
+    """List all users - SUPERADMIN only (cross-tenant enumeration guard).
+
+    A per-workspace admin must NOT see users of other tenants. The current
+    UI never calls this endpoint (the panel uses /api/admin/workspaces),
+    so restricting it to superadmin is safe and closes the leak where any
+    tenant admin could enumerate every user (email/role/created_at)."""
     user_id = int(get_jwt_identity())
 
-    if not is_admin(user_id):
-        return jsonify({'error': 'Unauthorized - admin access required'}), 403
+    if not is_superadmin(user_id):
+        return jsonify({'error': 'Unauthorized - superadmin access required'}), 403
 
     users = User.query.filter_by(is_deleted=False).all()
     return jsonify([u.to_dict() for u in users]), 200
@@ -33,11 +43,11 @@ def list_all_users():
 @jwt_required()
 @limiter.limit("50 per hour")
 def get_user_details(user_id):
-    """Get specific user details - admin only"""
+    """Get specific user details - SUPERADMIN only (cross-tenant guard)."""
     current_user_id = int(get_jwt_identity())
 
-    if not is_admin(current_user_id):
-        return jsonify({'error': 'Unauthorized - admin access required'}), 403
+    if not is_superadmin(current_user_id):
+        return jsonify({'error': 'Unauthorized - superadmin access required'}), 403
 
     user = User.query.filter_by(id=user_id, is_deleted=False).first()
     if not user:
@@ -49,11 +59,11 @@ def get_user_details(user_id):
 @jwt_required()
 @limiter.limit("20 per hour")
 def update_user_role(user_id):
-    """Update user role - admin only"""
+    """Update user role - SUPERADMIN only (cross-tenant guard)."""
     current_user_id = int(get_jwt_identity())
 
-    if not is_admin(current_user_id):
-        return jsonify({'error': 'Unauthorized - admin access required'}), 403
+    if not is_superadmin(current_user_id):
+        return jsonify({'error': 'Unauthorized - superadmin access required'}), 403
 
     data = request.get_json()
     if not data or 'role' not in data:
@@ -76,11 +86,11 @@ def update_user_role(user_id):
 @jwt_required()
 @limiter.limit("20 per hour")
 def delete_user_admin(user_id):
-    """Soft delete user - admin only"""
+    """Soft delete user - SUPERADMIN only (cross-tenant guard)."""
     current_user_id = int(get_jwt_identity())
 
-    if not is_admin(current_user_id):
-        return jsonify({'error': 'Unauthorized - admin access required'}), 403
+    if not is_superadmin(current_user_id):
+        return jsonify({'error': 'Unauthorized - superadmin access required'}), 403
 
     if user_id == current_user_id:
         return jsonify({'error': 'Cannot delete yourself'}), 400
@@ -100,11 +110,11 @@ def delete_user_admin(user_id):
 @jwt_required()
 @limiter.limit("30 per hour")
 def get_admin_stats():
-    """Get system statistics - admin only"""
+    """Get system statistics - SUPERADMIN only (cross-tenant guard)."""
     current_user_id = int(get_jwt_identity())
 
-    if not is_admin(current_user_id):
-        return jsonify({'error': 'Unauthorized - admin access required'}), 403
+    if not is_superadmin(current_user_id):
+        return jsonify({'error': 'Unauthorized - superadmin access required'}), 403
 
     from ..models.contact import Contact
     from ..models.case import Case

@@ -135,7 +135,7 @@
                 <h3>Trusted Legal Intelligence</h3>
                 <p>Private intake, discreet document receipt, and clear client-facing status updates.</p>
                 {% if current_user and main_site_url and main_site_url != '#' %}
-                <p style="margin-top:var(--space-3)"><a class="button button-secondary" href="{{ main_site_url }}" target="_blank" rel="noopener">← Return to main website</a></p>
+                <p style="margin-top:var(--space-3)"><a class="button button-secondary" id="returnSiteLink" href="{{ main_site_url }}" target="_blank" rel="noopener">← Return to main website</a></p>
                 {% endif %}
             </div>
         </aside>
