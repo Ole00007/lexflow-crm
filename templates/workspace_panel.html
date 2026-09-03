@@ -41,15 +41,20 @@ function initWs() {
     var html = '';
     res.data.forEach(function(item){
       var ws = item.workspace || {};
+      var canRename = ('__canRename' in item) ? item.__canRename : true;
       html += '<div class="card" style="margin-bottom:var(--space-6)">'
         + '<div class="eyebrow">Workspace #' + ws.id + '</div>'
-        + '<h2 style="margin:0 0 var(--space-2)">' + esc(ws.name) + ' <span class="badge">' + esc(ws.slug) + '</span></h2>'
+        + '<h2 style="margin:0 0 var(--space-2)">' + esc(ws.name) + ' <span class="badge">' + esc(ws.slug) + '</span>'
+        + '<button class="btn btn-ghost" style="margin-left:8px;font-size:12px;padding:4px 10px" onclick="renameWs(' + ws.id + ')">✏️ Rename</button>'
+        + '</h2>'
         + (ws.parent_workspace_id ? '<p class="intro">Sub-workspace of #' + ws.parent_workspace_id + '</p>' : '')
         + '<table><thead><tr><th>ID</th><th>Email (login)</th><th>Role</th></tr></thead><tbody>';
       (item.users || []).forEach(function(u){
         html += '<tr><td>' + u.id + '</td><td>' + esc(u.email) + '</td><td><span class="badge">' + esc(u.role) + '</span></td></tr>';
       });
-      html += '</tbody></table></div>';
+      html += '</tbody></table>'
+        + '<button class="btn btn-secondary" style="margin-top:10px;font-size:13px" onclick="addUser(' + ws.id + ')">+ Add login</button>'
+        + '</div>';
     });
     body.innerHTML = html;
     body.style.display = 'block';
@@ -70,6 +75,44 @@ function initWs() {
   })
   .catch(function(e){ document.getElementById('caseList').innerHTML = '<p style="color:var(--text-muted)">Could not load cases.</p>'; });
 }
+function renameWs(id) {
+  var cur = prompt('New workspace name:');
+  if (cur === null || !cur.trim()) return;
+  var t = token();
+  fetch('/api/workspace/' + id, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t},
+    body: JSON.stringify({name: cur.trim()})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+  .then(function(res){
+    if (res.ok) { initWs(); }
+    else { alert(res.d.error || 'Rename failed'); }
+  })
+  .catch(function(){ alert('Rename failed'); });
+}
+
+function addUser(wsId) {
+  var email = prompt('New login email:');
+  if (!email || !email.trim()) return;
+  var pw = prompt('Password (min 6 chars):');
+  if (!pw || pw.length < 6) { alert('Password must be at least 6 chars'); return; }
+  var role = prompt('Role (admin/staff/user):', 'user') || 'user';
+  if (!['admin','staff','user'].includes(role)) { alert('Role must be admin/staff/user'); return; }
+  var t = token();
+  fetch('/api/workspace/' + wsId + '/user', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t},
+    body: JSON.stringify({email: email.trim(), password: pw, role: role})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+  .then(function(res){
+    if (res.ok) { alert('Login created: ' + res.d.user.email); initWs(); }
+    else { alert(res.d.error || 'Add user failed'); }
+  })
+  .catch(function(){ alert('Add user failed'); });
+}
+
 initWs();
 </script>
 {% endblock %}

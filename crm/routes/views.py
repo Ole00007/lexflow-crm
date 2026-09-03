@@ -477,6 +477,81 @@ def superadmin_panel():
     return render_template('admin_panel.html', panel=[])
 
 
+@views_bp.route('/api/workspace/<int:workspace_id>', methods=['PATCH'])
+@jwt_required()
+def api_workspace_rename(workspace_id):
+    """Rename a workspace (or sub-workspace). Superadmin may rename any; a
+    parent-workspace admin may rename their own sub-workspaces. Client
+    sub-tenant admins may rename their OWN workspace (their studio name)."""
+    from ..models.user import User
+    uid = get_jwt_identity()
+    user = User.query.filter_by(id=int(uid), is_deleted=False).first() if uid else None
+    if not user:
+        return jsonify({'error': 'Not found'}), 404
+
+    ws = Workspace.query.filter_by(id=workspace_id, is_active=True).first()
+    if not ws:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    data = request.get_json(silent=True) or {}
+    new_name = (data.get('name') or '').strip()
+    if not new_name or len(new_name) > 255:
+        return jsonify({'error': 'name (1-255 chars) is required'}), 400
+
+    # Permission: superadmin OR owner of this workspace OR parent admin of a sub-workspace
+    is_super = user.role == 'superadmin'
+    is_owner = user.workspace_id == ws.id
+    is_parent_admin = ws.parent_workspace_id and user.workspace_id == ws.parent_workspace_id and user.role == 'admin'
+    if not (is_super or is_owner or is_parent_admin):
+        return jsonify({'error': 'Not allowed to rename this workspace'}), 403
+
+    ws.name = new_name
+    db.session.commit()
+    return jsonify({'success': True, 'workspace': ws.to_dict()}), 200
+
+
+@views_bp.route('/api/workspace/<int:workspace_id>/user', methods=['POST'])
+@jwt_required()
+def api_workspace_add_user(workspace_id):
+    """Add a login (admin/staff/user) to a workspace. Superadmin OR parent
+    admin of the workspace may add users. Returns the created account."""
+    from ..models.user import User
+    uid = get_jwt_identity()
+    user = User.query.filter_by(id=int(uid), is_deleted=False).first() if uid else None
+    if not user:
+        return jsonify({'error': 'Not found'}), 404
+
+    ws = Workspace.query.filter_by(id=workspace_id, is_active=True).first()
+    if not ws:
+        return jsonify({'error': 'Workspace not found'}), 404
+
+    is_super = user.role == 'superadmin'
+    is_owner = user.workspace_id == ws.id and user.role == 'admin'
+    is_parent_admin = ws.parent_workspace_id and user.workspace_id == ws.parent_workspace_id and user.role == 'admin'
+    if not (is_super or is_owner or is_parent_admin):
+        return jsonify({'error': 'Not allowed to add users here'}), 403
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+    role = data.get('role') or 'user'
+    import re
+    if not email or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return jsonify({'error': 'Valid email is required'}), 400
+    if len(password) < 6:
+        return jsonify({'error': 'password (min 6 chars) is required'}), 400
+    if role not in ('admin', 'staff', 'user'):
+        return jsonify({'error': 'role must be admin|staff|user'}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email already in use'}), 409
+
+    new_user = User(email=email, role=role, workspace_id=ws.id)
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'success': True, 'user': {'id': new_user.id, 'email': new_user.email, 'role': new_user.role}}), 201
+
+
 @views_bp.route('/api/admin/workspaces')
 @jwt_required()
 def api_superadmin_workspaces():

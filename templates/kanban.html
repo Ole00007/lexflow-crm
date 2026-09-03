@@ -815,7 +815,13 @@ function onLoginSuccess(data) {
   var siteMap = {
     'lexflow': 'https://poetic-kleicha-28d058.netlify.app',
     'pagliano': 'https://verdant-crumble-021449.netlify.app',
-    'romanelli-studio': 'https://romanelli-studio.olesya00007.workers.dev'
+    'romanelli-studio': 'https://romanelli-studio.olesya00007.workers.dev',
+    'romanelli-audit': 'https://romanelli-studio.olesya00007.workers.dev'
+  };
+  // Client sub-workspaces under a firm map back to the FIRM site.
+  // (romanelli-cl1..clN all belong to Romanelli studio)
+  var firmSiteByPrefix = {
+    'romanelli-cl': 'https://romanelli-studio.olesya00007.workers.dev'
   };
   var faviconMap = {
     'pagliano': '/static/favicons/pagliano.svg',
@@ -826,6 +832,12 @@ function onLoginSuccess(data) {
   var slug = (u.workspace && u.workspace.slug) || '';
   if (rs) {
     var url = siteMap[slug] || '#';
+    if (url === '#' && slug) {
+      // fallback: client sub-workspace → parent firm site
+      for (var prefix in firmSiteByPrefix) {
+        if (slug.indexOf(prefix) === 0) { url = firmSiteByPrefix[prefix]; break; }
+      }
+    }
     if (url !== '#') { rs.href = url; rs.style.display = 'inline-block'; }
     else rs.style.display = 'none';
   }

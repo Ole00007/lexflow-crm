@@ -9,6 +9,8 @@ from werkzeug.utils import secure_filename
 
 from ..extensions import db
 from ..models.attachment import Attachment
+from ..models.workspace import Workspace
+from ..models.user import User
 from ..workspace import get_current_workspace_id, get_visible_workspace_ids, workspace_filter
 
 attachments_bp = Blueprint('attachments', __name__, url_prefix='/api/attachments')
@@ -146,9 +148,35 @@ def download_attachment(attachment_id):
 @attachments_bp.delete('/<int:attachment_id>')
 @jwt_required()
 def delete_attachment(attachment_id):
+    """Delete an attachment.
+
+    RULE (client sub-tenants): a sub-workspace (client) admin can VIEW and
+    UPLOAD documents but must NOT delete existing ones. Delete is allowed for:
+      - superadmin
+      - the workspace OWNER admin (non-sub, e.g. Romanelli studio itself)
+      - the PARENT admin of the attachment's sub-workspace
+    A client (sub-tenant admin) on their own workspace -> 403.
+    """
     attachment = _get_attachment(attachment_id)
     if not attachment:
         return jsonify({"error": "Attachment not found"}), 404
+
+    uid = get_jwt_identity()
+    user = User.query.filter_by(id=int(uid), is_deleted=False).first() if uid else None
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    ws = Workspace.query.get(attachment.workspace_id) if attachment.workspace_id else None
+
+    # Client sub-tenant (has a parent workspace): the client admin can VIEW and
+    # UPLOAD but must NOT delete existing docs. Delete allowed for superadmin
+    # or the PARENT (firm) admin only.
+    if ws and ws.parent_workspace_id:
+        is_super = user.role == 'superadmin'
+        is_parent_admin = user.workspace_id == ws.parent_workspace_id and user.role == 'admin'
+        if not (is_super or is_parent_admin):
+            return jsonify({"error": "Client sub-tenant may not delete documents"}), 403
+
     file_path = UPLOAD_FOLDER / attachment.stored_name
     try:
         if file_path.exists():

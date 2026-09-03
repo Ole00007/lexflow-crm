@@ -205,6 +205,11 @@ def create_app():
         secure_label = None
         if user and user.workspace:
             main_site_url = site_map.get(user.workspace.slug, "#")
+            # Client sub-workspaces under a firm fall back to the FIRM site
+            if main_site_url == "#" and user.workspace.slug and user.workspace.slug.startswith("romanelli-cl"):
+                main_site_url = os.environ.get(
+                    "ROMANELLI_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"
+                )
             favicon_url = favicon_map.get(user.workspace.slug)
             secure_label = secure_label_map.get(
                 user.workspace.slug,

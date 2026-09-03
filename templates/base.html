@@ -195,6 +195,10 @@
         'romanelli-studio': 'https://romanelli-studio.olesya00007.workers.dev',
         'romanelli-audit': 'https://romanelli-studio.olesya00007.workers.dev',
       };
+      // Client sub-workspaces under a firm map back to the FIRM site.
+      var firmSiteByPrefix = {
+        'romanelli-cl': 'https://romanelli-studio.olesya00007.workers.dev',
+      };
       var labelBySlug = function (slug) {
         var m = {
           'lexflow': 'LexFlow Secure Workspace',
@@ -241,10 +245,16 @@
           var wn = badge.querySelector('.ws-name');
           if (wn) wn.textContent = name;
         }
-        // return-to-site link
-        if (siteMap[slug]) {
+        // return-to-site link (client sub-workspaces fall back to the FIRM site)
+        var siteUrl = siteMap[slug];
+        if (!siteUrl && slug) {
+          for (var p in firmSiteByPrefix) {
+            if (slug.indexOf(p) === 0) { siteUrl = firmSiteByPrefix[p]; break; }
+          }
+        }
+        if (siteUrl) {
           var rs = document.getElementById('returnSiteLink');
-          if (rs) { rs.href = siteMap[slug]; rs.style.display = 'inline-block'; }
+          if (rs) { rs.href = siteUrl; rs.style.display = 'inline-block'; }
         }
       }
 
