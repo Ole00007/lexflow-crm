@@ -1,11 +1,12 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..extensions import db
-from ..models.contact import Contact
+from ..models.contact import Contact, VALID_LIFECYCLE_STAGES
 from ..models.user import User
 from ..activity_logger import log_activity
 from ..workspace import get_current_workspace_id, workspace_filter
 from datetime import datetime
+import json
 
 contacts_bp = Blueprint('contacts', __name__, url_prefix='/api/contacts')
 
@@ -81,7 +82,21 @@ def create_contact():
         company=data.get('company'),
         status=data.get('status', 'lead'),
         notes=data.get('notes'),
+        lifecycle_stage=data.get('lifecycle_stage') or 'lead',
     )
+    if contact.lifecycle_stage not in VALID_LIFECYCLE_STAGES:
+        return jsonify({'error': f"lifecycle_stage must be one of: {', '.join(VALID_LIFECYCLE_STAGES)}"}), 400
+    if 'tags' in data and data['tags'] is not None:
+        tags = data['tags']
+        if isinstance(tags, list):
+            contact.tags = json.dumps(tags)
+        elif isinstance(tags, str):
+            contact.tags = tags
+    if 'updated_at' in data and data['updated_at']:
+        try:
+            contact.updated_at = datetime.fromisoformat(str(data['updated_at']).replace('Z', ''))
+        except ValueError:
+            pass
     db.session.add(contact)
     db.session.commit()
 
@@ -108,7 +123,21 @@ def update_contact(contact_id):
             setattr(contact, attr, data[field])
             changes.append(f"{field}")
 
+    if 'lifecycle_stage' in data:
+        ls = (data.get('lifecycle_stage') or 'lead').strip()
+        if ls not in VALID_LIFECYCLE_STAGES:
+            return jsonify({'error': f"lifecycle_stage must be one of: {', '.join(VALID_LIFECYCLE_STAGES)}"}), 400
+        contact.lifecycle_stage = ls
+        changes.append("lifecycle_stage")
+    if 'tags' in data:
+        tags = data['tags']
+        if isinstance(tags, list):
+            contact.tags = json.dumps(tags)
+        elif isinstance(tags, str):
+            contact.tags = tags
+        changes.append("tags")
     if changes:
+        contact.updated_at = datetime.utcnow()
         actor_id = _get_actor_id()
         log_activity(actor_id, "contact", contact.id, "updated", f"Contact '{contact.fullname}' updated: {', '.join(changes)}")
 

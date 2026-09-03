@@ -300,13 +300,13 @@ def create_app():
         if not getattr(app, '_schema_checked', False):
             from sqlalchemy import inspect, text
             from .models.user import User
+            import logging
+            log = logging.getLogger(__name__)
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             if tables:
                 cols = [c['name'] for c in inspector.get_columns('cases')]
                 if 'workspace_id' not in cols:
-                    import logging
-                    log = logging.getLogger(__name__)
                     log.info("Old schema — recreating tables with CASCADE...")
                     with db.engine.connect() as conn:
                         conn.execute(text("DROP SCHEMA public CASCADE"))
@@ -314,11 +314,22 @@ def create_app():
                         conn.commit()
                     db.create_all()
                     log.info("✓ Tables recreated")
+            # Ensure the new contacts.lifecycle_stage, tags, updated_at columns exist
+            try:
+                c_cols = [c['name'] for c in inspector.get_columns('contacts')]
+                if 'lifecycle_stage' not in c_cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE contacts ADD COLUMN lifecycle_stage VARCHAR(20) DEFAULT 'lead'"))
+                        conn.execute(text("ALTER TABLE contacts ADD COLUMN tags TEXT"))
+                        conn.execute(text("ALTER TABLE contacts ADD COLUMN updated_at TIMESTAMP"))
+                        conn.commit()
+                    log.info("✓ Added contacts lifecycle_stage/tags/updated_at")
+            except Exception as e:
+                log.warning(f"ensure contacts fields skipped: {e}")
+
             # Ensure the new workspaces.parent_workspace_id column exists
             # (prod DBs predate this column; db.create_all() only creates missing
             # tables, not columns — so we add it explicitly if missing).
-            import logging
-            log = logging.getLogger(__name__)
             try:
                 ws_cols = [c['name'] for c in inspector.get_columns('workspaces')]
                 if 'parent_workspace_id' not in ws_cols:

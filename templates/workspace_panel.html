@@ -15,6 +15,15 @@
       <p style="color:var(--text-muted)">Loading cases…</p>
     </div>
   </div>
+
+  <div class="card" style="margin-top:var(--space-6)">
+    <h2>Firm Team <span class="badge">Internal directory</span></h2>
+    <p class="intro">Your lawyers, assistants and office contacts — clients of your firm see this team (read-only).</p>
+    <div id="teamList" style="display:grid;gap:6px">
+      <p style="color:var(--text-muted)">Loading team…</p>
+    </div>
+    <button class="btn btn-secondary" id="teamAddBtn" style="margin-top:10px;display:none" onclick="addTeam()">+ Add team member</button>
+  </div>
 </div>
 
 <script>
@@ -113,6 +122,94 @@ function addUser(wsId) {
   .catch(function(){ alert('Add user failed'); });
 }
 
+/* ── Firm Team (internal directory) ───────────────────────────── */
+function loadTeam() {
+  var t = token();
+  fetch('/api/auth/me', {headers: {'Authorization': 'Bearer ' + t}})
+  .then(function(r){ return r.json(); })
+  .then(function(me){
+    var isSubTenant = me && me.workspace && me.workspace.parent_workspace_id;
+    var canManage = me && (me.role === 'superadmin' || (me.role === 'admin' && !isSubTenant));
+    var addBtn = document.getElementById('teamAddBtn');
+    if (addBtn) addBtn.style.display = canManage ? 'inline-block' : 'none';
+    fetch('/api/firm-team', {headers: {'Authorization': 'Bearer ' + t}})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+    .then(function(res){
+      var el = document.getElementById('teamList');
+      if (!el) return;
+      if (!res.ok || !Array.isArray(res.d)) { el.innerHTML = '<p style="color:var(--text-muted)">Could not load team.</p>'; return; }
+      if (!res.d.length) { el.innerHTML = '<p style="color:var(--text-muted)">No team members yet.</p>'; }
+      else {
+        el.innerHTML = res.d.map(function(m){
+          var extra = [m.email, m.phone].filter(Boolean).join(' · ');
+          var active = m.is_active ? '' : ' <span class="badge">inactive</span>';
+          var actions = canManage
+            ? '<button class="btn btn-ghost" style="font-size:12px;padding:3px 9px" onclick="editTeam(' + m.id + ')">✏️</button> '
+              + '<button class="btn btn-ghost" style="font-size:12px;padding:3px 9px;color:#b91c1c" onclick="deleteTeam(' + m.id + ')">🗑</button>'
+            : '';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--surface-2)">'
+            + '<span><strong>' + esc(m.name) + '</strong> <span class="badge">' + esc(m.role) + '</span>' + active
+            + '<br><span style="color:var(--text-muted);font-size:13px">' + esc(extra || '—') + '</span></span>'
+            + (actions ? '<span style="white-space:nowrap">' + actions + '</span>' : '')
+            + '</div>';
+        }).join('');
+      }
+    })
+    .catch(function(){ var el = document.getElementById('teamList'); if (el) el.innerHTML = '<p style="color:var(--text-muted)">Could not load team.</p>'; });
+  })
+  .catch(function(){});
+}
+
+function addTeam() {
+  var name = prompt('Team member name:');
+  if (!name || !name.trim()) return;
+  var role = prompt('Role (avvocato/assistente/office):', 'avvocato') || 'avvocato';
+  if (!['avvocato','assistente','office'].includes(role)) { alert('Role must be avvocato/assistente/office'); return; }
+  var email = prompt('Email (optional):', '') || '';
+  var phone = prompt('Phone (optional):', '') || '';
+  var t = token();
+  fetch('/api/firm-team', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t},
+    body: JSON.stringify({name: name.trim(), role: role, email: email.trim() || null, phone: phone.trim() || null})
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+  .then(function(res){ if (res.ok) { alert('Team member added'); loadTeam(); } else alert(res.d.error || 'Add failed'); })
+  .catch(function(){ alert('Add failed'); });
+}
+
+function editTeam(id) {
+  var t = token();
+  fetch('/api/firm-team/' + id, {headers: {'Authorization': 'Bearer ' + t}})
+  .then(function(r){ return r.json(); })
+  .then(function(m){
+    if (!m || !m.id) { alert('Not found'); return; }
+    var name = prompt('Team member name:', m.name);
+    if (!name || !name.trim()) return;
+    var role = prompt('Role (avvocato/assistente/office):', m.role) || 'avvocato';
+    if (!['avvocato','assistente','office'].includes(role)) { alert('Role must be avvocato/assistente/office'); return; }
+    var email = prompt('Email (optional):', m.email || '') || '';
+    var phone = prompt('Phone (optional):', m.phone || '') || '';
+    return fetch('/api/firm-team/' + id, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t},
+      body: JSON.stringify({name: name.trim(), role: role, email: email.trim() || null, phone: phone.trim() || null})
+    }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); });
+  })
+  .then(function(res){ if (res && res.ok) { alert('Updated'); loadTeam(); } else if (res) alert(res.d && res.d.error || 'Update failed'); })
+  .catch(function(){ alert('Update failed'); });
+}
+
+function deleteTeam(id) {
+  if (!confirm('Delete this team member?')) return;
+  var t = token();
+  fetch('/api/firm-team/' + id, {method: 'DELETE', headers: {'Authorization': 'Bearer ' + t}})
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+  .then(function(res){ if (res.ok) { alert('Deleted'); loadTeam(); } else alert(res.d.error || 'Delete failed'); })
+  .catch(function(){ alert('Delete failed'); });
+}
+
 initWs();
+loadTeam();
 </script>
 {% endblock %}
