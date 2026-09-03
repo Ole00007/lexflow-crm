@@ -123,6 +123,7 @@
                 <li><a class="nav-link{{ ' active' if ep == 'views.calendar' }}" href="{{ url_for('views.calendar') }}">Calendar</a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.tasks' }}" href="{{ url_for('views.tasks') }}">Tasks</a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.admin_list' }}" href="{{ url_for('views.admin_list') }}">Matters</a></li>
+                <li><a class="nav-link{{ ' active' if ep == 'views.workspace_panel' }}" href="{{ url_for('views.workspace_panel') }}">Firm Team</a></li>
                 {% if current_user %}
                 <li><a class="nav-link{{ ' active' if ep == 'views.settings_page' }}" href="{{ url_for('views.settings_page') }}">⚙ Settings</a></li>
                 <li><a class="nav-link" href="#" onclick="doLogout(event)">Logout</a></li>

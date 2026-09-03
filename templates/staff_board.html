@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Board — Secure Workspace</title>
+<link rel="icon" type="image/svg+xml" id="appFavicon" href="/static/favicon.svg">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0E1117; --surface: #161B27; --surface-2: #1E2535; --border: #1E2A3A;
+  --text: #E2E8F0; --text-muted: #94A3B8; --text-faint: #475569;
+  --accent: #3B7DD8; --accent-h: #5A96F0; --accent-glow: rgba(59,125,216,0.2);
+  --teal: #0F9B8E; --success: #10B981; --warning: #F59E0B; --danger: #EF4444;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
+}
+html { font-size: 16px; }
+body {
+  background: radial-gradient(1200px 600px at 20% -10%, var(--accent-glow), transparent 60%), var(--bg);
+  color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+header {
+  display: flex; align-items: center; gap: 14px; padding: 14px 22px;
+  background: rgba(14,17,23,0.8); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40;
+}
+.logo { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+.logo span { color: var(--accent-h); }
+.rm-nav-link {
+  padding: 7px 12px; border-radius: var(--radius-md); color: var(--text-muted);
+  font-size: 13px; font-weight: 500; transition: background .15s, color .15s;
+}
+.rm-nav-link:hover { background: var(--surface-2); color: var(--text); }
+.rm-nav-link.active { background: var(--accent-glow); color: var(--accent-h); }
+.btn { border: none; border-radius: var(--radius-md); padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+
+/* ── Staff board ──────────────────────────────────────────────── */
+.board { display: flex; gap: 14px; padding: 20px 22px; overflow-x: auto; align-items: flex-start; }
+.column { min-width: 250px; max-width: 320px; flex: 0 0 auto; background: rgba(22,27,39,0.7); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px; }
+.col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.col-title { font-size: 13px; font-weight: 700; letter-spacing: 0.03em; }
+.col-sub { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+.col-count { font-size: 11px; font-weight: 700; color: var(--text-faint); background: var(--surface-2); border-radius: 999px; padding: 2px 9px; }
+.cards { display: flex; flex-direction: column; gap: 8px; }
+.card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 11px 13px; transition: transform .1s, border-color .15s; }
+.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card-id { font-size: 11px; font-weight: 700; color: var(--accent-h); letter-spacing: 0.04em; }
+.card-title { font-size: 13px; font-weight: 600; margin: 4px 0 6px; line-height: 1.35; }
+.card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+.pill.priority-High { color: var(--danger); border-color: rgba(239,68,68,.35); }
+.pill.priority-Medium { color: var(--warning); border-color: rgba(245,158,11,.35); }
+.empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: 14px 4px; }
+.board-footer { padding: 0 22px 26px; color: var(--text-faint); font-size: 12px; }
+.board-footer b { color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>a</span>LEXy <span style="font-size:12px;color:var(--text-faint)">Staff Board</span></div>
+  <nav style="display:flex;gap:4px;align-items:center;margin-right:auto;flex-wrap:wrap">
+    <a href="/dashboard" class="rm-nav-link">Dashboard</a>
+    <a href="/contacts" class="rm-nav-link">Contacts</a>
+    <a href="/kanban" class="rm-nav-link">Kanban</a>
+    <a href="/kanban/roadmap" class="rm-nav-link active">Staff Board</a>
+    <a href="/calendar" class="rm-nav-link">Calendar</a>
+    <a href="/tasks" class="rm-nav-link">Tasks</a>
+  </nav>
+  <div id="userBadge" style="color:var(--text-muted);font-size:13px"></div>
+  <button class="btn btn-logout" id="logoutBtn" style="display:none" onclick="handleLogout()">Logout</button>
+</header>
+
+<div class="board">
+  {% for m in members %}
+  {% set mcases = cases | selectattr('ownerid', 'equalto', m.id) | list %}
+  <div class="column">
+    <div class="col-head">
+      <span>
+        <div class="col-title">{{ m.name }}</div>
+        <div class="col-sub">{{ m.role }} · {{ m.email or m.phone or '—' }}</div>
+      </span>
+      <span class="col-count">{{ mcases | length }}</span>
+    </div>
+    <div class="cards">
+      {% for c in mcases %}
+      <div class="card">
+        <div class="card-id">{{ c.case_no or ('#' ~ c.id) }}</div>
+        <div class="card-title">{{ c.title }}</div>
+        <div class="card-meta">
+          <span class="pill">{{ c.status }}</span>
+          {% if c.priority %}<span class="pill priority-{{ c.priority }}">{{ c.priority }}</span>{% endif %}
+          {% if c.duedate %}<span class="pill">due {{ c.duedate }}</span>{% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="empty">—</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="column" style="min-width:300px">
+    <div class="col-head"><span class="col-title">Firm team</span></div>
+    <div class="empty">No active staff members yet. Add them in the Firm Team section of your workspace.</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="board-footer">
+  <b>Per-person workload</b> · each column = one staff member, cards = their matters.
+</div>
+
+<script>
+(function(){
+  var t = localStorage.getItem('jwt');
+  if (t) {
+    var b = document.getElementById('userBadge');
+    var lo = document.getElementById('logoutBtn');
+    if (lo) lo.style.display = 'inline-block';
+    fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + t } })
+      .then(function(r){ return r.json(); })
+      .then(function(me){ if (me && me.email) b.textContent = (me.workspace && me.workspace.name ? me.workspace.name + ' · ' : '') + me.email; })
+      .catch(function(){});
+  }
+})();
+function handleLogout(){ localStorage.removeItem('jwt'); window.location.href = '/kanban'; }
+</script>
+</body>
+</html>

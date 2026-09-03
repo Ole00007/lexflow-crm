@@ -585,6 +585,8 @@ header {
       <a href="/dashboard" class="kn-nav-link">Dashboard</a>
       <a href="/contacts" class="kn-nav-link">Contacts</a>
       <a href="/kanban" class="kn-nav-link active">Kanban</a>
+      <a href="/kanban/roadmap" class="kn-nav-link" id="roadmapLink">Roadmap</a>
+      <a href="/workspace" class="kn-nav-link" id="firmTeamLink" style="display:none">Firm Team</a>
       <a href="/calendar" class="kn-nav-link">Calendar</a>
       <a href="/tasks" class="kn-nav-link">Tasks</a>
       <a href="/settings" class="kn-nav-link">⚙</a>
@@ -810,6 +812,17 @@ function onLoginSuccess(data) {
   }
   var sa = document.getElementById('superAdminLink');
   if (sa) sa.style.display = (u.role === 'superadmin') ? 'inline-block' : 'none';
+
+  // Roadmap: internal (lexflow/superadmin) -> agentic roadmap; other tenants -> Staff Board
+  var rmLink = document.getElementById('roadmapLink');
+  var ftLink = document.getElementById('firmTeamLink');
+  var rmSlug = (u.workspace && u.workspace.slug) || '';
+  if (rmLink) {
+    var isInternal = (u.role === 'superadmin') || (rmSlug === 'lexflow');
+    rmLink.textContent = isInternal ? 'Roadmap' : 'Staff Board';
+    rmLink.href = '/kanban/roadmap';
+  }
+  if (ftLink) ftLink.style.display = 'inline-block';
 
   // Return-to-site: map workspace slug → public site
   var siteMap = {

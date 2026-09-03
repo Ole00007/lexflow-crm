@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap — Secure Workspace</title>
+<link rel="icon" type="image/svg+xml" id="appFavicon" href="/static/favicon.svg">
+<style>
+/* ── Reset & Base (matches kanban.html) ───────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0E1117;
+  --surface: #161B27;
+  --surface-2: #1E2535;
+  --border: #1E2A3A;
+  --text: #E2E8F0;
+  --text-muted: #94A3B8;
+  --text-faint: #475569;
+  --accent: #3B7DD8;
+  --accent-h: #5A96F0;
+  --accent-glow: rgba(59,125,216,0.2);
+  --teal: #0F9B8E;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+html { font-size: 16px; }
+body {
+  background: radial-gradient(1200px 600px at 20% -10%, var(--accent-glow), transparent 60%), var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ── Header ───────────────────────────────────────────────────── */
+header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px;
+  background: rgba(14,17,23,0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 40;
+}
+.logo { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+.logo span { color: var(--accent-h); }
+.roadmap-nav { display: flex; gap: 4px; align-items: center; margin-right: auto; flex-wrap: wrap; }
+.rm-nav-link {
+  padding: 7px 12px; border-radius: var(--radius-md);
+  color: var(--text-muted); font-size: 13px; font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.rm-nav-link:hover { background: var(--surface-2); color: var(--text); }
+.rm-nav-link.active { background: var(--accent-glow); color: var(--accent-h); }
+.btn { border: none; border-radius: var(--radius-md); padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-h); }
+.btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── Board ────────────────────────────────────────────────────── */
+.board { display: flex; gap: 14px; padding: 20px 22px; overflow-x: auto; align-items: flex-start; }
+.column {
+  min-width: 240px; max-width: 300px; flex: 0 0 auto;
+  background: rgba(22,27,39,0.7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+}
+.col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.col-title { font-size: 13px; font-weight: 700; text-transform: capitalize; letter-spacing: 0.03em; color: var(--text); }
+.col-count {
+  font-size: 11px; font-weight: 700; color: var(--text-faint);
+  background: var(--surface-2); border-radius: 999px; padding: 2px 9px;
+}
+.cards { display: flex; flex-direction: column; gap: 8px; }
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 13px;
+  cursor: default;
+  transition: transform .1s, border-color .15s;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card-id { font-size: 11px; font-weight: 700; color: var(--accent-h); letter-spacing: 0.04em; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--text); margin: 4px 0 6px; line-height: 1.35; }
+.card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--surface); color: var(--text-muted); border: 1px solid var(--border);
+}
+.pill.priority-P1 { color: var(--danger); border-color: rgba(239,68,68,.35); }
+.pill.priority-P2 { color: var(--warning); border-color: rgba(245,158,11,.35); }
+.pill.priority-P3, .pill.priority-P4 { color: var(--text-muted); }
+.pill.deployed { color: var(--success); border-color: rgba(16,185,129,.35); }
+.pill.blocked { color: var(--danger); border-color: rgba(239,68,68,.35); }
+.pill.local { color: var(--accent-h); border-color: rgba(90,150,240,.35); }
+.card-notes { font-size: 11px; color: var(--text-faint); margin-top: 7px; line-height: 1.45; }
+.empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: 14px 4px; }
+
+/* ── Legend / footer ──────────────────────────────────────────── */
+.board-footer { padding: 0 22px 26px; color: var(--text-faint); font-size: 12px; }
+.board-footer b { color: var(--text-muted); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+
+@media (max-width: 640px) {
+  .board { padding: 14px; }
+  .column { min-width: 220px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>a</span>LEXy <span style="font-size:12px;color:var(--text-faint)">Roadmap</span></div>
+  <nav class="roadmap-nav" aria-label="CRM sections">
+    <a href="/dashboard" class="rm-nav-link">Dashboard</a>
+    <a href="/contacts" class="rm-nav-link">Contacts</a>
+    <a href="/kanban" class="rm-nav-link">Kanban</a>
+    <a href="/kanban/roadmap" class="rm-nav-link active">Roadmap</a>
+    <a href="/calendar" class="rm-nav-link">Calendar</a>
+    <a href="/tasks" class="rm-nav-link">Tasks</a>
+  </nav>
+  <div class="user-badge" id="userBadge" style="color:var(--text-muted);font-size:13px"></div>
+  <button class="btn btn-logout" id="logoutBtn" style="display:none" onclick="handleLogout()">Logout</button>
+</header>
+
+<div class="board">
+  {% for col in columns %}
+  <div class="column">
+    <div class="col-head">
+      <span class="col-title">{{ col.replace('_', ' ') }}</span>
+      <span class="col-count">{{ by_column[col] | length }}</span>
+    </div>
+    <div class="cards">
+      {% for t in by_column[col] %}
+      <div class="card" title="{{ t.get('notes', '') }}">
+        <div class="card-id">{{ t.get('id', '') }}</div>
+        <div class="card-title">{{ t.get('title', '') }}</div>
+        <div class="card-meta">
+          {% if t.get('priority') %}<span class="pill priority-{{ t.get('priority') }}">{{ t.get('priority') }}</span>{% endif %}
+          {% if t.get('deploy_status') %}<span class="pill {{ t.get('deploy_status') }}">{{ t.get('deploy_status') }}</span>{% endif %}
+          {% if t.get('assigned_agent') %}<span class="pill">{{ t.get('assigned_agent') }}</span>{% endif %}
+        </div>
+        {% if t.get('notes') %}<div class="card-notes">{{ t.get('notes') }}</div>{% endif %}
+      </div>
+      {% else %}
+      <div class="empty">—</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="board-footer">
+  <b>{{ roadmap.get('project', '') }}</b> · {{ roadmap.get('file_purpose', '') }} · updated {{ roadmap.get('last_updated', '') }}
+  <div class="legend">
+    <span class="pill">P1-P4 = priority</span>
+    <span class="pill deployed">deployed</span>
+    <span class="pill local">local</span>
+    <span class="pill blocked">blocked</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var t = localStorage.getItem('jwt');
+  if (t) {
+    var badge = document.getElementById('userBadge');
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.style.display = 'inline-block';
+    fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + t } })
+      .then(function(r){ return r.json(); })
+      .then(function(me){
+        if (me && me.email) {
+          badge.textContent = (me.workspace && me.workspace.name ? me.workspace.name + ' · ' : '') + me.email;
+        }
+      })
+      .catch(function(){});
+  }
+})();
+function handleLogout() {
+  localStorage.removeItem('jwt');
+  window.location.href = '/kanban';
+}
+</script>
+</body>
+</html>

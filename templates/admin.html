@@ -11,8 +11,10 @@
             Review new requests, open matter details, update statuses, and prepare demo screenshots.
         </p>
         <div class="actions">
-            <a class="button" href="{{ url_for('views.intake') }}">New intake</a>
-        </div>
+                <a class="button" href="{{ url_for('views.intake') }}">New intake</a>
+                <a class="button" href="{{ url_for('views.workspace_panel') }}" style="margin-left:8px">+ Add staff member</a>
+                <a class="button" href="/kanban/roadmap" style="margin-left:8px">Staff Board</a>
+            </div>
     </div>
 
     {% with messages = get_flashed_messages() %}

@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, jsonify, request, abort, redirect,
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from pathlib import Path
 import os
+import logging
 import secrets
 from datetime import datetime, date
 from uuid import uuid4
@@ -31,6 +32,7 @@ STATUSES = ["New intake", "Conflict check", "Lawyer review",
             "Waiting client docs", "Quoted", "Engaged", "Closed"]
 
 views_bp = Blueprint('views', __name__)
+logger = logging.getLogger(__name__)
 
 
 # ── Dashboard ──────────────────────────────────────────────────────
@@ -138,6 +140,76 @@ def kanban():
     else:
         cases_by_status = {s: Case.query.filter_by(is_deleted=False, status=s).all() for s in statuses}
     return render_template('kanban.html', statuses=statuses, cases_by_status=cases_by_status)
+
+
+@views_bp.route('/kanban/roadmap')
+@jwt_required(optional=True)
+def roadmap():
+    """Workspace-aware board for '/kanban/roadmap'.
+
+    - superadmin or 'lexflow' (ws7) user  -> agentic roadmap (docs JSON)
+    - other workspace users (e.g. Romanelli Studio) -> per-person-per-staff
+      board: each staff member (FirmTeamMember) + their cases/projects.
+    - anonymous -> redirect to /kanban (no leak).
+    """
+    import json as _json
+    import os as _os
+    from ..models.user import User as _User
+    from ..models.firm_team import FirmTeamMember
+
+    uid = None
+    try:
+        uid = int(get_jwt_identity()) if get_jwt_identity() else None
+    except Exception:
+        uid = None
+    user = None
+    if uid:
+        user = _User.query.filter_by(id=uid, is_deleted=False).first()
+
+    # ── Access gate: no leak to non-lexflow tenants ─────────────────
+    if not user:
+        return redirect(url_for('views.kanban'))
+    is_internal = user.role == 'superadmin' or (user.workspace and user.workspace.slug == 'lexflow')
+
+    # ── Staff board for firm workspaces (per-person-per-staff) ──────
+    if not is_internal:
+        ws = user.workspace
+        team_ws_id = ws.parent_workspace_id if ws and ws.parent_workspace_id else (ws.id if ws else None)
+        members = FirmTeamMember.query.filter_by(workspace_id=team_ws_id, is_active=True).all() if team_ws_id else []
+        from ..models.case import Case
+        ws_ids = get_visible_workspace_ids()
+        cases = []
+        if ws_ids is not None:
+            cases = Case.query.filter(Case.is_deleted == False, Case.workspace_id.in_(ws_ids)).all()
+        else:
+            cases = Case.query.filter_by(is_deleted=False).all()
+        return render_template('staff_board.html', members=members, cases=cases)
+
+    # ── Internal agentic roadmap (lexflow / superadmin only) ────────
+    roadmap_path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))),
+        'docs', 'LexFlow_Agentic_Roadmap.json'
+    )
+    data = {}
+    if _os.path.exists(roadmap_path):
+        with open(roadmap_path, 'r', encoding='utf-8') as f:
+            data = _json.load(f)
+
+    columns = data.get('kanban_columns', ['backlog', 'in_progress', 'blocked',
+                                          'awaiting_confirmation', 'local_verified',
+                                          'deployed', 'done'])
+    tasks = data.get('tasks', [])
+    by_column = {col: [] for col in columns}
+    for t in tasks:
+        col = t.get('column', 'backlog')
+        if col not in by_column:
+            by_column[col] = []
+        by_column[col].append(t)
+
+    return render_template('roadmap.html',
+                           columns=columns,
+                           by_column=by_column,
+                           roadmap=data)
 
 
 # ── Calendar View ─────────────────────────────────────────────────
@@ -263,6 +335,22 @@ def submit():
                   f"<p><strong>Email:</strong> {email}</p><p><strong>Practice:</strong> {practice_area}</p>"
                   f"<p><strong>Urgency:</strong> {urgency}</p>"
     )
+
+    # Notify the CLIENT too (auto-confirmation) — 2026-09-03 (Ole):
+    # intake must reach both the owner AND the person who submitted it.
+    try:
+        send_email(
+            to_email=email,
+            subject=f"Riceviamo la tua richiesta — {workspace_name}",
+            html_body=f"<h3>Gentile {client_name},</h3>"
+                      f"<p>abbiamo ricevuto la tua richiesta presso <b>{workspace_name}</b>.</p>"
+                      f"<p><strong>Oggetto:</strong> {practice_area or 'Consulenza'}</p>"
+                      f"<p><strong>Messaggio:</strong> {description or '—'}</p>"
+                      f"<p>Ti ricontatteremo al più presto. Grazie.</p>"
+                      f"<p style='color:#94A3B8;font-size:12px'>Questo è un messaggio automatico di conferma.</p>"
+        )
+    except Exception as _e:
+        logger.warning(f"Submit client email failed (non-fatal): {_e}")
 
     flash('Intake submitted successfully. You will receive updates via email.', 'success')
     return redirect(url_for('views.case_status', token=case.id))
@@ -642,13 +730,13 @@ def pagliano_lp():
 def intake_from_lp(workspace_slug):
     """Handle intake form submission from a landing page (multi-tenant).
     Creates contact + case in the correct workspace based on URL.
-    Sends email notification to workspace owner.
+    Sends email + WhatsApp notification to workspace owner (WhatsApp best-effort).
     """
     import secrets
     from datetime import date
     from ..models.workspace import Workspace
     from ..models.user import User
-    from ..notification_service import send_email
+    from ..notification_service import send_email, send_whatsapp
 
     # Resolve workspace
     ws = Workspace.query.filter_by(slug=workspace_slug, is_active=True).first()
@@ -704,6 +792,39 @@ def intake_from_lp(workspace_slug):
                       f"<p><strong>Message:</strong> {message or '—'}</p>"
                       f"<p><strong>GDPR:</strong> {'Yes' if gdpr else 'No'}</p>"
         )
+
+    # Notify the CLIENT too (auto-confirmation) — 2026-09-03 (Ole):
+    # intake must reach both the owner AND the person who submitted it.
+    try:
+        send_email(
+            to_email=email,
+            subject=f"Riceviamo la tua richiesta — {ws.name}",
+            html_body=f"<h3>Gentile {fullname},</h3>"
+                      f"<p>abbiamo ricevuto la tua richiesta presso <b>{ws.name}</b>.</p>"
+                      f"<p><strong>Oggetto:</strong> {practice_area or 'Consulenza'}</p>"
+                      f"<p><strong>Messaggio:</strong> {message or '—'}</p>"
+                      f"<p>Ti ricontatteremo al più presto. Grazie.</p>"
+                      f"<p style='color:#94A3B8;font-size:12px'>Questo è un messaggio automatico di conferma.</p>"
+        )
+    except Exception as _e:
+        logger.warning(f"Intake client email failed (non-fatal): {_e}")
+
+    # WhatsApp to workspace owner (UltraMsg) — best-effort, never crash the intake
+    owner_phone = os.environ.get('ADMIN_PHONE', '')
+    if not owner_phone:
+        logger.warning("WhatsApp skipped: no ADMIN_PHONE set for intake notification (workspace=%s)", ws.slug)
+    else:
+        try:
+            send_whatsapp(
+                owner_phone,
+                f"🔔 New intake from {ws.name}: {fullname}\n"
+                f"Email: {email}\n"
+                f"Phone: {phone or '—'}\n"
+                f"Practice area: {practice_area or '—'}\n"
+                f"Message: {message or '—'}"
+            )
+        except Exception as e:
+            logger.warning("WhatsApp notification failed for intake (workspace=%s): %s", ws.slug, e)
 
     if request.is_json or request.accept_mimetypes.accept_json:
         return jsonify({'success': True, 'contact': contact.to_dict(), 'case': case.to_dict()}), 201
