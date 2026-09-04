@@ -21,6 +21,10 @@ except ImportError:
 
 
 def send_email(to_email: str, subject: str, html_body: str, from_name: str = "LexFlow") -> bool:
+    # Preferred: SMTP (e.g. Yahoo app password) — set SMTP_HOST/PORT/USER/PASSWORD/EMAIL_FROM
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    if smtp_host:
+        return _send_email_smtp(to_email, subject, html_body, from_name)
     api_key = os.environ.get("RESEND_API_KEY", "")
     from_addr = os.environ.get("EMAIL_FROM", "onboarding@resend.dev")
     if not api_key:
@@ -41,6 +45,40 @@ def send_email(to_email: str, subject: str, html_body: str, from_name: str = "Le
         return True
     except Exception as e:
         logger.warning(f"Email failed to {to_email}: {e}")
+        return False
+
+
+def _send_email_smtp(to_email: str, subject: str, html_body: str, from_name: str) -> bool:
+    """Send via SMTP (Yahoo/Gmail app-password pattern). Best-effort."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    host = os.environ.get("SMTP_HOST", "")
+    port = int(os.environ.get("SMTP_PORT", "465"))
+    user = os.environ.get("SMTP_USER", "")
+    password = os.environ.get("SMTP_PASSWORD", "")
+    from_addr = os.environ.get("EMAIL_FROM", user)
+    if not host or not user or not password:
+        logger.info("Email skipped: SMTP configured but SMTP_USER/PASSWORD missing")
+        return False
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{from_name} <{from_addr}>"
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+        if port == 465:
+            server = smtplib.SMTP_SSL(host, port, timeout=30)
+        else:
+            server = smtplib.SMTP(host, port, timeout=30)
+            server.starttls()
+        server.login(user, password)
+        server.sendmail(from_addr, [to_email], msg.as_string())
+        server.quit()
+        logger.info(f"Email sent via SMTP to {to_email}: {subject}")
+        return True
+    except Exception as e:
+        logger.warning(f"SMTP email failed to {to_email}: {e}")
         return False
 
 
