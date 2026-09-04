@@ -659,6 +659,89 @@ def api_superadmin_workspaces():
     return jsonify(out), 200
 
 
+@views_bp.route('/api/admin/workspaces', methods=['POST'])
+@jwt_required()
+def api_admin_create_workspace():
+    """Superadmin creates a client (sub-)workspace + admin user + sends intake
+    notifications. Used to provision isolated client spaces without direct
+    DB access (no TCP proxy needed). Emails: superadmin/owner + the client.
+    """
+    from ..models.user import User
+    from ..notification_service import send_email
+    if not _is_superadmin():
+        return jsonify({'error': 'Superadmin only'}), 403
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    slug = (data.get('slug') or '').strip().lower()
+    parent_slug = (data.get('parent_slug') or '').strip()
+    client_email = (data.get('client_email') or '').strip().lower()
+    code_prefix = (data.get('code_prefix') or '').strip().upper()
+    if not name or not slug or not client_email:
+        return jsonify({'error': 'name, slug, client_email are required'}), 400
+    if Workspace.query.filter_by(slug=slug).first():
+        return jsonify({'error': f'workspace slug {slug} already exists'}), 409
+    parent = None
+    if parent_slug:
+        parent = Workspace.query.filter_by(slug=parent_slug, is_active=True).first()
+        if not parent:
+            return jsonify({'error': f'parent workspace {parent_slug} not found'}), 404
+    ws = Workspace(
+        parent_workspace_id=parent.id if parent else None,
+        slug=slug,
+        name=name,
+        code_prefix=code_prefix or None,
+        is_active=True,
+    )
+    db.session.add(ws)
+    db.session.flush()
+    import secrets as _secrets
+    import string as _string
+    _alphabet = _string.ascii_letters + _string.digits
+    pw = ''.join(_secrets.choice(_alphabet) for _ in range(12))
+    u = User(email=client_email, role='admin', workspace_id=ws.id)
+    u.set_password(pw)
+    db.session.add(u)
+    db.session.commit()
+
+    # Notifications (best-effort, never fail the response)
+    notif = []
+    owner_email = os.environ.get('ADMIN_EMAIL', '')
+    if owner_email:
+        try:
+            send_email(
+                to_email=owner_email,
+                subject=f"Intake ricevuta — {name}",
+                html_body=f"<h3>Nuova richiesta ricevuta</h3>"
+                          f"<p>È stata presa una nuova intake per il cliente <b>{name}</b>"
+                          f"{(' sotto ' + parent.name) if parent else ''}.</p>"
+                          f"<p>Client: {name} · Email: {client_email}</p>"
+                          f"<p>Accedi alla CRM per dettagli.</p>",
+            )
+            notif.append(f"owner ({owner_email})")
+        except Exception as e:
+            notif.append(f"owner FAIL: {e}")
+    try:
+        send_email(
+            to_email=client_email,
+            subject=f"Riceviamo la tua richiesta — {name}",
+            html_body=f"<h3>Gentile cliente,</h3>"
+                      f"<p>abbiamo ricevuto la tua richiesta (intake) presso <b>{parent.name if parent else name}</b> "
+                      f"per <b>{name}</b>.</p>"
+                      f"<p>Ti ricontatteremo al più presto.</p>"
+                      f"<p style='color:#94A3B8;font-size:12px'>Conferma automatica.</p>",
+        )
+        notif.append(f"client ({client_email})")
+    except Exception as e:
+        notif.append(f"client FAIL: {e}")
+
+    return jsonify({
+        'workspace': ws.to_dict(),
+        'user': {'id': u.id, 'email': u.email, 'role': u.role, 'workspace_id': u.workspace_id},
+        'initial_password': pw,
+        'notifications': notif,
+    }), 201
+
+
 @views_bp.route('/api/admin/reset-password', methods=['POST'])
 @jwt_required()
 def api_admin_reset_password():
