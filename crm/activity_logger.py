@@ -7,11 +7,16 @@ from .models.activity import ActivityLog
 from .workspace import get_current_workspace_id
 
 
-def log_activity(actor_id, target_type, target_id, action, summary, details=None):
-    """Create an activity log entry. Safe to call from anywhere if db is available."""
+def log_activity(actor_id, target_type, target_id, action, summary, details=None, workspace_id=None):
+    """Create an activity log entry. Safe to call from anywhere if db is available.
+
+    workspace_id may be passed explicitly (e.g. public intake endpoints that
+    resolve the tenant from the URL but carry no JWT — without it those events
+    would land in the default workspace 1 timeline instead of the tenant's).
+    """
     try:
         entry = ActivityLog(
-            workspace_id=get_current_workspace_id() or 1,
+            workspace_id=workspace_id or get_current_workspace_id() or 1,
             actor_id=actor_id,
             target_type=target_type,
             target_id=target_id,

@@ -37,6 +37,34 @@ header {
 .btn { border: none; border-radius: var(--radius-md); padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .btn-primary { background: var(--accent); color: var(--bg); }
 .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── Skip link (standalone page — does not extend base.html) ──── */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 22px;
+  z-index: 1000;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top .15s ease;
+}
+.skip-link:focus { top: 12px; }
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .skip-link { transition: none; }
+}
 
 /* ── Staff board ──────────────────────────────────────────────── */
 .board { display: flex; gap: 14px; padding: 20px 22px; overflow-x: auto; align-items: flex-start; }
@@ -46,7 +74,15 @@ header {
 .col-sub { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
 .col-count { font-size: 11px; font-weight: 700; color: var(--text-faint); background: var(--surface-2); border-radius: 999px; padding: 2px 9px; }
 .cards { display: flex; flex-direction: column; gap: 8px; }
-.card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 11px 13px; transition: transform .1s, border-color .15s; }
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 13px;
+  cursor: pointer;
+  display: block;
+  transition: transform .1s, border-color .15s;
+}
 .card:hover { border-color: var(--accent); transform: translateY(-1px); }
 .card-id { font-size: 11px; font-weight: 700; color: var(--accent-h); letter-spacing: 0.04em; }
 .card-title { font-size: 13px; font-weight: 600; margin: 4px 0 6px; line-height: 1.35; }
@@ -57,9 +93,39 @@ header {
 .empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: 14px 4px; }
 .board-footer { padding: 0 22px 26px; color: var(--text-faint); font-size: 12px; }
 .board-footer b { color: var(--text-muted); }
+
+/* ── Connections panel (hierarchy + collaboration) ─────────────── */
+.conn-panel { padding: 4px 22px 6px; max-width: 1100px; }
+.conn-panel details {
+  background: rgba(22,27,39,0.7); border: 1px solid var(--border);
+  border-radius: var(--radius-md); margin-bottom: 10px; overflow: hidden;
+}
+.conn-panel summary {
+  cursor: pointer; padding: 11px 14px; font-size: 13px; font-weight: 700;
+  color: var(--text); list-style: none; display: flex; align-items: center; gap: 8px;
+  user-select: none;
+}
+.conn-panel summary::-webkit-details-marker { display: none; }
+.conn-panel summary::before { content: "▸"; color: var(--accent-h); font-size: 12px; transition: transform .15s; }
+.conn-panel details[open] summary::before { transform: rotate(90deg); }
+.conn-count { font-size: 10px; font-weight: 700; color: var(--text-faint); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
+.hier-wrap { padding: 4px 16px 12px; }
+.hier-node { margin: 6px 0 0 6px; padding-left: 14px; border-left: 2px solid var(--border); font-size: 13px; }
+.hier-node.hier-root { border-left: none; padding-left: 0; font-size: 14px; font-weight: 800; color: var(--accent-h); }
+.hier-node.hier-root em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--text-faint); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; margin-left: 6px; }
+.hier-node.hier-sub { color: var(--text-muted); font-size: 12.5px; }
+.hint { color: var(--text-faint); font-size: 12px; }
+.hier-key { padding: 2px 16px 10px; color: var(--text-faint); font-size: 11.5px; border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 8px; }
+.collab-list { padding: 6px 16px 12px; display: flex; flex-direction: column; gap: 7px; }
+.member-collab { font-size: 12.5px; color: var(--text); display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.member-collab b { color: var(--text); min-width: 170px; }
+.conn-raw { padding: 6px 16px 12px 30px; font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 5px; }
+.conn-raw li::marker { color: var(--text-faint); }
 </style>
 </head>
 <body>
+
+<a href="#board" class="skip-link">Skip to board</a>
 
 <header>
   <div class="logo"><span>a</span>LEXy <span style="font-size:12px;color:var(--text-faint)">Staff Board</span></div>
@@ -75,9 +141,9 @@ header {
   <button class="btn btn-logout" id="logoutBtn" style="display:none" onclick="handleLogout()">Logout</button>
 </header>
 
-<div class="board">
+<div class="board" id="board">
   {% for m in members %}
-  {% set mcases = cases | selectattr('ownerid', 'equalto', m.id) | list %}
+  {% set mcases = member_cases.get(m.id, []) %}
   <div class="column">
     <div class="col-head">
       <span>
@@ -88,7 +154,7 @@ header {
     </div>
     <div class="cards">
       {% for c in mcases %}
-      <div class="card">
+      <a class="card" href="/admin/matter/{{ c.id }}">
         <div class="card-id">{{ c.case_no or ('#' ~ c.id) }}</div>
         <div class="card-title">{{ c.title }}</div>
         <div class="card-meta">
@@ -96,7 +162,7 @@ header {
           {% if c.priority %}<span class="pill priority-{{ c.priority }}">{{ c.priority }}</span>{% endif %}
           {% if c.duedate %}<span class="pill">due {{ c.duedate }}</span>{% endif %}
         </div>
-      </div>
+      </a>
       {% else %}
       <div class="empty">—</div>
       {% endfor %}
@@ -108,10 +174,94 @@ header {
     <div class="empty">No active staff members yet. Add them in the Firm Team section of your workspace.</div>
   </div>
   {% endfor %}
+  {% if unassigned_cases %}
+  <div class="column" style="min-width:250px">
+    <div class="col-head">
+      <span>
+        <div class="col-title">Unassigned</div>
+        <div class="col-sub">matters without a team member</div>
+      </span>
+      <span class="col-count">{{ unassigned_cases | length }}</span>
+    </div>
+    <div class="cards">
+      {% for c in unassigned_cases %}
+      <a class="card" href="/admin/matter/{{ c.id }}">
+        <div class="card-id">{{ c.case_no or ('#' ~ c.id) }}</div>
+        <div class="card-title">{{ c.title }}</div>
+        <div class="card-meta">
+          <span class="pill">{{ c.status }}</span>
+          {% if c.priority %}<span class="pill priority-{{ c.priority }}">{{ c.priority }}</span>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% set hier_edges = connections | selectattr('type', 'equalto', 'hierarchy') | list %}
+{% set collab_edges = connections | selectattr('type', 'equalto', 'collab') | list %}
+<div class="conn-panel" aria-label="Staff connections">
+  <details open>
+    <summary>Connections · Firm hierarchy <span class="conn-count">{{ hier_edges | length }}</span></summary>
+    <div class="hier-wrap">
+      <div class="hier-node hier-root">{{ firm_name }} <em>Firm</em></div>
+      <div class="hier-children">
+        {% for e in hier_edges if e.from == 'firm' %}
+        {% set subs = hier_edges | selectattr('from', 'equalto', e.to) | list %}
+        <div class="hier-node">
+          <b>{{ e.to_label }}</b> <span class="pill">{{ e.role_label or e.label }}</span>
+          <span class="hint">{{ e.count }} matter{{ 's' if e.count != 1 }}</span>
+          {% if subs %}
+          <div class="hier-children">
+            {% for s in subs %}
+            <div class="hier-node hier-sub"><span class="pill">reports to {{ s.to_label }}</span></div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="hier-key">Role hierarchy: avvocato → assistente → office</div>
+  </details>
+
+  <details>
+    <summary>Collaboration · shared matters <span class="conn-count">{{ collab_edges | length }}</span></summary>
+    {% if collab_edges %}
+    <div class="collab-list">
+      {% for m in members %}
+      {% set cl = collab_by_member.get(m.id, []) %}
+      <div class="member-collab">
+        <b>{{ m.name }}</b>
+        {% if cl %}
+        <span class="hint">
+          {% for x in cl %}Works with {{ x.other }} on <b>{{ x.count }}</b> shared matter{{ 's' if x.count != 1 }}{% if not loop.last %} · {% endif %}{% endfor %}
+        </span>
+        {% else %}
+        <span class="hint">No shared matters yet.</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="hier-key">Collaboration = two staff members both involved (owner / assignee) on the same matter.</div>
+    {% else %}
+    <div class="empty">No shared matters between team members yet.</div>
+    {% endif %}
+  </details>
+
+  <details>
+    <summary>Connection data <span class="conn-count">{{ connections | length }}</span></summary>
+    <ul class="conn-raw">
+      {% for e in connections %}
+      <li><span class="pill">{{ e.type }}</span> {{ e.from_label }} → {{ e.to_label }} · {{ e.label }} · count {{ e.count }}</li>
+      {% endfor %}
+    </ul>
+  </details>
 </div>
 
 <div class="board-footer">
-  <b>Per-person workload</b> · each column = one staff member, cards = their matters.
+  <b>Per-person workload</b> · each column = one staff member, cards = their matters (owner or assignee).
 </div>
 
 <script>

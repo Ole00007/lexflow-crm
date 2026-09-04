@@ -72,18 +72,26 @@
         body.innerHTML = '<tr><td colspan="8">No matters yet. Use New intake to start.</td></tr>';
         return;
       }
-      body.innerHTML = cases.map(function (c) {
-        return '<tr>'
-          + '<td>' + esc(c.display_id || c.case_no || c.id) + '</td>'
-          + '<td>' + esc(c.title || '') + '</td>'
-          + '<td>' + esc(c.contactid == null ? '' : c.contactid) + '</td>'
-          + '<td>' + esc(c.casetype || '') + '</td>'
-          + '<td><span class="badge">' + esc(c.status || '') + '</span></td>'
-          + '<td>' + esc(c.priority || '') + '</td>'
-          + '<td>' + esc(fmtDate(c.createdat)) + '</td>'
-          + '<td><a href="/admin/matter/' + esc(c.id) + '">Open →</a></td>'
-          + '</tr>';
-      }).join('');
+      // Fetch contacts in parallel so the Contact column shows names, not raw IDs.
+      return fetch('/api/contacts', { headers: { 'Authorization': 'Bearer ' + t } })
+        .then(function (r) { return r.json().catch(function () { return []; }); })
+        .then(function (contacts) {
+          var contactMap = {};
+          (contacts || []).forEach(function (c) { contactMap[c.id] = c.fullname; });
+          body.innerHTML = cases.map(function (c) {
+            var cname = c.contactid == null ? '' : (contactMap[c.contactid] || 'Contact #' + c.contactid);
+            return '<tr>'
+              + '<td>' + esc(c.display_id || c.case_no || c.id) + '</td>'
+              + '<td>' + esc(c.title || '') + '</td>'
+              + '<td>' + esc(cname) + '</td>'
+              + '<td>' + esc(c.casetype || '') + '</td>'
+              + '<td><span class="badge">' + esc(c.status || '') + '</span></td>'
+              + '<td>' + esc(c.priority || '') + '</td>'
+              + '<td>' + esc(fmtDate(c.createdat)) + '</td>'
+              + '<td><a href="/admin/matter/' + esc(c.id) + '">Open →</a></td>'
+              + '</tr>';
+          }).join('');
+        });
     })
     .catch(function () {
       body.innerHTML = '<tr><td colspan="8" style="color:var(--danger)">Could not load matters. Please log in again.</td></tr>';

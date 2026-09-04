@@ -85,7 +85,7 @@
       '<p><strong>ID:</strong> ' + esc(c.display_id || c.case_no || c.id) + '</p>' +
       '<p><strong>Status:</strong> <span class="badge">' + esc(c.status || '') + '</span></p>' +
       '<p><strong>Title:</strong> ' + esc(c.title || '') + '</p>' +
-      '<p><strong>Contact ID:</strong> ' + esc(c.contactid == null ? '' : c.contactid) + '</p>' +
+      '<p><strong>Contact:</strong> ' + esc(c.contact_name || (c.contactid == null ? '—' : '#' + c.contactid)) + '</p>' +
       '<p><strong>Case type:</strong> ' + esc(c.casetype || '—') + '</p>' +
       '<p><strong>Priority:</strong> ' + esc(c.priority || '') + '</p>' +
       '<p><strong>Created:</strong> ' + esc(fmtDate(c.createdat)) + '</p>' +

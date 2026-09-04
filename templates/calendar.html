@@ -15,7 +15,7 @@
   .cal-viewswitch{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
   .cal-viewbtn{padding:6px 14px;border:none;background:var(--surface);color:var(--text-muted);font-size:var(--text-sm);font-weight:600;cursor:pointer}
   .cal-viewbtn:hover{color:var(--text)}
-  .cal-viewbtn.active{background:var(--accent);color:#fff}
+  .cal-viewbtn.active{background:var(--accent);color:var(--bg)}
   #calGridBody{position:relative}
   .cal-body-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:var(--text-sm)}
 
@@ -32,7 +32,7 @@
   .cal-mcell.cal-out{background:var(--surface-2);opacity:.55}
   .cal-mcell.cal-today{background:var(--accent-glow)}
   .cal-mnum{width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;font-size:var(--text-sm);font-weight:600;color:var(--text-muted);margin-bottom:2px}
-  .cal-today .cal-mnum{background:var(--accent);color:#fff;font-weight:700}
+  .cal-today .cal-mnum{background:var(--accent);color:var(--bg);font-weight:700}
   .cal-out .cal-mnum{color:var(--text-faint)}
   .cal-chip{display:block;width:100%;text-align:left;margin:1px 0;padding:1px 6px;border:none;border-left:3px solid var(--chip,#7C8BA1);background:color-mix(in srgb,var(--chip,#7C8BA1) 18%,var(--surface));border-radius:3px;font-size:var(--text-xs);color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cal-chip:hover{background:color-mix(in srgb,var(--chip,#7C8BA1) 32%,var(--surface))}
@@ -44,7 +44,7 @@
   .cal-dayhead{padding:6px 4px;text-align:center;border-left:1px solid var(--border)}
   .cal-dh-dow{font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
   .cal-dh-num{display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;font-size:var(--text-sm);font-weight:600;color:var(--text);margin-top:2px}
-  .cal-dayhead.cal-today .cal-dh-num{background:var(--accent);color:#fff}
+  .cal-dayhead.cal-today .cal-dh-num{background:var(--accent);color:var(--bg)}
   .cal-weekbody{position:relative;display:grid;grid-template-columns:56px repeat(7,1fr)}
   .cal-daybody{position:relative;display:grid;grid-template-columns:56px 1fr}
   .cal-axis{position:relative;height:calc(var(--cal-hour-h,48px) * 24)}
@@ -182,11 +182,15 @@ const API = '';
 function token() { return localStorage.getItem('jwt') || ''; }
 function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
 function loginNoticeHTML() {
+  // Tenant-neutral login link: honour ?ws= on the current URL (e.g. /calendar?ws=pagliano)
+  // instead of hardcoding a tenant — never bounce a user toward the wrong workspace.
+  var ws = new URLSearchParams(window.location.search).get('ws') || '';
+  var qs = ws ? ('?ws=' + encodeURIComponent(ws) + '&back=/calendar') : '?back=/calendar';
   return '<div class="cal-login-prompt">'
     + '<div class="cal-login-card">'
     + '<h3>🔒 Calendar — Sign in to view</h3>'
     + '<p>Your calendar is private to your workspace. Log in to see hearings, deadlines and meetings in the grid and list views below.</p>'
-    + '<a class="cal-login-btn" href="/login?ws=romanelli-studio&back=/calendar">Log in to your Secure Workspace</a>'
+    + '<a class="cal-login-btn" href="/login' + qs + '">Log in to your Secure Workspace</a>'
     + '</div></div>';
 }
 
@@ -241,7 +245,7 @@ var editingId = null;
 function handleCreate() {
   var title = document.getElementById('evTitle').value.trim();
   var start = document.getElementById('evStart').value;
-  if (!title || !start) { alert('Title and start time required'); return; }
+  if (!title || !start) { toast('Title and start time required', 'error'); return; }
   var body = {title:title, start_datetime: start + ':00', event_type: document.getElementById('evType').value, status: document.getElementById('evStatus').value};
   var end = document.getElementById('evEnd').value;
   if (end) body.end_datetime = end + ':00';
@@ -257,7 +261,7 @@ function handleCreate() {
   var method = editingId ? 'PUT' : 'POST';
   fetch(url, {method: method, headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()}, body:JSON.stringify(body)})
     .then(r => r.json()).then(d => { closeModal(); loadEvents(); gridRefresh(); })
-    .catch(e => alert('Error: ' + e.message));
+    .catch(e => toast('Error: ' + e.message, 'error'));
 }
 
 /* ===================== Google-style calendar grid ===================== */
@@ -587,7 +591,7 @@ function delEvent(id){
   closePopover();
   fetch(API + '/api/calendar/' + id, {method:'DELETE', headers:{'Authorization':'Bearer '+token()}})
     .then(r => r.json()).then(() => { loadEvents(); gridRefresh(); })
-    .catch(e => alert('Error: ' + e.message));
+    .catch(e => toast('Error: ' + e.message, 'error'));
 }
 
 /* ---------- drag & drop to move events (month view; HTML5 DnD) ---------- */
@@ -620,7 +624,7 @@ function calDrop(ev, cell){
   body.end_datetime = dayKey+'T'+_calHM(en)+':00';
   fetch(API + '/api/calendar/' + id, {method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token()}, body:JSON.stringify(body)})
     .then(r => r.json()).then(() => { loadEvents(); gridRefresh(); })
-    .catch(err => alert('Error moving event: ' + err.message));
+    .catch(err => toast('Error moving event: ' + err.message, 'error'));
 }
 
 (function init() { loadEvents(); loadGrid(); })();

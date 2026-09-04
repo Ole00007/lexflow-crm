@@ -242,6 +242,7 @@ def create_app():
     from .routes.saved_views import saved_views_bp
     from .routes.attachments import attachments_bp
     from .routes.firm_team import firm_team_bp
+    from .routes.roadmap import roadmap_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -258,6 +259,7 @@ def create_app():
     app.register_blueprint(saved_views_bp)
     app.register_blueprint(attachments_bp)
     app.register_blueprint(firm_team_bp)
+    app.register_blueprint(roadmap_bp)
 
     # Google Calendar OAuth
     from .routes.google_oauth_routes import google_oauth_bp

@@ -59,7 +59,16 @@ def dashboard():
             tasks = Task.query.filter_by(is_deleted=False).count()
             pending_tasks = Task.query.filter_by(is_deleted=False, status='pending').count()
             upcoming_deadlines = Deadline.query.filter_by(is_deleted=False, status='pending').order_by(Deadline.deadline_date).limit(5).all()
-        recent_activity = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(10).all()
+        # Recent activity MUST be workspace-scoped too (cross-tenant leak
+        # fix 2026-09-04): a tenant admin must only see their own workspace's
+        # timeline, not every tenant's latest 10 entries. Anonymous users
+        # (ws_ids == []) see an empty feed — never everyone's activity.
+        if ws_ids is not None:
+            recent_activity = ActivityLog.query.filter(
+                ActivityLog.workspace_id.in_(ws_ids)
+            ).order_by(ActivityLog.created_at.desc()).limit(10).all()
+        else:
+            recent_activity = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(10).all()
     except Exception:
         contacts = cases = tasks = pending_tasks = 0
         upcoming_deadlines = []; recent_activity = []; user = None
@@ -173,17 +182,148 @@ def roadmap():
 
     # ── Staff board for firm workspaces (per-person-per-staff) ──────
     if not is_internal:
+        import re as _re
         ws = user.workspace
         team_ws_id = ws.parent_workspace_id if ws and ws.parent_workspace_id else (ws.id if ws else None)
         members = FirmTeamMember.query.filter_by(workspace_id=team_ws_id, is_active=True).all() if team_ws_id else []
-        from ..models.case import Case
         ws_ids = get_visible_workspace_ids()
         cases = []
         if ws_ids is not None:
             cases = Case.query.filter(Case.is_deleted == False, Case.workspace_id.in_(ws_ids)).all()
         else:
             cases = Case.query.filter_by(is_deleted=False).all()
-        return render_template('staff_board.html', members=members, cases=cases)
+
+        # ── Resolve team members → firm user accounts ───────────────
+        # Case.ownerid / Case.assignedto hold USER ids, while
+        # FirmTeamMember.id is a separate team-directory id space — matching
+        # them directly (old template selectattr) always yields empty columns.
+        # The trustworthy link is the member's EMAIL matching a firm user's
+        # email; a normalized name-match is the best-effort fallback. Members
+        # are scoped to the FIRM's own workspace, so no cross-tenant linkage
+        # can ever be produced here.
+        firm_users = _User.query.filter_by(workspace_id=team_ws_id, is_deleted=False).all() if team_ws_id else []
+        user_by_email = {}
+        for u in firm_users:
+            if u.email:
+                user_by_email[u.email.strip().lower()] = u
+
+        def _norm_name(s):
+            """'Avv. Maria Romanelli' -> 'maria romanelli' (title prefixes stripped)."""
+            if not s:
+                return ''
+            n = _re.sub(r'^(avv\.?|dott\.?ssa?|dr\.?|sig\.?ra?|rag\.?|prof\.?|studio)\s*', '', s.strip().lower())
+            return _re.sub(r'[^a-z0-9]+', ' ', n).strip()
+
+        def _user_name_tokens(u):
+            """Email local part ('maria.rossi@x.it' -> {'maria','rossi'})."""
+            local = (u.email or '').split('@')[0].replace('.', ' ').strip().lower()
+            return set(_re.sub(r'[^a-z0-9]+', ' ', local).split())
+
+        member_user_ids = {}  # member.id -> [user.id, ...]
+        for m in members:
+            ids = []
+            key = (m.email or '').strip().lower()
+            if key and key in user_by_email:
+                ids.append(user_by_email[key].id)
+            else:
+                mn = _norm_name(m.name)
+                m_tokens = set(mn.split()) if mn else set()
+                for u in firm_users:
+                    l_tokens = _user_name_tokens(u)
+                    if not l_tokens:
+                        continue
+                    if l_tokens <= m_tokens or len(m_tokens & l_tokens) >= 2:
+                        ids.append(u.id)
+            member_user_ids[m.id] = ids
+
+        # ── Per-member workload (owner OR assignee touches the matter) ─
+        member_user_id_sets = {m.id: set(member_user_ids.get(m.id, [])) for m in members}
+        member_cases = {m.id: [] for m in members}
+        assigned_case_ids = set()
+        for c in cases:
+            cids = {c.ownerid, c.assignedto} - {None}
+            for mid, uids in member_user_id_sets.items():
+                if cids & uids:
+                    member_cases[mid].append(c)
+                    assigned_case_ids.add(c.id)
+        unassigned_cases = [c for c in cases if c.id not in assigned_case_ids]
+
+        # ── Connections: HIERARCHY (firm -> members, role chain) + ────
+        #    COLLABORATION (members sharing the same matter(s)).
+        firm_name = ws.name if ws else 'Firm'
+        role_level = {'office': 0, 'assistente': 1, 'avvocato': 2}
+        member_role_level = {m.id: role_level.get(m.role, 0) for m in members}
+        max_level = max(member_role_level.values()) if member_role_level else 0
+
+        connections = []
+        for m in members:  # hierarchy: firm -> team member
+            connections.append({
+                "type": "hierarchy",
+                "from": "firm",
+                "from_label": firm_name,
+                "to": f"member-{m.id}",
+                "to_label": m.name,
+                "label": "team member",
+                "role_label": m.role,
+                "count": len(member_cases[m.id]),
+            })
+        for m in members:  # hierarchy: role chain avvocato > assistente > office
+            lvl = member_role_level[m.id]
+            if lvl >= max_level:
+                continue
+            seniors = [o for o in members if member_role_level[o.id] > lvl]
+            if not seniors:
+                continue
+            sup = min(seniors, key=lambda o: (member_role_level[o.id], o.id))
+            connections.append({
+                "type": "hierarchy",
+                "from": f"member-{m.id}",
+                "from_label": m.name,
+                "to": f"member-{sup.id}",
+                "to_label": sup.name,
+                "label": "reports to",
+                "count": 1,
+            })
+        for i in range(len(members)):  # collaboration: shared matters
+            for j in range(i + 1, len(members)):
+                a, b = members[i], members[j]
+                shared = [
+                    c for c in cases
+                    if ({c.ownerid, c.assignedto} - {None}) & member_user_id_sets[a.id]
+                    and ({c.ownerid, c.assignedto} - {None}) & member_user_id_sets[b.id]
+                ]
+                if shared:
+                    connections.append({
+                        "type": "collab",
+                        "from": f"member-{a.id}",
+                        "from_label": a.name,
+                        "to": f"member-{b.id}",
+                        "to_label": b.name,
+                        "label": "shared matters",
+                        "count": len(shared),
+                    })
+        # per-member collab summary (rendering helper; connections stays canonical)
+        collab_by_member = {m.id: [] for m in members}
+        for e in connections:
+            if e["type"] != "collab":
+                continue
+            try:
+                fid, tid = int(e["from"].replace("member-", "")), int(e["to"].replace("member-", ""))
+            except ValueError:
+                continue
+            collab_by_member.setdefault(fid, []).append({"other": e["to_label"], "count": e["count"]})
+            collab_by_member.setdefault(tid, []).append({"other": e["from_label"], "count": e["count"]})
+
+        return render_template(
+            'staff_board.html',
+            members=members,
+            cases=cases,
+            member_cases=member_cases,
+            unassigned_cases=unassigned_cases,
+            connections=connections,
+            collab_by_member=collab_by_member,
+            firm_name=firm_name,
+        )
 
     # ── Internal agentic roadmap (lexflow / superadmin only) ────────
     roadmap_path = _os.path.join(
@@ -296,6 +436,15 @@ def submit():
                 casetype=practice_area, status='Intake', priority=urgency, openedat=date.today())
     db.session.add(case)
     db.session.commit()
+
+    # Log activity (workspace_id explicit — /submit can be hit without JWT and
+    # the old code logged nothing here, so intakes never appeared in timelines)
+    try:
+        actor_id = int(get_jwt_identity()) if get_jwt_identity() else None
+    except Exception:
+        actor_id = None
+    log_activity(actor_id, 'contact', contact.id, 'created', f"Intake contact: {client_name}", workspace_id=wid)
+    log_activity(actor_id, 'case', case.id, 'created', f"Intake case: {description[:60] or client_name}", workspace_id=wid)
 
     # Save uploaded intake documents and create Attachment rows linked to the new case
     _base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -856,9 +1005,10 @@ def intake_from_lp(workspace_slug):
     db.session.add(case)
     db.session.commit()
 
-    # Log activity
-    log_activity(None, 'contact', contact.id, 'created', f"Contact from {ws.name} LP")
-    log_activity(None, 'case', case.id, 'created', f"Intake from {ws.name} LP")
+    # Log activity (workspace_id passed explicitly — public endpoint has no JWT,
+    # so without it the event would land in default workspace 1's timeline)
+    log_activity(None, 'contact', contact.id, 'created', f"Contact from {ws.name} LP", workspace_id=wid)
+    log_activity(None, 'case', case.id, 'created', f"Intake from {ws.name} LP", workspace_id=wid)
 
     # Notify workspace owner
     owner = User.query.filter_by(workspace_id=wid, role='admin').first()
@@ -998,11 +1148,11 @@ def create_appointment():
 
     # Activity logging
     log_activity(None, 'contact', contact.id, 'appointment_requested',
-                 f"Appointment requested by {fullname} ({ws.name})")
+                 f"Appointment requested by {fullname} ({ws.name})", workspace_id=wid)
     log_activity(None, 'case', case.id, 'appointment_requested',
-                 f"Appointment '{title}' requested via {ws.name} chatbot")
+                 f"Appointment '{title}' requested via {ws.name} chatbot", workspace_id=wid)
     log_activity(None, 'case', case.id, 'event_created',
-                 f"Calendar event '{title}' created ({event.event_type})")
+                 f"Calendar event '{title}' created ({event.event_type})", workspace_id=wid)
 
     # Notify workspace owner + client
     owner = User.query.filter_by(workspace_id=wid, role='admin').first()

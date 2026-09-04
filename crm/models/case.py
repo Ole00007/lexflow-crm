@@ -30,10 +30,23 @@ class Case(db.Model):
         return self.case_no or f"#{self.id}"
 
     def to_dict(self):
+        # Linked contact display fields (additive — never replaces raw ids, so
+        # existing consumers that key on contactid keep working). Used by
+        # /api/cases consumers (Matters list/detail) to render a contact NAME
+        # instead of leaking the raw numeric contactid.
+        contact_name = contact_email = None
+        try:
+            if self.contact:
+                contact_name = self.contact.fullname
+                contact_email = self.contact.email
+        except Exception:
+            pass
         return {
             "id": self.id,
             "workspace_id": self.workspace_id,
             "contactid": self.contactid,
+            "contact_name": contact_name,
+            "contact_email": contact_email,
             "ownerid": self.ownerid,
             "title": self.title,
             "casetype": self.casetype,

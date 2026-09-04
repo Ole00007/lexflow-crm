@@ -152,6 +152,24 @@ header {
 .kn-nav-link:hover, .kn-nav-link.active { background: var(--surface-2); color: var(--text); }
 .kn-nav-link.sa { color: var(--warning); border: 1px solid var(--warning); }
 .kn-nav-link.sa:hover { background: var(--warning); color: #0f172a; }
+.kanban-nav {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-right: auto;
+}
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.nav-toggle:hover { color: var(--text); border-color: var(--text-muted); }
 .ws-chip {
   font-size: .72rem;
   font-weight: 700;
@@ -194,7 +212,51 @@ header {
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
 @media (max-width: 900px) {
-  .kanban-nav { display: none !important; }
+  .nav-toggle { display: inline-block; }
+  .kanban-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    margin: 0;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+  }
+  .kanban-nav.open { display: flex; }
+  .kanban-nav .kn-nav-link { padding: 10px 12px; white-space: normal; }
+}
+
+/* ── Skip link (standalone page — does not extend base.html) ──── */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 20px;
+  z-index: 1000;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top .15s ease;
+}
+.skip-link:focus { top: 12px; }
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .skip-link { transition: none; }
 }
 
 /* ── Board ─────────────────────────────────────────────────────── */
@@ -568,20 +630,23 @@ header {
 </head>
 <body>
 
+<a href="#board" class="skip-link">Skip to board</a>
+
 <!-- ── Header ──────────────────────────────────────────────────── -->
 <header>
   <div class="logo"><span>a</span>LEXy</div>
 
   <!-- Login form (shown when not authenticated) -->
   <div class="login-form" id="loginForm">
-    <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
-    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="email" aria-label="Email">
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" aria-label="Password">
     <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">Login</button>
   </div>
 
   <!-- Post-login controls -->
   <div id="loggedInControls" style="display:none; align-items:center; gap:10px; flex:1; justify-content:flex-end;">
-    <nav class="kanban-nav" aria-label="CRM sections" style="display:flex;gap:4px;align-items:center;margin-right:auto;">
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false" onclick="toggleNav()">☰</button>
+    <nav class="kanban-nav" aria-label="CRM sections">
       <a href="/dashboard" class="kn-nav-link">Dashboard</a>
       <a href="/contacts" class="kn-nav-link">Contacts</a>
       <a href="/kanban" class="kn-nav-link active">Kanban</a>
@@ -603,7 +668,7 @@ header {
 </header>
 
 <!-- ── Toast Container ─────────────────────────────────────────── -->
-<div class="toast-container" id="toastContainer"></div>
+<div class="toast-container" id="toastContainer" role="status" aria-live="polite"></div>
 
 <!-- ── Board ───────────────────────────────────────────────────── -->
 <div class="board-head">
@@ -682,9 +747,11 @@ header {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="caseContactId">Contact ID *</label>
-          <input type="number" id="caseContactId" placeholder="Contact ID">
-          <div class="hint">Create a contact first in Contacts</div>
+          <label for="caseContactId">Contact *</label>
+          <select id="caseContactId" required>
+            <option value="">— select a contact —</option>
+          </select>
+          <div class="hint">Pick the client this case belongs to (contacts from your workspace)</div>
         </div>
         <div class="form-group">
           <label for="casePriority">Priority</label>
@@ -939,6 +1006,29 @@ function loadCases() {
     .catch(function(e) { toast('Failed to load cases: ' + e.message, 'error'); });
 }
 
+/* Populate the New Task contact picker from /api/contacts (same pattern as
+   tasks.html case picker — no more memorized numeric Contact IDs). */
+function loadContacts() {
+  var t = token();
+  if (!t) return;
+  var sel = document.getElementById('caseContactId');
+  if (!sel) return;
+  fetch(API + '/api/contacts', {headers: {'Authorization': 'Bearer ' + t}})
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+    .then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var contacts = res.data || [];
+      sel.innerHTML = '<option value="">— select a contact —</option>' + contacts.map(function(c) {
+        var label = (c.fullname || 'Contact #' + c.id);
+        if (c.company) label += ' · ' + c.company;
+        return '<option value="' + c.id + '">' + esc(label) + '</option>';
+      }).join('');
+    })
+    .catch(function() {
+      sel.innerHTML = '<option value="">— contacts unavailable —</option>';
+    });
+}
+
 function renderColumn(status, cases) {
   var list = document.getElementById('list-' + status);
   var count = document.getElementById('count-' + status);
@@ -1076,6 +1166,7 @@ function openModal() {
   document.getElementById('submitCaseBtn').disabled = false;
   document.getElementById('submitCaseBtn').textContent = 'Create';
   document.getElementById('caseTitle').focus();
+  loadContacts();
 }
 
 function closeModal() {
@@ -1139,9 +1230,35 @@ document.getElementById('loginEmail').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') document.getElementById('loginPassword').focus();
 });
 
+/* Mobile navigation toggle (nav is hidden below 900px — see media query) */
+function toggleNav() {
+  var nav = document.querySelector('.kanban-nav');
+  var btn = document.getElementById('navToggle');
+  if (!nav) return;
+  var open = nav.classList.toggle('open');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+document.addEventListener('click', function(e) {
+  if (e.target.closest && e.target.closest('.kanban-nav a')) {
+    var nav = document.querySelector('.kanban-nav');
+    var btn = document.getElementById('navToggle');
+    if (nav) nav.classList.remove('open');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+});
+
 /* Escape closes modal */
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') {
+    var nav = document.querySelector('.kanban-nav');
+    if (nav && nav.classList.contains('open')) {
+      nav.classList.remove('open');
+      var btn = document.getElementById('navToggle');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    } else {
+      closeModal();
+    }
+  }
 });
 
 /* ═══════════════════════════════════════════════════════════════

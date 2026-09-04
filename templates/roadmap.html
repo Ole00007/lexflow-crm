@@ -61,59 +61,193 @@ header {
 .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
 .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
 
-/* ── Board ────────────────────────────────────────────────────── */
-.board { display: flex; gap: 14px; padding: 20px 22px; overflow-x: auto; align-items: flex-start; }
-.column {
-  min-width: 240px; max-width: 300px; flex: 0 0 auto;
-  background: rgba(22,27,39,0.7);
+/* ── Skip link (standalone page — does not extend base.html) ──── */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 22px;
+  z-index: 1000;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top .15s ease;
+}
+.skip-link:focus { top: 12px; }
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .skip-link { transition: none; }
+  .node-bg { transition: none; }
+}
+
+/* ── Graph layout ─────────────────────────────────────────────── */
+.graph-main { display: flex; flex-direction: column; }
+.graph-toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 22px 10px; }
+.graph-title h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.graph-title p { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.toolbar-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+.tb-btn {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.tb-btn:hover { border-color: var(--accent); background: var(--surface); }
+.tb-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--text-muted); padding: 6px 10px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer;
+  user-select: none;
+}
+.tb-toggle:hover { border-color: var(--accent); }
+.tb-toggle input { accent-color: var(--accent); width: 14px; height: 14px; }
+
+.graph-box {
+  position: relative;
+  margin: 0 22px;
+  height: calc(100vh - 240px);
+  min-height: 440px;
+  background: rgba(14,17,23,0.55);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 12px;
+  overflow: hidden;
 }
-.col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.col-title { font-size: 13px; font-weight: 700; text-transform: capitalize; letter-spacing: 0.03em; color: var(--text); }
-.col-count {
-  font-size: 11px; font-weight: 700; color: var(--text-faint);
-  background: var(--surface-2); border-radius: 999px; padding: 2px 9px;
+#graph {
+  display: block; width: 100%; height: 100%;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  cursor: grab;
+  outline: none;
 }
-.cards { display: flex; flex-direction: column; gap: 8px; }
-.card {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 11px 13px;
-  cursor: default;
-  transition: transform .1s, border-color .15s;
+#graph.panning { cursor: grabbing; }
+.graph-hint {
+  position: absolute; left: 12px; bottom: 10px; z-index: 5;
+  font-size: 11px; color: var(--text-faint);
+  background: rgba(14,17,23,0.72); padding: 4px 10px; border-radius: 6px;
+  pointer-events: none;
 }
-.card:hover { border-color: var(--accent); transform: translateY(-1px); }
-.card-id { font-size: 11px; font-weight: 700; color: var(--accent-h); letter-spacing: 0.04em; }
-.card-title { font-size: 13px; font-weight: 600; color: var(--text); margin: 4px 0 6px; line-height: 1.35; }
-.card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
-.pill {
-  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
-  background: var(--surface); color: var(--text-muted); border: 1px solid var(--border);
-}
-.pill.priority-P1 { color: var(--danger); border-color: rgba(239,68,68,.35); }
-.pill.priority-P2 { color: var(--warning); border-color: rgba(245,158,11,.35); }
-.pill.priority-P3, .pill.priority-P4 { color: var(--text-muted); }
-.pill.deployed { color: var(--success); border-color: rgba(16,185,129,.35); }
-.pill.blocked { color: var(--danger); border-color: rgba(239,68,68,.35); }
-.pill.local { color: var(--accent-h); border-color: rgba(90,150,240,.35); }
-.card-notes { font-size: 11px; color: var(--text-faint); margin-top: 7px; line-height: 1.45; }
-.empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: 14px 4px; }
 
-/* ── Legend / footer ──────────────────────────────────────────── */
-.board-footer { padding: 0 22px 26px; color: var(--text-faint); font-size: 12px; }
-.board-footer b { color: var(--text-muted); }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+/* ── SVG edges ────────────────────────────────────────────────── */
+.edge-dep { stroke: var(--accent-h); stroke-width: 2; opacity: .8; }
+.edge-int { stroke: #8FA3BF; stroke-width: 1.3; stroke-dasharray: 5 4; opacity: .42; }
+.edge-dep.hl { opacity: 1; stroke-width: 2.8; }
+.edge-int.hl { opacity: .95; stroke-width: 1.8; }
+.edge-dep.dim, .edge-int.dim { opacity: .04; }
+
+/* ── SVG nodes ────────────────────────────────────────────────── */
+.node { cursor: grab; outline: none; }
+.node:active { cursor: grabbing; }
+.node-bg { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; transition: filter .15s; }
+.node-id { font: 700 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; fill: var(--accent-h); }
+.node-title { font: 500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; fill: var(--text); }
+.node-meta { font: 500 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; fill: var(--text-muted); }
+.node:hover .node-bg, .node:focus .node-bg { filter: brightness(1.3); }
+.node:focus .node-bg { stroke: #FFFFFF; stroke-width: 2; }
+.node.sel .node-bg {
+  stroke: #FFFFFF; stroke-width: 2.5;
+  filter: drop-shadow(0 0 9px rgba(90,150,240,0.6));
+}
+.node.nbr .node-bg { stroke-width: 2.2; }
+.node.dim { opacity: .16; }
+
+/* ── Column colour coding (border + id text, AA on dark fills) ── */
+.col-backlog .node-bg { fill: #182131; stroke: #93A7C4; }
+.col-backlog .node-id { fill: #93A7C4; }
+.col-queue .node-bg { fill: #241F36; stroke: #B7A6F7; }
+.col-queue .node-id { fill: #B7A6F7; }
+.col-awaiting_confirmation .node-bg { fill: #241F36; stroke: #B7A6F7; }
+.col-awaiting_confirmation .node-id { fill: #B7A6F7; }
+.col-in_progress .node-bg { fill: #15263F; stroke: #6CA0F0; }
+.col-in_progress .node-id { fill: #6CA0F0; }
+.col-blocked .node-bg { fill: #331B1B; stroke: #F87171; stroke-dasharray: 6 4; }
+.col-blocked .node-id { fill: #F87171; }
+.col-local_verified .node-bg { fill: #2E2413; stroke: #FBBF24; }
+.col-local_verified .node-id { fill: #FBBF24; }
+.col-deployed .node-bg { fill: #123229; stroke: #34D399; }
+.col-deployed .node-id { fill: #34D399; }
+.col-done .node-bg { fill: #0F2E2B; stroke: #5EEAD4; }
+.col-done .node-id { fill: #5EEAD4; }
+.col-default .node-bg { fill: #1B2434; stroke: #A8B7CC; }
+.col-default .node-id { fill: #A8B7CC; }
+
+/* ── Legend / counts ──────────────────────────────────────────── */
+.graph-legend {
+  display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+  padding: 12px 22px 26px; color: var(--text-muted); font-size: 12px;
+}
+.legend-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.legend-label { font-weight: 700; color: var(--text); font-size: 11.5px; letter-spacing: 0.03em; text-transform: uppercase; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 10px; font-size: 11.5px; color: var(--text);
+}
+.chip i.swatch { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.chip b { color: var(--text-faint); font-weight: 700; }
+.chip.col-backlog i.swatch { background: #93A7C4; }
+.chip.col-queue i.swatch { background: #B7A6F7; }
+.chip.col-awaiting_confirmation i.swatch { background: #B7A6F7; }
+.chip.col-in_progress i.swatch { background: #6CA0F0; }
+.chip.col-blocked i.swatch { background: #F87171; }
+.chip.col-local_verified i.swatch { background: #FBBF24; }
+.chip.col-deployed i.swatch { background: #34D399; }
+.chip.col-done i.swatch { background: #5EEAD4; }
+.chip.col-default i.swatch { background: #A8B7CC; }
+.lg-edge { display: inline-flex; align-items: center; gap: 7px; }
+.lg-edge svg { display: block; }
+
+/* ── Tooltip ──────────────────────────────────────────────────── */
+#tooltip {
+  position: fixed; z-index: 60; max-width: 360px;
+  background: var(--surface-2); border: 1px solid var(--accent);
+  border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,.45); pointer-events: none;
+}
+#tooltip h4 { font-size: 12.5px; font-weight: 700; color: var(--accent-h); margin-bottom: 6px; line-height: 1.35; }
+#tooltip .tt-row { display: flex; gap: 8px; margin-top: 3px; line-height: 1.4; }
+#tooltip .tt-k { color: var(--text-faint); min-width: 62px; flex: 0 0 auto; }
+#tooltip .tt-v { color: var(--text); }
+#tooltip .tt-notes { margin-top: 7px; color: var(--text-muted); line-height: 1.5; border-top: 1px solid var(--border); padding-top: 6px; max-height: 140px; overflow-y: auto; }
+
+/* ── Empty state (fallback when JSON missing/empty) ───────────── */
+.empty-wrap { padding: 60px 22px; display: flex; justify-content: center; }
+.empty-card {
+  max-width: 560px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 34px 36px; text-align: left;
+}
+.empty-card h1 { font-size: 19px; margin-bottom: 12px; }
+.empty-card p { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
+.empty-card code {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 6px; font-size: 12px; color: var(--accent-h);
+}
+.empty-card .empty-sub { margin-top: 14px; font-size: 12.5px; color: var(--text-faint); }
+.empty-card .empty-sub b { color: var(--text-muted); }
+
+/* ── Screen-reader only ───────────────────────────────────────── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 
 @media (max-width: 640px) {
-  .board { padding: 14px; }
-  .column { min-width: 220px; }
+  .graph-box { margin: 0 12px; height: calc(100vh - 270px); }
+  .graph-toolbar { padding: 14px 12px 8px; }
+  .graph-legend { padding: 10px 12px 20px; }
+  .toolbar-controls { margin-left: 0; }
 }
 </style>
 </head>
 <body>
+
+<a href="#graphWrap" class="skip-link">Skip to graph</a>
 
 <header>
   <div class="logo"><span>a</span>LEXy <span style="font-size:12px;color:var(--text-faint)">Roadmap</span></div>
@@ -121,7 +255,7 @@ header {
     <a href="/dashboard" class="rm-nav-link">Dashboard</a>
     <a href="/contacts" class="rm-nav-link">Contacts</a>
     <a href="/kanban" class="rm-nav-link">Kanban</a>
-    <a href="/kanban/roadmap" class="rm-nav-link active">Roadmap</a>
+    <a href="/kanban/roadmap" class="rm-nav-link active" aria-current="page">Roadmap</a>
     <a href="/calendar" class="rm-nav-link">Calendar</a>
     <a href="/tasks" class="rm-nav-link">Tasks</a>
   </nav>
@@ -129,44 +263,695 @@ header {
   <button class="btn btn-logout" id="logoutBtn" style="display:none" onclick="handleLogout()">Logout</button>
 </header>
 
-<div class="board">
-  {% for col in columns %}
-  <div class="column">
-    <div class="col-head">
-      <span class="col-title">{{ col.replace('_', ' ') }}</span>
-      <span class="col-count">{{ by_column[col] | length }}</span>
+{% if roadmap is mapping and roadmap.get('tasks') %}
+<main id="graphWrap" class="graph-main">
+  <div class="graph-toolbar">
+    <div class="graph-title">
+      <h1>{{ roadmap.get('project', 'LexFlow Roadmap') }} — execution mind-map</h1>
+      <p>updated {{ roadmap.get('last_updated', '—') }} · {{ (roadmap.get('tasks') or []) | length }} tasks · nodes &amp; links below</p>
     </div>
-    <div class="cards">
-      {% for t in by_column[col] %}
-      <div class="card" title="{{ t.get('notes', '') }}">
-        <div class="card-id">{{ t.get('id', '') }}</div>
-        <div class="card-title">{{ t.get('title', '') }}</div>
-        <div class="card-meta">
-          {% if t.get('priority') %}<span class="pill priority-{{ t.get('priority') }}">{{ t.get('priority') }}</span>{% endif %}
-          {% if t.get('deploy_status') %}<span class="pill {{ t.get('deploy_status') }}">{{ t.get('deploy_status') }}</span>{% endif %}
-          {% if t.get('assigned_agent') %}<span class="pill">{{ t.get('assigned_agent') }}</span>{% endif %}
-        </div>
-        {% if t.get('notes') %}<div class="card-notes">{{ t.get('notes') }}</div>{% endif %}
-      </div>
-      {% else %}
-      <div class="empty">—</div>
-      {% endfor %}
+    <div class="toolbar-controls">
+      <button type="button" class="tb-btn" id="zoomIn" aria-label="Zoom in">＋ Zoom in</button>
+      <button type="button" class="tb-btn" id="zoomOut" aria-label="Zoom out">－ Zoom out</button>
+      <button type="button" class="tb-btn" id="zoomReset" aria-label="Reset view">⌂ Reset view</button>
+      <label class="tb-toggle"><input type="checkbox" id="toggleDeps" checked> Dependencies</label>
+      <label class="tb-toggle"><input type="checkbox" id="toggleIntersect" checked> Intersections</label>
     </div>
   </div>
-  {% endfor %}
-</div>
 
-<div class="board-footer">
-  <b>{{ roadmap.get('project', '') }}</b> · {{ roadmap.get('file_purpose', '') }} · updated {{ roadmap.get('last_updated', '') }}
-  <div class="legend">
-    <span class="pill">P1-P4 = priority</span>
-    <span class="pill deployed">deployed</span>
-    <span class="pill local">local</span>
-    <span class="pill blocked">blocked</span>
+  <div class="graph-box">
+    <svg id="graph"
+         viewBox="0 0 1720 1000"
+         tabindex="0"
+         role="img"
+         aria-label="Roadmap mind-map. Tasks are nodes coloured by status column; solid arrows show task dependencies; dashed lines show tasks sharing an assigned agent or tenant scope. Drag nodes to rearrange, drag the background to pan, scroll or pinch to zoom, click a node to highlight its connections."
+         aria-describedby="graphHint">
+      <defs>
+        <marker id="arrowDep" viewBox="0 0 10 10" refX="8" refY="5"
+                markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#5A96F0"></path>
+        </marker>
+      </defs>
+      <g id="viewport">
+        <g id="edgeLayer"></g>
+        <g id="nodeLayer"></g>
+      </g>
+    </svg>
+    <div class="graph-hint" id="graphHint">Drag nodes to rearrange · drag background to pan · scroll / pinch to zoom · click a node to highlight its connections · Tab to focus nodes, arrows move them</div>
+    <div id="tooltip" role="tooltip" hidden></div>
+    <div id="srLive" class="sr-only" aria-live="polite"></div>
   </div>
-</div>
+
+  <div class="graph-legend">
+    <div class="legend-row">
+      <span class="legend-label">Columns</span>
+      <span id="legendCols" class="legend-row"></span>
+    </div>
+    <div class="legend-row">
+      <span class="legend-label">Links</span>
+      <span class="lg-edge">
+        <svg width="30" height="10" aria-hidden="true"><line x1="1" y1="5" x2="20" y2="5" stroke="#5A96F0" stroke-width="2"></line><polygon points="18,1 27,5 18,9" fill="#5A96F0"></polygon></svg>
+        depends on
+      </span>
+      <span class="lg-edge">
+        <svg width="30" height="10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#8FA3BF" stroke-width="1.5" stroke-dasharray="5 4"></line></svg>
+        shared agent / tenant
+      </span>
+      <span class="lg-edge"><span style="color:var(--text-faint)">(dashed border = blocked)</span></span>
+    </div>
+  </div>
+</main>
+{% else %}
+<main id="graphWrap" class="empty-wrap">
+  <div class="empty-card">
+    <h1>Roadmap mind-map — no data yet</h1>
+    <p>The roadmap source file (<code>docs/LexFlow_Agentic_Roadmap.json</code>) is missing or contains no tasks. Once tasks are added to that file, this page renders them as a graph — each task a node, with <b>depends-on</b> arrows and <b>shared agent / tenant</b> links.</p>
+    <p class="empty-sub">This view replaces the old kanban-style columns with a diagram view (T-021): tasks as nodes, connections as edges — a human-readable map of project context and intersections. The kanban board stays at <a href="/kanban" style="color:var(--accent-h)">/kanban</a>.</p>
+  </div>
+</main>
+{% endif %}
 
 <script>
+var ROADMAP = {{ roadmap | tojson }};
+
+(function(){
+'use strict';
+/* ── Guard: nothing to diagram ────────────────────────────────── */
+if (!window.ROADMAP || !Array.isArray(window.ROADMAP.tasks) || window.ROADMAP.tasks.length === 0) return;
+
+var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var NS = 'http://www.w3.org/2000/svg';
+var svg = document.getElementById('graph');
+var viewport = document.getElementById('viewport');
+var edgeLayer = document.getElementById('edgeLayer');
+var nodeLayer = document.getElementById('nodeLayer');
+var tipEl = document.getElementById('tooltip');
+var srLive = document.getElementById('srLive');
+
+var tasks = window.ROADMAP.tasks;
+
+/* ── Column order (known first, then any unexpected columns) ──── */
+var knownCols = (window.ROADMAP.kanban_columns && window.ROADMAP.kanban_columns.length)
+  ? window.ROADMAP.kanban_columns.slice()
+  : ['backlog', 'in_progress', 'blocked', 'awaiting_confirmation', 'local_verified', 'deployed', 'done'];
+var usedCols = [];
+tasks.forEach(function(t){
+  var c = t.column || 'backlog';
+  if (usedCols.indexOf(c) < 0) usedCols.push(c);
+});
+var orderedCols = knownCols.filter(function(c){ return usedCols.indexOf(c) >= 0; });
+usedCols.forEach(function(c){ if (orderedCols.indexOf(c) < 0) orderedCols.push(c); });
+
+/* ── Layer x positions per column ─────────────────────────────── */
+var LAYER_X0 = 150, LAYER_GAP = 235;
+var layerX = {};
+orderedCols.forEach(function(c, i){ layerX[c] = LAYER_X0 + i * LAYER_GAP; });
+
+/* ── Tenant universe (for "global scope" detection) ───────────── */
+var allTenants = [];
+tasks.forEach(function(t){
+  (t.tenant_scope || []).forEach(function(x){ if (allTenants.indexOf(x) < 0) allTenants.push(x); });
+});
+/* A task is "global" when its scope covers every PRIMARY tenant declared in
+   ROADMAP.tenants (e.g. ws7, ws9, ws10). Sub-tenant/client lists (cl*) don't
+   count — a task touching only Romanelli's cluster is still focused, not global. */
+var primaryTenants = [];
+(function(){
+  var tObj = window.ROADMAP.tenants;
+  if (tObj && typeof tObj === 'object') {
+    Object.keys(tObj).forEach(function(k){ primaryTenants.push(k); });
+  }
+  if (!primaryTenants.length) {
+    allTenants.forEach(function(x){ if (primaryTenants.indexOf(x) < 0) primaryTenants.push(x); });
+  }
+})();
+function isGlobalScope(scope){
+  if (!scope || !scope.length) return false;
+  for (var i = 0; i < primaryTenants.length; i++) {
+    if (scope.indexOf(primaryTenants[i]) < 0) return false;
+  }
+  return true;
+}
+
+/* ── Text measurement (canvas, with fallback) ─────────────────── */
+var _ctx = null;
+function measure(s, px, bold){
+  s = String(s == null ? '' : s);
+  try {
+    if (!_ctx) { var c = document.createElement('canvas'); _ctx = c.getContext('2d'); }
+    _ctx.font = (bold ? '700 ' : '400 ') + px + 'px system-ui, -apple-system, "Segoe UI", sans-serif';
+    return _ctx.measureText(s).width;
+  } catch (e) { return s.length * px * 0.6; }
+}
+function wrapText(text, maxW, px){
+  var words = String(text == null ? '' : text).split(/\s+/);
+  var lines = [], cur = '';
+  words.forEach(function(w){
+    var test = cur ? cur + ' ' + w : w;
+    if (measure(test, px) <= maxW) { cur = test; }
+    else { if (cur) lines.push(cur); cur = w; }
+  });
+  if (cur) lines.push(cur);
+  if (!lines.length) lines = [''];
+  return lines;
+}
+function agentShort(a){
+  if (!a) return '';
+  return String(a).split('_')[0];
+}
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* ── Node models ──────────────────────────────────────────────── */
+var byId = {};          /* id -> node model */
+var nodes = [];
+var perColCount = {};
+tasks.forEach(function(t){
+  var c = t.column || 'backlog';
+  perColCount[c] = (perColCount[c] || 0) + 1;
+});
+var perColIdx = {};
+tasks.forEach(function(t, i){
+  var c = t.column || 'backlog';
+  var idx = perColIdx[c] || 0; perColIdx[c] = idx + 1;
+  var id = t.id || ('T-' + (i + 1));
+  var title = String(t.title || id);
+  var metaParts = [];
+  if (t.priority) metaParts.push(t.priority);
+  if (t.deploy_status) metaParts.push(t.deploy_status);
+  var aShort = agentShort(t.assigned_agent);
+  if (aShort) metaParts.push(aShort);
+  var metaText = metaParts.join(' · ');
+
+  var idW = measure(id, 10.5, true);
+  var titleLines = wrapText(title, 186, 11.5);
+  if (titleLines.length > 3) {
+    var capped = titleLines.slice(0, 3);
+    var last = capped[2];
+    while (measure(last + '…', 11.5) > 186 && last.length > 1) last = last.slice(0, -1);
+    capped[2] = last + '…';
+    titleLines = capped;
+  }
+  var titleW = 0;
+  titleLines.forEach(function(l){ titleW = Math.max(titleW, measure(l, 11.5)); });
+  var metaW = metaText ? measure(metaText, 9.5) : 0;
+  var w = Math.max(96, Math.min(210, Math.max(idW, titleW, metaW) + 26));
+  var h = 14 + 15 + titleLines.length * 14 + (metaText ? 15 : 7);
+
+  var n = {
+    id: id, title: title, column: c, priority: t.priority || '',
+    deploy: t.deploy_status || '', agent: t.assigned_agent || '',
+    agentShort: aShort, tenants: t.tenant_scope || [], notes: t.notes || '',
+    depends: t.depends_on || [],
+    w: w, h: h, titleLines: titleLines, metaText: metaText,
+    x: layerX[c] + (Math.random() * 40 - 20),
+    y: 260 + (idx - (perColCount[c] - 1) / 2) * 84 + (Math.random() * 24 - 12),
+    vx: 0, vy: 0, layerX: layerX[c], anchorY: 260 + (idx - (perColCount[c] - 1) / 2) * 84
+  };
+  nodes.push(n); byId[id] = n;
+});
+
+/* ── Edges ────────────────────────────────────────────────────── */
+var depEdges = [], intEdges = [];
+function depLinked(a, b){
+  return (a.depends && a.depends.indexOf(b.id) >= 0) || (b.depends && b.depends.indexOf(a.id) >= 0);
+}
+/* solid: depends_on */
+nodes.forEach(function(n){
+  (n.depends || []).forEach(function(d){
+    var tgt = byId[d];
+    if (tgt && tgt.id !== n.id) depEdges.push({ a: n, b: tgt, dep: true });
+  });
+});
+/* dashed: shared assigned_agent OR shared tenant scope (both scoped to a
+   subset of the primary tenants — i.e. both tasks are "focused", so the
+   overlap is a real project intersection, not the all-tenants default) */
+for (var i = 0; i < nodes.length; i++) {
+  for (var j = i + 1; j < nodes.length; j++) {
+    var a = nodes[i], b = nodes[j];
+    if (depLinked(a, b)) continue;
+    var shareAgent = !!(a.agent && a.agent === b.agent);
+    var scopeA = a.tenants, scopeB = b.tenants;
+    var shareTenant = !isGlobalScope(scopeA) && !isGlobalScope(scopeB) &&
+      scopeA.some(function(x){ return scopeB.indexOf(x) >= 0; });
+    if (shareAgent || shareTenant) intEdges.push({ a: a, b: b, dep: false });
+  }
+}
+var edges = depEdges.concat(intEdges);
+
+/* adjacency (for neighbour highlighting) */
+var adj = {};
+edges.forEach(function(e){
+  (adj[e.a.id] = adj[e.a.id] || {})[e.b.id] = true;
+  (adj[e.b.id] = adj[e.b.id] || {})[e.a.id] = true;
+});
+
+/* ── Force-ish layout (synchronous → instant, reduced-motion safe) ── */
+(function simulate(){
+  var k = 260, iters = 90;
+  for (var it = 0; it < iters; it++) {
+    var i, j;
+    for (i = 0; i < nodes.length; i++) {
+      for (j = i + 1; j < nodes.length; j++) {
+        var a = nodes[i], b = nodes[j];
+        var dx = a.x - b.x, dy = a.y - b.y;
+        var d2 = dx * dx + dy * dy;
+        if (d2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 1; }
+        var d = Math.sqrt(d2);
+        var f = k * k / d2;
+        var fx = dx / d * f, fy = dy / d * f;
+        a.vx += fx; a.vy += fy;
+        b.vx -= fx; b.vy -= fy;
+      }
+    }
+    for (j = 0; j < edges.length; j++) {
+      var e = edges[j];
+      var ea = e.a, eb = e.b;
+      var edx = eb.x - ea.x, edy = eb.y - ea.y;
+      var ed = Math.sqrt(edx * edx + edy * edy) || 1;
+      var rest = e.dep ? 200 : 150;
+      var ef = (ed - rest) * (e.dep ? 0.02 : 0.006);
+      var efx = edx / ed * ef, efy = edy / ed * ef;
+      ea.vx += efx; ea.vy += efy;
+      eb.vx -= efx; eb.vy -= efy;
+    }
+    for (i = 0; i < nodes.length; i++) {
+      var nd = nodes[i];
+      nd.vx += (nd.layerX - nd.x) * 0.022;
+      nd.vy += (nd.anchorY - nd.y) * 0.004;
+      nd.vx *= 0.85; nd.vy *= 0.85;
+      var vl = Math.sqrt(nd.vx * nd.vx + nd.vy * nd.vy);
+      if (vl > 12) { nd.vx = nd.vx / vl * 12; nd.vy = nd.vy / vl * 12; }
+      nd.x += nd.vx; nd.y += nd.vy;
+    }
+  }
+})();
+
+/* ── Render edges ─────────────────────────────────────────────── */
+function rectBorder(cx, cy, hw, hh, ox, oy){
+  var dx = cx - ox, dy = cy - oy;
+  if (dx === 0 && dy === 0) return { x: cx, y: cy };
+  var tx = dx !== 0 ? hw / Math.abs(dx) : Infinity;
+  var ty = dy !== 0 ? hh / Math.abs(dy) : Infinity;
+  var t = Math.min(tx, ty);
+  return { x: ox + dx * t, y: oy + dy * t };
+}
+function edgeCoords(e){
+  var A = e.a, B = e.b;
+  var p1 = rectBorder(A.x, A.y, A.w / 2, A.h / 2, B.x, B.y);
+  var p2 = rectBorder(B.x, B.y, B.w / 2, B.h / 2, A.x, A.y);
+  return { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+}
+var edgeEls = [];
+edges.forEach(function(e){
+  var line = document.createElementNS(NS, 'line');
+  line.setAttribute('class', e.dep ? 'edge-dep' : 'edge-int');
+  if (e.dep) line.setAttribute('marker-end', 'url(#arrowDep)');
+  edgeLayer.appendChild(line);
+  edgeEls.push({ el: line, e: e });
+});
+function updateEdgeEls(){
+  edgeEls.forEach(function(ee){
+    var c = edgeCoords(ee.e);
+    ee.el.setAttribute('x1', c.x1); ee.el.setAttribute('y1', c.y1);
+    ee.el.setAttribute('x2', c.x2); ee.el.setAttribute('y2', c.y2);
+  });
+}
+updateEdgeEls();
+
+/* ── Render nodes ─────────────────────────────────────────────── */
+var nodeG = {};
+function setNodePos(n){
+  nodeG[n.id].setAttribute('transform', 'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')');
+}
+function ariaFor(n){
+  var parts = [n.id + ', ' + n.title];
+  parts.push('Column ' + (n.column || 'backlog'));
+  if (n.priority) parts.push('priority ' + n.priority);
+  if (n.agent) parts.push('assigned ' + n.agent);
+  if (n.tenants.length) parts.push('tenant scope ' + n.tenants.join(', '));
+  if (n.notes) parts.push('Notes: ' + n.notes.slice(0, 220));
+  return parts.join('. ');
+}
+nodes.forEach(function(n){
+  var g = document.createElementNS(NS, 'g');
+  g.setAttribute('class', 'node col-' + String(n.column).toLowerCase().replace(/[^a-z0-9_-]+/g, '-'));
+  g.setAttribute('tabindex', '0');
+  g.setAttribute('role', 'button');
+  g.setAttribute('aria-label', ariaFor(n));
+  g.setAttribute('data-id', n.id);
+
+  var rect = document.createElementNS(NS, 'rect');
+  rect.setAttribute('class', 'node-bg');
+  rect.setAttribute('x', 0); rect.setAttribute('y', 0);
+  rect.setAttribute('width', n.w); rect.setAttribute('height', n.h);
+  rect.setAttribute('rx', 9);
+  g.appendChild(rect);
+
+  var idT = document.createElementNS(NS, 'text');
+  idT.setAttribute('class', 'node-id');
+  idT.setAttribute('x', 13); idT.setAttribute('y', 19);
+  idT.textContent = n.id;
+  g.appendChild(idT);
+
+  var tT = document.createElementNS(NS, 'text');
+  tT.setAttribute('class', 'node-title');
+  tT.setAttribute('x', 13);
+  tT.setAttribute('y', 35);
+  n.titleLines.forEach(function(l, li){
+    var tsp = document.createElementNS(NS, 'tspan');
+    tsp.setAttribute('x', 13);
+    tsp.setAttribute('dy', li === 0 ? 0 : 14);
+    tsp.textContent = l;
+    tT.appendChild(tsp);
+  });
+  g.appendChild(tT);
+
+  if (n.metaText) {
+    var mT = document.createElementNS(NS, 'text');
+    mT.setAttribute('class', 'node-meta');
+    mT.setAttribute('x', 13);
+    mT.setAttribute('y', n.h - 9);
+    mT.textContent = n.metaText;
+    g.appendChild(mT);
+  }
+
+  nodeLayer.appendChild(g);
+  nodeG[n.id] = g;
+  setNodePos(n);
+});
+
+/* ── Pan / zoom state ─────────────────────────────────────────── */
+var tx = 0, ty = 0, k = 1;
+function applyTransform(){
+  viewport.setAttribute('transform', 'translate(' + tx + ',' + ty + ') scale(' + k + ')');
+}
+function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
+function zoomAtClient(px, py, factor){
+  var nk = clamp(k * factor, 0.22, 3.2);
+  var wx = (px - tx) / k, wy = (py - ty) / k;
+  k = nk;
+  tx = px - wx * k; ty = py - wy * k;
+  applyTransform();
+}
+function fitView(){
+  if (!nodes.length) return;
+  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  nodes.forEach(function(n){
+    minX = Math.min(minX, n.x - n.w / 2); maxX = Math.max(maxX, n.x + n.w / 2);
+    minY = Math.min(minY, n.y - n.h / 2); maxY = Math.max(maxY, n.y + n.h / 2);
+  });
+  var cw = svg.clientWidth || 1200, ch = svg.clientHeight || 800;
+  var bw = (maxX - minX) + 90, bh = (maxY - minY) + 90;
+  k = clamp(Math.min(cw / bw, ch / bh), 0.22, 1.15);
+  tx = cw / 2 - ((minX + maxX) / 2) * k;
+  ty = ch / 2 - ((minY + maxY) / 2) * k;
+  applyTransform();
+}
+applyTransform();
+
+/* ── Tooltip ──────────────────────────────────────────────────── */
+function tipHTML(n){
+  var h = '<h4>' + esc(n.id + ' · ' + n.title) + '</h4>';
+  h += '<div class="tt-row"><span class="tt-k">Column</span><span class="tt-v">' + esc(n.column || 'backlog') + '</span></div>';
+  if (n.priority) h += '<div class="tt-row"><span class="tt-k">Priority</span><span class="tt-v">' + esc(n.priority) + '</span></div>';
+  if (n.agent) h += '<div class="tt-row"><span class="tt-k">Assigned</span><span class="tt-v">' + esc(n.agent) + '</span></div>';
+  if (n.deploy) h += '<div class="tt-row"><span class="tt-k">Deploy</span><span class="tt-v">' + esc(n.deploy) + '</span></div>';
+  if (n.tenants.length) h += '<div class="tt-row"><span class="tt-k">Tenants</span><span class="tt-v">' + esc(n.tenants.join(', ')) + '</span></div>';
+  var deps = (n.depends || []).filter(function(d){ return byId[d]; });
+  if (deps.length) h += '<div class="tt-row"><span class="tt-k">Depends on</span><span class="tt-v">' + esc(deps.join(', ')) + '</span></div>';
+  if (n.notes) h += '<div class="tt-notes">' + esc(n.notes) + '</div>';
+  return h;
+}
+function positionTip(clientX, clientY){
+  var pad = 12;
+  var bw = tipEl.offsetWidth, bh = tipEl.offsetHeight;
+  var left = clientX + pad, top = clientY + pad + 6;
+  if (left + bw > window.innerWidth - 8) left = clientX - bw - pad;
+  if (top + bh > window.innerHeight - 8) top = clientY - bh - pad - 8;
+  tipEl.style.left = Math.max(8, left) + 'px';
+  tipEl.style.top = Math.max(8, top) + 'px';
+}
+function showTip(n, clientX, clientY){
+  tipEl.innerHTML = tipHTML(n);
+  tipEl.hidden = false;
+  positionTip(clientX, clientY);
+}
+function hideTip(){ tipEl.hidden = true; }
+
+/* ── Highlight / selection ────────────────────────────────────── */
+var selectedId = null;
+function clearSelect(){
+  selectedId = null;
+  nodes.forEach(function(n){ nodeG[n.id].classList.remove('sel', 'nbr', 'dim'); });
+  edgeEls.forEach(function(ee){ ee.el.classList.remove('hl', 'dim'); });
+}
+function selectNode(id){
+  if (selectedId === id) { clearSelect(); return; }
+  selectedId = id;
+  var nbrs = adj[id] || {};
+  nodes.forEach(function(n){
+    var g = nodeG[n.id];
+    var isSel = n.id === id;
+    var isNbr = !!nbrs[n.id];
+    g.classList.toggle('sel', isSel);
+    g.classList.toggle('nbr', isNbr);
+    g.classList.toggle('dim', !isSel && !isNbr);
+  });
+  edgeEls.forEach(function(ee){
+    var touch = ee.e.a.id === id || ee.e.b.id === id;
+    ee.el.classList.toggle('hl', touch);
+    ee.el.classList.toggle('dim', !touch);
+  });
+  var nbList = Object.keys(nbrs).sort();
+  announce(id + ' selected. Connected to ' + (nbList.length ? nbList.join(', ') : 'nothing yet.'));
+}
+function announce(msg){ srLive.textContent = ''; srLive.textContent = msg; }
+
+/* ── Pointer interaction (drag nodes / pan / pinch) ───────────── */
+var pointers = {};
+var draggingNode = null, draggedMoved = false, downStart = null;
+var panning = null, pannedMoved = false, panStart = null;
+var pinch = { prevD: 0, prevMid: null };
+
+svg.addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  svg.setPointerCapture(e.pointerId);
+  pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+  var ng = e.target && e.target.closest ? e.target.closest('.node') : null;
+  if (ng) {
+    if (Object.keys(pointers).length === 1) {
+      draggingNode = ng;
+      draggedMoved = false;
+      downStart = { x: e.clientX, y: e.clientY };
+    }
+  } else {
+    panning = { x: e.clientX, y: e.clientY };
+    pannedMoved = false;
+    panStart = { x: e.clientX, y: e.clientY };
+    svg.classList.add('panning');
+  }
+  pinch = { prevD: 0, prevMid: null };
+});
+
+svg.addEventListener('pointermove', function(e){
+  var prev = pointers[e.pointerId];
+  if (!prev) return;
+  pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+  var ids = Object.keys(pointers);
+
+  if (ids.length >= 2) {
+    draggingNode = null; panning = null;
+    svg.classList.remove('panning');
+    var p1 = pointers[ids[0]], p2 = pointers[ids[1]];
+    var d = Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
+    var mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    if (pinch.prevD > 0 && pinch.prevMid) {
+      zoomAtClient(mid.x, mid.y, d / pinch.prevD);
+      tx += mid.x - pinch.prevMid.x; ty += mid.y - pinch.prevMid.y;
+      applyTransform();
+    }
+    pinch = { prevD: d, prevMid: mid };
+    return;
+  }
+  pinch = { prevD: 0, prevMid: null };
+
+  if (draggingNode) {
+    var m = byId[draggingNode.getAttribute('data-id')];
+    if (!m) return;
+    if (!draggedMoved && Math.hypot(e.clientX - downStart.x, e.clientY - downStart.y) > 4) draggedMoved = true;
+    if (draggedMoved) {
+      var dx = (e.clientX - prev.x) / k, dy = (e.clientY - prev.y) / k;
+      m.x += dx; m.y += dy;
+      setNodePos(m);
+      updateEdgeEls();
+    }
+  } else if (panning) {
+    var pdx = e.clientX - panning.x, pdy = e.clientY - panning.y;
+    if (!pannedMoved && Math.hypot(e.clientX - panStart.x, e.clientY - panStart.y) > 4) pannedMoved = true;
+    tx += pdx; ty += pdy;
+    applyTransform();
+    panning = { x: e.clientX, y: e.clientY };
+  }
+});
+
+function endPointer(e){
+  delete pointers[e.pointerId];
+  pinch = { prevD: 0, prevMid: null };
+  if (draggingNode) {
+    if (!draggedMoved) selectNode(draggingNode.getAttribute('data-id'));
+    draggingNode = null;
+  } else if (panning) {
+    if (!pannedMoved) clearSelect();
+    panning = null;
+  }
+  if (Object.keys(pointers).length === 0) {
+    draggingNode = null; panning = null;
+    svg.classList.remove('panning');
+  }
+}
+svg.addEventListener('pointerup', endPointer);
+svg.addEventListener('pointercancel', endPointer);
+
+/* ── Wheel zoom ───────────────────────────────────────────────── */
+svg.addEventListener('wheel', function(e){
+  e.preventDefault();
+  var r = svg.getBoundingClientRect();
+  zoomAtClient(e.clientX - r.left, e.clientY - r.top, Math.pow(1.0015, -e.deltaY));
+}, { passive: false });
+
+/* ── Toolbar ──────────────────────────────────────────────────── */
+document.getElementById('zoomIn').addEventListener('click', function(){
+  var r = svg.getBoundingClientRect();
+  zoomAtClient(r.left + r.width / 2, r.top + r.height / 2, 1.35);
+});
+document.getElementById('zoomOut').addEventListener('click', function(){
+  var r = svg.getBoundingClientRect();
+  zoomAtClient(r.left + r.width / 2, r.top + r.height / 2, 1 / 1.35);
+});
+document.getElementById('zoomReset').addEventListener('click', fitView);
+document.getElementById('toggleDeps').addEventListener('change', applyToggles);
+document.getElementById('toggleIntersect').addEventListener('change', applyToggles);
+function applyToggles(){
+  var showDeps = document.getElementById('toggleDeps').checked;
+  var showInt = document.getElementById('toggleIntersect').checked;
+  edgeEls.forEach(function(ee){
+    ee.el.style.display = (ee.e.dep ? showDeps : showInt) ? '' : 'none';
+  });
+}
+
+/* ── Keyboard (nodes: arrows move / Enter+Space select; svg: pan / zoom) ── */
+document.addEventListener('keydown', function(e){
+  var ae = document.activeElement;
+  if (ae && ae.classList && ae.classList.contains('node')) {
+    var m = byId[ae.getAttribute('data-id')];
+    if (!m) return;
+    var step = e.shiftKey ? 40 : 12;
+    var moved = true;
+    if (e.key === 'ArrowLeft') m.x -= step;
+    else if (e.key === 'ArrowRight') m.x += step;
+    else if (e.key === 'ArrowUp') m.y -= step;
+    else if (e.key === 'ArrowDown') m.y += step;
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectNode(m.id); return; }
+    else if (e.key === 'Escape') { clearSelect(); return; }
+    else moved = false;
+    if (moved) {
+      e.preventDefault();
+      setNodePos(m);
+      updateEdgeEls();
+      announce(m.id + ' moved to x ' + Math.round(m.x) + ', y ' + Math.round(m.y));
+    }
+  } else if (ae === svg || ae === document.body) {
+    var s = e.shiftKey ? 90 : 45;
+    var handled = true;
+    if (e.key === 'ArrowLeft') { tx += s; }
+    else if (e.key === 'ArrowRight') { tx -= s; }
+    else if (e.key === 'ArrowUp') { ty += s; }
+    else if (e.key === 'ArrowDown') { ty -= s; }
+    else if (e.key === '+' || e.key === '=') {
+      var r = svg.getBoundingClientRect();
+      zoomAtClient(r.left + r.width / 2, r.top + r.height / 2, 1.35);
+    }
+    else if (e.key === '-') {
+      var r2 = svg.getBoundingClientRect();
+      zoomAtClient(r2.left + r2.width / 2, r2.top + r2.height / 2, 1 / 1.35);
+    }
+    else if (e.key === '0') { fitView(); }
+    else handled = false;
+    if (handled) { e.preventDefault(); applyTransform(); }
+  }
+});
+
+/* ── Hover tooltip ────────────────────────────────────────────── */
+nodeLayer.addEventListener('pointerover', function(e){
+  var ng = e.target && e.target.closest ? e.target.closest('.node') : null;
+  if (ng) {
+    var m = byId[ng.getAttribute('data-id')];
+    if (m) showTip(m, e.clientX, e.clientY);
+  }
+});
+nodeLayer.addEventListener('pointermove', function(e){
+  if (!tipEl.hidden) positionTip(e.clientX, e.clientY);
+});
+nodeLayer.addEventListener('pointerout', function(e){
+  var ng = e.target && e.target.closest ? e.target.closest('.node') : null;
+  if (ng && (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('.node'))) hideTip();
+});
+
+/* ── Focus announcements ──────────────────────────────────────── */
+nodeLayer.addEventListener('focusin', function(e){
+  var ng = e.target && e.target.closest ? e.target.closest('.node') : null;
+  if (ng) {
+    var m = byId[ng.getAttribute('data-id')];
+    if (m) announce(m.id + ': ' + m.title + '. Column ' + (m.column || 'backlog') +
+      (m.priority ? ', priority ' + m.priority : '') +
+      (m.agent ? ', assigned ' + m.agent : '') + '.');
+    if (m) showTip(m, 0, 0);
+  }
+});
+nodeLayer.addEventListener('focusout', function(){ hideTip(); });
+
+/* ── Legend chips (counts per column) ─────────────────────────── */
+(function buildLegend(){
+  var counts = {};
+  tasks.forEach(function(t){
+    var c = t.column || 'backlog';
+    counts[c] = (counts[c] || 0) + 1;
+  });
+  var host = document.getElementById('legendCols');
+  if (!host) return;
+  orderedCols.forEach(function(c){
+    if (!counts[c]) return;
+    var span = document.createElement('span');
+    span.className = 'chip col-' + String(c).toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+    var sw = document.createElement('i');
+    sw.className = 'swatch';
+    sw.setAttribute('aria-hidden', 'true');
+    span.appendChild(sw);
+    span.appendChild(document.createTextNode(' ' + c.replace(/_/g, ' ')));
+    var b = document.createElement('b');
+    b.textContent = ' ' + counts[c];
+    span.appendChild(b);
+    host.appendChild(span);
+  });
+})();
+
+/* ── Initial fit (again after fonts settle) ───────────────────── */
+fitView();
+if (!REDUCED) {
+  window.addEventListener('load', function(){ fitView(); });
+}
+
+/* ── Escape also clears selection from anywhere ───────────────── */
+svg.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') clearSelect();
+});
+})();
+
+/* ── Header: user badge + logout ──────────────────────────────── */
 (function(){
   var t = localStorage.getItem('jwt');
   if (t) {

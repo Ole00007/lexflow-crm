@@ -43,7 +43,7 @@
   <h1 class="brand">{{ tenant }}</h1>
   <p class="eyebrow">AREA RISERVATA</p>
   <p class="hint">Inserisci le credenziali per gestire le richieste dei clienti.<br>Accedi per visualizzare l'area riservata.</p>
-  <p class="err" id="errMsg"></p>
+  <p class="err" id="errMsg" role="alert"></p>
   <form id="loginForm" onsubmit="return doLogin(event)">
     <label for="email">Email</label>
     <input type="email" id="email" autocomplete="username" required>
