@@ -377,6 +377,36 @@
     {
       "id": "T-019",
       "title": "Design/UX audit: CRM + landing vs 2025 legal-SaaS standards (WCAG 2.2/ISO 40500, mobile parity, role dashboards, trust bar, AI-native)",
+      "column": "local_verified",
+      "assigned_agent": "frontend_developer",
+      "deploy_status": null,
+      "tenant_scope": [
+        "ws7",
+        "ws9",
+        "ws10"
+      ],
+      "priority": "P3",
+      "depends_on": [],
+      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). AUDIT DONE 2026-09-04: gap matrix + top-10 fix list (frontend_developer, read-only) in docs/UX-Test-Report-2026-09-04.md + LexFlux-UX-UI-Design-Research-Report-2025.md in Obsidian. Contrast quick-fix APPLIED locally (commit 3aaea16, --text-faint -> #7E90A9, btn text var(--bg); calendar/tasks white-on-accent still ~4.1:1 — pending). IMPLEMENTATION ORDER (Ole 2026-09-04): Pagliano (least populated) first -> verify locally -> Lexflow -> Romanelli. Hard rule: no design deploy before Ole's human review of local preview."
+    },
+    {
+      "id": "T-020",
+      "title": "i18n: CRM English -> Italian (+ Russian optional) — bilingual by end of week",
+      "column": "backlog",
+      "assigned_agent": null,
+      "deploy_status": null,
+      "tenant_scope": [
+        "ws7",
+        "ws9",
+        "ws10"
+      ],
+      "priority": "P2",
+      "depends_on": [],
+      "notes": "Ole 2026-09-04: keep CRM English for now (tester lawyers speak English); landings stay Italian. Plan translation to Italian (and possibly Russian) for NEXT WEEK — bilingual by end of week. Do NOT touch language now. Reminder: operator-installer must remind Ole about this."
+    },
+    {
+      "id": "T-021",
+      "title": "Diagram view of task/case execution (n8n/Obsidian-graph style) on roadmap",
       "column": "backlog",
       "assigned_agent": null,
       "deploy_status": null,
@@ -386,8 +416,10 @@
         "ws10"
       ],
       "priority": "P3",
-      "depends_on": [],
-      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). Deliver: gap matrix vs these standards + prioritized fix list. Spec/audit first, code later."
+      "depends_on": [
+        "T-019"
+      ],
+      "notes": "Ole 2026-09-04: add a visual architecture-style diagram of task execution to the roadmap (like Obsidian graph / n8n nodes) — native, clear who has what. Spec first, then local implementation on Pagliano, then replicate."
     }
   ],
   "reflection_rules": [
