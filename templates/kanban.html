@@ -16,7 +16,7 @@
   --border: #1E2A3A;
   --text: #E2E8F0;
   --text-muted: #94A3B8;
-  --text-faint: #475569;
+  --text-faint: #7E90A9;
   --accent: #3B7DD8;
   --accent-h: #5A96F0;
   --accent-glow: rgba(59,125,216,0.2);
@@ -109,10 +109,10 @@ header {
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 .btn-primary {
-  background: var(--text-muted);
-  color: #fff;
+  background: var(--accent);
+  color: var(--bg);
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+.btn-primary:hover:not(:disabled) { background: var(--accent-h); color: var(--bg); }
 
 .btn-add {
   background: var(--accent-h);
@@ -494,10 +494,10 @@ header {
 .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
 
 .btn-submit {
-  background: var(--text-muted);
-  color: #fff;
+  background: var(--accent);
+  color: var(--bg);
 }
-.btn-submit:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+.btn-submit:hover:not(:disabled) { background: var(--accent-h); color: var(--bg); }
 
 /* ── Toast Notifications ──────────────────────────────────────── */
 .toast-container {

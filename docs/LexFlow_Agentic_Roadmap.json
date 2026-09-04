@@ -169,9 +169,9 @@
     {
       "id": "T-007",
       "title": "Contacts redesign: two-model split (Internal staff directory + Client-Facing lifecycle/consent/tags)",
-      "column": "in_progress",
+      "column": "done",
       "assigned_agent": "backend_dev",
-      "deploy_status": null,
+      "deploy_status": "deployed",
       "tenant_scope": [
         "ws7",
         "ws9",
@@ -220,7 +220,7 @@
     {
       "id": "T-010",
       "title": "Resend email integration fact-check + test (Pagliano only)",
-      "column": "in_progress",
+      "column": "awaiting_confirmation",
       "assigned_agent": "lexflow_head_admin",
       "deploy_status": "local",
       "tenant_scope": [
@@ -228,7 +228,7 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Reuse prior documentation/test. Determine exact integration status: same Railway project vs separate vs Resend-only never connected. Isolated to ws9 to avoid side effects."
+      "notes": "FACT-CHECK DONE 2026-09-04: code live in notification_service.py (views.py:26,739; auth.py:56); email_service.py dead code. API key re_... validated (domains 200). ⚠️ DELIVERY BLOCKED: EMAIL_FROM=onboarding@resend.dev only delivers to account owner (olesya00007@yahoo.com); Resend 403 'verify a domain' for alegra_007@proton.me/ms.okuneva@internet.ru. REMAINING: add verified Resend domain + set EMAIL_FROM=no-reply@<domain> in Railway, then real send test. Also: upload notify (attachment_uploaded, commit pending) emails owner + client on file upload."
     },
     {
       "id": "T-011",
@@ -373,6 +373,21 @@
         "T-009"
       ],
       "notes": "Confirmed missing in v2 roadmap §5 — needs its own spec. Distinct from T-013 (adaptive follow-up): AI-personalized content generation per client. Spec before code."
+    },
+    {
+      "id": "T-019",
+      "title": "Design/UX audit: CRM + landing vs 2025 legal-SaaS standards (WCAG 2.2/ISO 40500, mobile parity, role dashboards, trust bar, AI-native)",
+      "column": "backlog",
+      "assigned_agent": null,
+      "deploy_status": null,
+      "tenant_scope": [
+        "ws7",
+        "ws9",
+        "ws10"
+      ],
+      "priority": "P3",
+      "depends_on": [],
+      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). Deliver: gap matrix vs these standards + prioritized fix list. Spec/audit first, code later."
     }
   ],
   "reflection_rules": [
