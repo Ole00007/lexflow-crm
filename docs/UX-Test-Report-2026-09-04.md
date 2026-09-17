@@ -4,7 +4,7 @@
 **Branch:** `lexflow_hermes_v1` (working tree, post contrast-fix commit `3aaea16`)
 **Tester role:** Human evaluator simulating (A) a first-time Italian client and (B) a returning lawyer partner
 **Method:** NN/g-style usability walkthrough · WCAG 2.2 AA (ISO 40500:2025) heuristic check · mobile-first evaluation (<900px) · keyboard-only path · screen-reader semantic order
-**Scope note:** `LexFlow-landing/index.html` does **not exist** in this repo (the LexFlow landing is deployed at `https://poetic-kleicha-28d058.netlify.app` per `templates/base.html:194`). The in-repo, user-facing landing tested here is the **Pagliano LP** (`templates/pagliano.html`). `static/lexflow_dashboard.html` is a dev/curl harness, not user-facing. All findings cite `file:line`.
+**Scope note:** `LexFlow-landing/index.html` does **not exist** in this repo. The LexFlow landing lived on a Netlify site at the time of this test (that legacy origin has since been removed from the CRM, 2026-09-17); the CRM now points at the new marketing site `https://lexflow-site.pages.dev/lexflow-index#hero`. The in-repo, user-facing landing tested here is the **Pagliano LP** (`templates/pagliano.html`). `static/lexflow_dashboard.html` is a dev/curl harness, not user-facing. All findings cite `file:line`.
 
 ---
 
