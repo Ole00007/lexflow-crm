@@ -6,6 +6,35 @@ from .config import Config
 from .extensions import db, migrate, jwt, cors, limiter
 
 
+def public_site_url(slug):
+    """Workspace slug -> its public website URL ("#" when unknown).
+
+    Single source of truth for the server-rendered "main site" / "return to
+    website" links (template context processor + the public /login route).
+    Mirrors the client-side maps in templates/base.html and kanban.html, which
+    exist because the JWT lives in localStorage and the server cannot know the
+    visitor on those pages.
+    """
+    site_map = {
+        # LexFlow marketing site (Cloudflare Pages). NOTE: the site root "/" 404s;
+        # its homepage is the clean URL /lexflow-index (Pages 308s the .html form),
+        # and "#hero" is the stable anchor on that page.
+        "lexflow": os.environ.get("LEXFLOW_SITE_URL", "https://lexflow-site.pages.dev/lexflow-index#hero"),
+        "pagliano": os.environ.get("PAGLIANO_SITE_URL", "https://verdant-crumble-021449.netlify.app"),
+        "romanelli-studio": os.environ.get("ROMANELLI_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"),
+        "romanelli-audit": os.environ.get("ROMANELLI_AUDIT_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"),
+        "tommasoferro": os.environ.get("FERRO_SITE_URL", "#"),
+        "avibeagency": os.environ.get("AVIBE_SITE_URL", "#"),
+    }
+    url = site_map.get(slug or "", "#")
+    # Client sub-workspaces under a firm fall back to the FIRM site
+    if url == "#" and slug and slug.startswith("romanelli-cl"):
+        url = os.environ.get(
+            "ROMANELLI_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"
+        )
+    return url
+
+
 def _seed_default_users():
     """Seed admin user and workspace for fresh DB (idempotent)."""
     from .models.workspace import Workspace
@@ -176,14 +205,7 @@ def create_app():
             user = None
 
         # Per-workspace public site (the client's own website / landing page)
-        site_map = {
-            "lexflow": os.environ.get("LEXFLOW_SITE_URL", "https://poetic-kleicha-28d058.netlify.app"),
-            "pagliano": os.environ.get("PAGLIANO_SITE_URL", "https://verdant-crumble-021449.netlify.app"),
-            "romanelli-studio": os.environ.get("ROMANELLI_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"),
-            "romanelli-audit": os.environ.get("ROMANELLI_AUDIT_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"),
-            "tommasoferro": os.environ.get("FERRO_SITE_URL", "#"),
-            "avibeagency": os.environ.get("AVIBE_SITE_URL", "#"),
-        }
+        # -> see public_site_url() (module-level single source of truth)
         # Per-workspace favicon (matches each tenant's landing-page favicon)
         favicon_map = {
             "romanelli-studio": "/static/favicons/romanelli.svg",
@@ -204,12 +226,7 @@ def create_app():
         favicon_url = None
         secure_label = None
         if user and user.workspace:
-            main_site_url = site_map.get(user.workspace.slug, "#")
-            # Client sub-workspaces under a firm fall back to the FIRM site
-            if main_site_url == "#" and user.workspace.slug and user.workspace.slug.startswith("romanelli-cl"):
-                main_site_url = os.environ.get(
-                    "ROMANELLI_SITE_URL", "https://romanelli-studio.olesya00007.workers.dev"
-                )
+            main_site_url = public_site_url(user.workspace.slug)
             favicon_url = favicon_map.get(user.workspace.slug)
             secure_label = secure_label_map.get(
                 user.workspace.slug,

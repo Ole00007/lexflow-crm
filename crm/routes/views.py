@@ -117,7 +117,12 @@ def login():
     slug = request.args.get('ws') or request.args.get('tenant') or request.args.get('slug') or ''
     workspace = Workspace.query.filter_by(slug=slug, is_active=True).first() if slug else None
     tenant = workspace.name if workspace else 'LexFlow'
-    main_url = request.args.get('back') or '#'
+    # "← Torna al sito" back-link: explicit ?back= wins (used by direct links),
+    # otherwise fall back to the tenant's public website (never a dead "#").
+    from .. import public_site_url
+    main_url = request.args.get('back') or public_site_url(
+        workspace.slug if workspace else 'lexflow'
+    )
     return render_template('login.html', tenant=tenant, tenant_slug=workspace.slug if workspace else None,
                            main_site_url=main_url, favicon_url=(
                                '/static/favicons/romanelli.svg'
