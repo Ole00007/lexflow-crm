@@ -2,7 +2,39 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-19",
+  "last_status_run": {
+    "date": "2026-09-19",
+    "by": "operator-installer (daily LexFlow status cron)",
+    "evidence_used": [
+      "git log -n 15 in lexflow-crm (branch lexflow_hermes_v1, HEAD 6ef25da 2026-09-17) — no CRM commit since 2026-09-17",
+      "prod health https://web-production-031a6.up.railway.app/health = 200",
+      "Kanban board (32 existing cards before this run)",
+      "vault: 05-Daily/2026-09-19.md morning check, 01-Projects/LexFlow/*"
+    ],
+    "moved_today": "nothing — no CRM code commit, no deploy, no push since 2026-09-17",
+    "kanban_cards_created": {
+      "T-002": "t_a5f4dd68",
+      "T-003": "t_a7e05e2c",
+      "T-004": "t_34e5415d",
+      "T-005": "t_cba427b1",
+      "T-006": "t_ba95cc42",
+      "T-008": "t_6cf123af",
+      "T-009": "t_7bdb5c53",
+      "T-010": "t_da4552e5",
+      "T-011": "t_226f9045",
+      "T-012": "t_b8dfc0cc",
+      "T-013": "t_5cf7a308",
+      "T-014": "t_594fcced",
+      "T-015": "t_f0a8b939",
+      "T-017": "t_4af8abb6",
+      "T-018": "t_f48b0a11",
+      "T-019": "t_bc68191b",
+      "T-020": "t_a4e0ad76",
+      "T-021": "t_f0f709f5"
+    },
+    "note": "All 18 unfinished roadmap tasks had no open Kanban card; one card each was created (no duplicates). Cards for Ole-gated items were created blocked, not ready."
+  },
   "report_rule": "Every status update MUST include deploy_status: 'local' (with local_preview_url) or 'deployed' (with prod_url + commit_hash). Never report done without one of these two.",
   "process_rules": {
     "cross_audit": "Before EVERY local test and before any deploy, operator_installer and backend_dev cross-audit each other's code changes: operator reviews backend_dev's code, backend_dev reviews operator's code. Then report to user, then deploy. Applies to all code changes, no exceptions.",
@@ -89,7 +121,7 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Reflection table drafted and refined against Clio Grow/HubSpot/Lawmatics. Awaiting explicit go before code.",
+      "notes": "Reflection table drafted and refined against Clio Grow/HubSpot/Lawmatics. Awaiting explicit go before code. (Kanban card t_a5f4dd68, created blocked; it is the parent of T-003, T-004, T-012.)",
       "reflection_rules_ref": "see reflection_rules[]"
     },
     {
@@ -198,7 +230,7 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Two-part mandate: (A) find gaps operator_installer missed, (B) proactive incremental improvement suggestions (UI/UX, security, isolation, architecture) with time+priority estimates."
+      "notes": "Two-part mandate: (A) find gaps operator_installer missed, (B) proactive incremental improvement suggestions (UI/UX, security, isolation, architecture) with time+priority estimates. PROGRESS 2026-09-16 (evidence: kanban t_16356a2c / t_4637a500 / t_4f1a9c3c): three audits delivered — dead-button sweep (1 real dead button: login.html 'Entra' -> /api/auth/login 415, form-vs-JSON mismatch; 16 page routes 200; 41 API routes correct), RLS audit, cross-feature consistency (/tasks attachment 404, intake creates NO Calendar event, task->calendar disconnected, no workspace filtering in any API route). Consolidated gap register + prioritised improvement list still open. Kanban card: t_6cf123af."
     },
     {
       "id": "T-009",
@@ -228,7 +260,7 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "FACT-CHECK DONE 2026-09-04: code live in notification_service.py (views.py:26,739; auth.py:56); email_service.py dead code. API key re_... validated (domains 200). ⚠️ DELIVERY BLOCKED: EMAIL_FROM=onboarding@resend.dev only delivers to account owner (olesya00007@yahoo.com); Resend 403 'verify a domain' for alegra_007@proton.me/ms.okuneva@internet.ru. REMAINING: add verified Resend domain + set EMAIL_FROM=no-reply@<domain> in Railway, then real send test. Also: upload notify (attachment_uploaded, commit pending) emails owner + client on file upload."
+      "notes": "FACT-CHECK DONE 2026-09-04: code live in notification_service.py (views.py:26,739; auth.py:56); email_service.py dead code. API key re_... validated (domains 200). ⚠️ DELIVERY BLOCKED: EMAIL_FROM=onboarding@resend.dev only delivers to account owner (olesya00007@yahoo.com); Resend 403 'verify a domain' for alegra_007@proton.me/ms.okuneva@internet.ru. REMAINING: add verified Resend domain + set EMAIL_FROM=no-reply@<domain> in Railway, then real send test. Also: upload notify (attachment_uploaded, commit pending) emails owner + client on file upload. MITIGATION COMMITTED 2026-09-04: SMTP fallback (commit 5182bf8) is preferred over Resend when SMTP_HOST is set — this unblocks client delivery without a verified Resend domain. Kanban card: t_da4552e5."
     },
     {
       "id": "T-011",
@@ -306,7 +338,7 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "BLOCKED until: 18 tests pass on real (non-sqlite) Postgres AND ALTER ROLE ... NOBYPASSRLS confirmed on Railway DATABASE_URL role."
+      "notes": "BLOCKED until: 18 tests pass on real (non-sqlite) Postgres AND ALTER ROLE ... NOBYPASSRLS confirmed on Railway DATABASE_URL role. AUDIT 2026-09-16 (kanban t_4637a500): RLS built on feat/rls, NOT merged — app-level workspace_filter() only. workspace_filter() covers 8 tables (deadlines, contacts, tasks, cases, activity_log, notes, attachments, calendar_events); migration f3a4b5c6d7e8_rls.py covers 11 tables; 18 tests in tests/test_rls.py; depends on flask-rls>=0.1.1. GAP tables with workspace_id but no filter: contact_relationship, firm_team_member. Manual prerequisite ALTER ROLE <app_role> NOBYPASSRLS must run BEFORE the migration and needs Railway prod access (= Ole). Filing decision (Linear / GitHub / direct backend-dev handoff) awaiting Ole. Kanban card: t_594fcced."
     },
     {
       "id": "T-015",
@@ -387,7 +419,7 @@
       ],
       "priority": "P3",
       "depends_on": [],
-      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). AUDIT DONE 2026-09-04: gap matrix + top-10 fix list (frontend_developer, read-only) in docs/UX-Test-Report-2026-09-04.md + LexFlux-UX-UI-Design-Research-Report-2025.md in Obsidian. Contrast quick-fix APPLIED locally (commit 3aaea16, --text-faint -> #7E90A9, btn text var(--bg); calendar/tasks white-on-accent still ~4.1:1 — pending). IMPLEMENTATION ORDER (Ole 2026-09-04): Pagliano (least populated) first -> verify locally -> Lexflow -> Romanelli. Hard rule: no design deploy before Ole's human review of local preview."
+      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). AUDIT DONE 2026-09-04: gap matrix + top-10 fix list (frontend_developer, read-only) in docs/UX-Test-Report-2026-09-04.md + LexFlux-UX-UI-Design-Research-Report-2025.md in Obsidian. Contrast quick-fix APPLIED locally (commit 3aaea16, --text-faint -> #7E90A9, btn text var(--bg); calendar/tasks white-on-accent still ~4.1:1 — pending). IMPLEMENTATION ORDER (Ole 2026-09-04): Pagliano (least populated) first -> verify locally -> Lexflow -> Romanelli. Hard rule: no design deploy before Ole's human review of local preview. STATUS 2026-09-19: still local_verified; calendar/tasks white-on-accent contrast still ~4.1:1 (WCAG AA requires 4.5:1) — open. Kanban card: t_bc68191b (blocked on Ole's localhost review)."
     },
     {
       "id": "T-020",
@@ -402,7 +434,7 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "Ole 2026-09-04: keep CRM English for now (tester lawyers speak English); landings stay Italian. Plan translation to Italian (and possibly Russian) for NEXT WEEK — bilingual by end of week. Do NOT touch language now. Reminder: operator-installer must remind Ole about this."
+      "notes": "Ole 2026-09-04: keep CRM English for now (tester lawyers speak English); landings stay Italian. Plan translation to Italian (and possibly Russian) for NEXT WEEK — bilingual by end of week. Do NOT touch language now. Reminder: operator-installer must remind Ole about this. Kanban card: t_a4e0ad76 (blocked — do not start before Ole opens the window)."
     },
     {
       "id": "T-021",
