@@ -2,18 +2,18 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-09-19",
+  "last_updated": "2026-09-20",
   "last_status_run": {
-    "date": "2026-09-19",
+    "date": "2026-09-20",
     "by": "operator-installer (daily LexFlow status cron)",
     "evidence_used": [
-      "git log -n 15 in lexflow-crm (branch lexflow_hermes_v1, HEAD 6ef25da 2026-09-17) — no CRM commit since 2026-09-17",
-      "prod health https://web-production-031a6.up.railway.app/health = 200",
-      "Kanban board (32 existing cards before this run)",
-      "vault: 05-Daily/2026-09-19.md morning check, 01-Projects/LexFlow/*"
+      "git log -n 15 in lexflow-crm (branch lexflow_hermes_v1, HEAD 3eff4e4 2026-09-19) — no commit since the 2026-09-19 docs status commit; no code commit since 6ef25da 2026-09-17",
+      "prod health https://web-production-031a6.up.railway.app/health = 200 (db ok, production)",
+      "Kanban board (51 cards total, no new LexFlow roadmap cards needed — all 18 unfinished tasks already mapped)",
+      "vault: 05-Daily/2026-09-19.md; 01-Projects/LexFlow/LexFlow-Project-Status.md; no vault note modified on 2026-09-20 before this run"
     ],
-    "moved_today": "nothing — no CRM code commit, no deploy, no push since 2026-09-17",
-    "kanban_cards_created": {
+    "moved_today": "nothing — Sunday; no CRM commit, no deploy, no push. All task columns carried over unchanged from the 2026-09-19 run.",
+    "kanban_cards_created_2026_09_19": {
       "T-002": "t_a5f4dd68",
       "T-003": "t_a7e05e2c",
       "T-004": "t_34e5415d",
@@ -33,7 +33,7 @@
       "T-020": "t_a4e0ad76",
       "T-021": "t_f0f709f5"
     },
-    "note": "All 18 unfinished roadmap tasks had no open Kanban card; one card each was created (no duplicates). Cards for Ole-gated items were created blocked, not ready."
+    "note": "Cards for the 18 unfinished roadmap tasks were created on 2026-09-19 (all 18 had no open card then; one card each, no duplicates). On 2026-09-20 the run re-read the board: every unfinished task still has exactly one open card, so NO new cards were created (no duplicate registries)."
   },
   "report_rule": "Every status update MUST include deploy_status: 'local' (with local_preview_url) or 'deployed' (with prod_url + commit_hash). Never report done without one of these two.",
   "process_rules": {
