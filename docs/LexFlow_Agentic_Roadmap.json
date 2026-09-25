@@ -2,24 +2,27 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-09-23",
+  "last_updated": "2026-09-25",
   "last_status_run": {
-    "date": "2026-09-23",
-    "by": "operator-installer (daily LexFlow status cron)",
+    "date": "2026-09-25",
+    "by": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
     "evidence_used": [
-      "git log -5 in lexflow-crm (branch lexflow_hermes_v1): HEAD 404247e 2026-09-21 docs-status commit; last code commit 6ef25da 2026-09-17 — NO commit of any kind since 2026-09-21, so no 2026-09-22 status commit exists",
-      "cron evidence: the 2026-09-22 10:24 run of job cda5f6d4a18a FAILED ('Hermes can't reach the model provider' — provider outage), so the 2026-09-22 status stamp/commit/vault update never happened",
-      "find over the repo working tree, -mtime -3: the ONLY modified file is docs/LexFlow_Agentic_Roadmap.json (this tracker) — no code file touched",
-      "git status: large PRE-EXISTING staged index state (4122 staged deletions, mostly .venv/** and uploads/**) plus an unstaged .gitignore edit — NOT created by this run; this run committed only its own tracker path",
+      "git log -n 15 in lexflow-crm (branch lexflow_hermes_v1): HEAD 86a9641 2026-09-23 (docs-status commit); previous 404247e 2026-09-21; last real code commit 6ef25da 2026-09-17 — NO commit of any kind since 2026-09-23, so no 2026-09-24 status commit exists",
+      "cron evidence (cron/executions.db): the 2026-09-24 09:20 run of job cda5f6d4a18a FAILED — 'RuntimeError: Hermes can't reach the model provider' (same provider outage as 2026-09-22), 20s runtime, delivery suppressed. So the 09-24 status stamp/commit/vault update never happened. Two missed days in four (09-22, 09-24).",
       "prod health https://web-production-031a6.up.railway.app/health = 200",
-      "Kanban board: 51 cards; newest card created 2026-09-19 19:45 — no card activity since. All 18 unfinished roadmap tasks still hold exactly one open card",
+      "Kanban board: 51 cards; newest card created 2026-09-19 19:45 — no card activity since. All 18 unfinished roadmap tasks still hold exactly one open card → 0 new cards created",
       "remote origin/lexflow_hermes_v1 still at 8c17456 (local HEAD unpushed, as gated on Ole)",
-      "vault: 05-Daily/2026-09-22.md holds only the memory-curator cron entries (Downloads stager + repo sync); no LexFlow status entry for 2026-09-22"
+      "vault: 05-Daily/2026-09-24.md exists but holds only memory-curator entries (Downloads stager + repo sync); no LexFlow status entry for 2026-09-24"
     ],
-    "moved_today": "nothing — no CRM commit, no deploy, no push, no Kanban card activity since the 2026-09-21 run. All task columns carried over unchanged.",
-    "kanban_cards_created_2026_09_23": {},
-    "note": "2026-09-23 run: re-read the board — every one of the 18 unfinished roadmap tasks still has exactly one open card, so NO new cards were created (rule §9 / §10.3, no duplicate registries). Card map from 2026-09-19 is unchanged. Missed-day note: 2026-09-22 produced no status update because the cron run failed at the provider layer, not because the project was idle.",
-    "open_data_gap": "T-001 and T-007 are column=done with deploy_status=deployed but carry no prod_url/commit_hash, which this file's own report_rule requires; T-016 names commit da19b36 in notes but has no prod_url field. Left unfilled rather than guessed."
+    "moved_today": "nothing — no CRM commit, no deploy, no push, no Kanban card activity since the 2026-09-23 run. All task columns carried over unchanged.",
+    "kanban_cards_created_2026_09_25": {},
+    "note": "2026-09-25 run: re-read the board — every one of the 18 unfinished roadmap tasks still has exactly one open card, so NO new cards were created (rule §9 / §10.3, no duplicate registries). Card map from 2026-09-19 unchanged. Missed-day note: 2026-09-24 produced no status update because the cron run failed at the provider layer, not because the project was idle.",
+    "open_data_gap": "T-001 and T-007 are column=done with deploy_status=deployed but carry no prod_url/commit_hash, which this file's own report_rule requires; T-016 names commit da19b36 in notes but has no prod_url field. Left unfilled rather than guessed.",
+    "parallel_sources_flagged": [
+      "~/Obsidian/01-Projects/LexFlow/_from-repos/LexFlow-CRM/docs/LexFlow_Agentic_Roadmap.json — derived vault mirror, now STALE (last_updated 2026-09-03 vs authority 2026-09-25). Derived copy; authority = this repo file. Needs a 'derived' label or regeneration by repo_sync.",
+      "Two hubs named LexFlow-INDEX.md (~/Obsidian/01-Projects/LexFlow/ and ~/Obsidian/01-Projects/AVibe-CRM/LexFlow/) — 59 [[LexFlow-INDEX]] links ambiguous. Flagged, not renamed (client folder involved).",
+      "Stale July-2026 status notes in other folders (AVibe-CRM/LexFlow/LexFlow-Deployment-Status.md, aLEXy/_from-repos/...) — authority is this JSON + LexFlow-Project-Status.md."
+    ]
   },
   "kanban_card_map": {
     "T-002": "t_a5f4dd68",
