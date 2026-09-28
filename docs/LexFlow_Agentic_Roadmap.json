@@ -2,38 +2,39 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
       "since": "2026-09-26 (first observed 07:41 CEST)",
-      "status": "OPEN — day 2",
-      "detail": "Production CRM https://web-production-031a6.up.railway.app/ returns HTTP 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\"} with headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: cdg1 — i.e. the Railway edge has NO active service bound to that domain. Reproduced 4/4 probes 2026-09-27 09:20 CEST on /, /health, /healthz, /api/health; /login timed out (curl 000). On 2026-09-25 the same endpoint returned 200, so this is a real regression, not a stale state. This is an APP-LAYER outage: it is NOT visible in the repo, and no roadmap task status change can fix it.",
+      "status": "OPEN — day 3",
+      "detail": "Production CRM https://web-production-031a6.up.railway.app/ returns HTTP 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\"} with headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: cdg1 — i.e. the Railway edge has NO active service bound to that domain. Reproduced 4/4 probes 2026-09-27 09:20 CEST on /, /health, /healthz, /api/health; /login timed out (curl 000). On 2026-09-25 the same endpoint returned 200, so this is a real regression, not a stale state. Still down 2026-09-28 09:01 CEST (probes: / 404, /health 404, /login 404, /api/health 000 after a 12s timeout); the 08:12 LEXFLOW TRY-DEMO REGRESSION CHECK cron independently recorded health=000, /login?ws=lexflow=000, /login?ws=romanelli-studio=000 and anon /api/admin/users=000 (expected 401). This is an APP-LAYER outage: it is NOT visible in the repo, and no roadmap task status change can fix it. Kanban card: t_8cbc766e (blocked).",
       "owner": "Ole (Railway prod access) — Railway CLI token gets 403 on Backboard GraphQL, so operator-installer cannot inspect or restart the service",
       "blocked_by": "credentials/access, not code",
       "note": "First reported by cron lexflow-morning-plan in ~/Obsidian/05-Daily/2026-09-26.md §operator-installer. No new information today beyond confirming it is still down."
     }
   ],
   "last_status_run": {
-    "date": "2026-09-27",
+    "date": "2026-09-28",
     "by": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
     "evidence_used": [
-      "git log -n 15 in lexflow-crm (branch lexflow_hermes_v1): HEAD d4ac000 2026-09-25 (docs-status commit). NO commit of any kind since 2026-09-25 — no 2026-09-26 status commit exists. Last real code commit remains 6ef25da 2026-09-17.",
-      "git status: working tree unchanged from prior runs — large pre-existing STAGED deletions (~.venv/**, uploads/**, apps/api/node_modules/**), unstaged .gitignore edit, modified crm_local.db. Not created by the status run; the status run staged only docs/LexFlow_Agentic_Roadmap.json.",
-      "cron evidence (~/.hermes/profiles/smoothy_op_dir/cron/executions.db): the 2026-09-26 09:07 run of job cda5f6d4a18a FAILED — 'TimeoutError: Cron job lexflow-daily-status-crm idle for 929s (limit 600s)', so the 09-26 stamp/commit/vault update never happened. Missed status days this week: 09-22 (provider outage), 09-24 (provider outage), 09-26 (idle timeout). Running total: 3 missed days in 8.",
-      "PROD: https://web-production-031a6.up.railway.app/ = 404 'Application not found' (railway fallback) — 4/4 probes at 09:20 CEST; was 200 on 2026-09-25. See open_p0.",
-      "Kanban board: 51 cards; ~/.hermes/kanban.db mtime still 2026-09-19 19:45 — no card activity since. All 18 unfinished roadmap tasks still hold exactly one open card → 0 new cards created.",
-      "remote origin/lexflow_hermes_v1 still at 8c17456; local HEAD d4ac000 unpushed (push triggers deploy → gated on Ole).",
-      "vault: 05-Daily/2026-09-26.md exists and already carries the morning-plan P0 prod-down entry; 05-Daily/2026-09-27.md did not exist and was created by this run."
+      "git log -n 15 in lexflow-crm (branch lexflow_hermes_v1): HEAD 90ec74e 2026-09-27 (docs-status commit). NO commit of any kind today, and no CRM commit since the 2026-09-27 status stamp. Last real code commit remains 6ef25da 2026-09-17.",
+      "git status: working tree carries only an unstaged .gitignore edit and a modified crm_local.db — the large staged .venv/uploads deletions recorded on 2026-09-27 are no longer staged. Neither change belongs to this run; the status run stages only docs/LexFlow_Agentic_Roadmap.json.",
+      "cron evidence (~/.hermes/profiles/smoothy_op_dir/cron/executions.db): this job's 2026-09-27 run COMPLETED and delivered (09:02:28 → 09:37:03), so no status day has been missed since 09-26. Today three other jobs failed: dbe4783b4249 (07:44) and f057d12934a7 (08:12) both 'RuntimeError: Hermes can't reach the model provider' (provider layer, not project), and bbde6d0665f4 (LEXFLOW TRY-DEMO REGRESSION CHECK, 08:12) exited 1 — its six recorded failures are all prod-down symptoms (health=000, /login?ws=lexflow=000, /login?ws=romanelli-studio=000, anon /api/admin/users=000 instead of 401, landing login refs=0, kanban siteMap missing lexflow). Missed status days this period: 09-22, 09-24 (provider outage), 09-26 (idle timeout).",
+      "PROD: https://web-production-031a6.up.railway.app/ = 404 'Application not found' (railway fallback) — probes at 09:01 CEST: / 404, /health 404, /login 404, /api/health 000 (12s timeout). Was 200 on 2026-09-25. See open_p0 (day 3). A same-signature Railway-edge 404 also still affects the Hindsight memory service (https://avibe-hindsight-production.up.railway.app → 404 on /, /health, /v1/default/banks, verified 09:01 CEST) — flagged to Ole 2026-09-27 as one edge/config action, not two independent bugs.",
+      "Kanban board: 52 cards (was 51). ONE new card since 2026-09-19: t_8cbc766e 'P0 LexFlow prod DOWN' (operator-installer, blocked, created 2026-09-27 09:36). It is not a duplicate of any roadmap task node — the P0 lives in open_p0 — and it is the only prod-down card. ~/.hermes/kanban.db mtime is now 2026-09-27 09:36. All 18 unfinished roadmap tasks still hold exactly one open card → 0 new cards created today (rule §9 / §10.3).",
+      "remote origin/lexflow_hermes_v1 still at 8c17456; local HEAD 90ec74e plus today's status commit are unpushed (a push triggers deploy → gated on Ole).",
+      "vault: 05-Daily/2026-09-28.md did not exist and was created by this run; 05-Daily/2026-09-27.md carries the 09-27 status entry. LexFlow-Project-Status.md refreshed in place (the single live status note — no second one created). The derived vault mirror _from-repos/LexFlow-CRM/docs/LexFlow_Agentic_Roadmap.json is still stale."
     ],
-    "moved_today": "nothing — no CRM commit, no deploy, no push, no Kanban card activity since the 2026-09-25 run. All task columns carried over unchanged. The only new fact is confirmation that the production outage is in its second day.",
-    "kanban_cards_created_2026_09_27": {},
-    "note": "2026-09-27 run: re-read the board — every one of the 18 unfinished roadmap tasks still has exactly one open card, so NO new cards were created (rule §9 / §10.3, no duplicate registries). Card map from 2026-09-19 unchanged. Also observed today, outside this job's scope and reported for awareness: cron lexflow-morning-plan (07:35) and lexflow-morning-report (08:01) both died with the same idle-timeout class of error as the 09-26 status run — a scheduler/agent-runtime reliability issue, not a project issue.",
+    "moved_today": "nothing — no CRM commit, no deploy, no push, and no movement on any roadmap task. All task columns carried over unchanged. The new facts are: the production outage is in its third day, the Hindsight memory service is still 404ing with the identical Railway-edge signature, and today's provider-layer failures hit three non-status jobs.",
+    "kanban_cards_created_2026_09_28": {},
+    "note": "2026-09-28 run: re-read the board — every one of the 18 unfinished roadmap tasks still has exactly one open card, so NO new cards were created. The kanban_card_map from 2026-09-19 is unchanged; the only board delta is t_8cbc766e, the P0 prod-down card, which maps to open_p0 rather than to a task node.",
     "open_data_gap": "T-001 and T-007 are column=done with deploy_status=deployed but carry no prod_url/commit_hash, which this file's own report_rule requires; T-016 names commit da19b36 in notes but has no prod_url field. Left unfilled rather than guessed.",
     "parallel_sources_flagged": [
-      "~/Obsidian/01-Projects/LexFlow/_from-repos/LexFlow-CRM/docs/LexFlow_Agentic_Roadmap.json — derived vault mirror, STILL STALE (last_updated 2026-09-03 vs authority 2026-09-27; file mtime 2026-09-04 12:44). Derived copy; authority = this repo file. Needs a 'derived' label or regeneration by repo_sync.",
+      "~/Obsidian/01-Projects/LexFlow/_from-repos/LexFlow-CRM/docs/LexFlow_Agentic_Roadmap.json — derived vault mirror, STILL STALE (last_updated 2026-09-03 vs authority 2026-09-28; file mtime 2026-09-04 12:44). Derived copy; authority = this repo file. Needs a 'derived' label or regeneration by repo_sync.",
       "Two hubs named LexFlow-INDEX.md (~/Obsidian/01-Projects/LexFlow/ and ~/Obsidian/01-Projects/AVibe-CRM/LexFlow/) — [[LexFlow-INDEX]] links remain ambiguous. Flagged, not renamed (client folder involved).",
-      "Stale July-2026 status notes in other folders (AVibe-CRM/LexFlow/LexFlow-Deployment-Status.md, aLEXy/_from-repos/...) — authority is this JSON + LexFlow-Project-Status.md."
+      "Stale July-2026 status notes in other folders (AVibe-CRM/LexFlow/LexFlow-Deployment-Status.md, aLEXy/_from-repos/...) — authority is this JSON + LexFlow-Project-Status.md.",
+      "Owner-profile drift (§10.3): the lexflow-* / obsidian-* cron jobs live in smoothy_op_dir's cron store while §10.3 names operator-installer as owner, and operator-installer has no jobs.json (0 jobs). Flagged 2026-09-27, still unfixed — needs Ole's decision before any job is re-homed."
     ]
   },
   "kanban_card_map": {
