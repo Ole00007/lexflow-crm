@@ -2,7 +2,7 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-10-04",
+  "last_updated": "2026-10-06",
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
@@ -190,7 +190,7 @@
       "id": "T-005",
       "title": "WhatsApp Business API integration (client + avvocato notifications)",
       "column": "backlog",
-      "assigned_agent": null,
+      "assigned_agent": "backend_dev",
       "deploy_status": null,
       "tenant_scope": [
         "ws7",
@@ -201,7 +201,7 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "Needs scoping + agent assignment. New channel, parallel-safe once scoped."
+      "notes": "SCOPED 2026-10-06 (backend_dev, kanban t_cba427b1; full note docs/WhatsApp-Business-API-Scoping-2026-10-06.md): Provider = META CLOUD API direct (drop UltraMsg from prod path — it is NOT a Meta-endorsed BSP; roadmap decision confirmed). Consent = explicit channel opt-in wa_opt_in(+ts+source) on contacts, transactional(legit-interest) vs marketing(explicit opt-in) split under GDPR+ePrivacy; same-channel opt-out honored. Suppression = single shared should_notify(contact,channel,type) gate used by email AND WhatsApp; honor reflection_rules suppression + Meta 24h window + webhook delivery. Cost = per-message category pricing, NO per-seat; single-digit EUR/mo at current volume; real cost is business verification (external, Ole ~1-3wk). Priority: KEEP P2/backlog, parallel-safe but sequence AFTER P0 prod-restore + T-010 email-delivery fix (email is the real blocker, WhatsApp is complementary not a substitute). Owner backend_dev. HARD GATE: no code/deploy/push/sends until Ole approves scope."
     },
     {
       "id": "T-006",
