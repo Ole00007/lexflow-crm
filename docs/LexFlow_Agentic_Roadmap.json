@@ -242,9 +242,9 @@
     {
       "id": "T-008",
       "title": "Full read-only app audit + proactive improvement suggestions",
-      "column": "in_progress",
+      "column": "done",
       "assigned_agent": "backend_dev",
-      "deploy_status": null,
+      "deploy_status": "local",
       "tenant_scope": [
         "ws7",
         "ws9",
@@ -254,7 +254,7 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Two-part mandate: (A) find gaps operator_installer missed, (B) proactive incremental improvement suggestions (UI/UX, security, isolation, architecture) with time+priority estimates. PROGRESS 2026-09-16 (evidence: kanban t_16356a2c / t_4637a500 / t_4f1a9c3c): three audits delivered — dead-button sweep (1 real dead button: login.html 'Entra' -> /api/auth/login 415, form-vs-JSON mismatch; 16 page routes 200; 41 API routes correct), RLS audit, cross-feature consistency (/tasks attachment 404, intake creates NO Calendar event, task->calendar disconnected, no workspace filtering in any API route). Consolidated gap register + prioritised improvement list still open. Kanban card: t_6cf123af."
+      "notes": "CONSOLIDATED REGISTER DELIVERED 2026-10-06 (t_6cf123af): two-part mandate complete. PART A gaps: (A1)[NEW-CRITICAL] /api/auth/seed is an UNPROTECTED destructive endpoint (wipes User+Workspace, reseeds 6 known-cred accounts incl superadmin Test12345!) — P0, 0.5-1h; (A2)[NEW] _ensure_workspace_users/_ensure_test_users re-seed hardcoded production creds (lexflow0826, crm0826, pagliano0826, Romanelli0826, Test1) on every boot until user changes password — force password change; (A3)[NEW] SECRET_KEY/JWT_SECRET_KEY fall back to committed dev key if env missing — verify both set in Railway; (A4) dead-button sweep: login 'Entra' 415 ALREADY FIXED locally (doLogin JSON fetch, fddbb7b 2026-09-04); (A5) RLS open: feat/rls not merged, workspace_filter on 8 tables, gap tables contact_relationship+firm_team_member, 5 alembic risks (see T-014); (A6) cross-feature: intake creates NO CalendarEvent, task->calendar disconnected, /tasks attachment 404; A6.4 CORRECTION: prior audit 'no workspace filtering in any API route' was vs BROKEN prod — local cases/contacts/tasks/views DO call workspace_filter(); (A7) prod 404 P0-PROD-DOWN root cause = Railway outage, not code; (A8)[NEW] hygiene: duplicate ' * 2.py' files tracked in git, crm_local.db committed, 19 legacy dead routes. PART B proposed: B1 first-login pw change, B2+B3 login rate-limit + shared Redis store, B4 RLS merge (T-014), B5 CSP nonce hardening, B6 task/calendar/intake reflection (T-002), B7 /tasks attachment, B8 workspace_id 'or 1' fallback fix, B9 cleanup, B10 unified activity audit trail. Full register: kanban t_6cf123af artifact lexflow-t008-gap-register.md. Reading: date=2026-10-06, by=backend-dev, local-only, no deploy, no push."
     },
     {
       "id": "T-009",
