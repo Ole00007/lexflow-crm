@@ -1,0 +1,26 @@
+# Railway/Railpack build fix — 2026-10-10
+#
+# WHY THIS FILE EXISTS
+# Railpack runs `mise` to install the interpreter named in runtime.txt (`python-3.11.8`).
+# mise >= 2026.8.13 enforces GitHub artifact-attestation verification for the Python
+# provider. The cpython-3.11.8 artifact has no attestations published, so `mise install`
+# aborts with:
+#   mise ERROR Failed to install core:python@3.11.8:
+#     No GitHub artifact attestations found for python@3.11.8
+# The build then fails, no deployment is created, and the service domain
+# (web-production-031a6.up.railway.app) returns Railway's edge fallback
+# 404 {"status":"error","code":404,"message":"Application not found"}.
+#
+# This is a build-pipeline regression, NOT an application bug. No application code,
+# schema, route or template is changed by this file.
+#
+# WHAT IT DOES
+# Disables attestation verification for the Python provider only, so the already-pinned
+# interpreter in runtime.txt installs again.
+#
+# ROLLBACK
+# Delete this file. The build behaviour returns to the previous (failing) state; nothing
+# else in the repository is affected.
+
+[settings]
+python.github_attestations = false
