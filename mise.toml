@@ -14,6 +14,16 @@
 # This is a build-pipeline regression, NOT an application bug. No application code,
 # schema, route or template is changed by this file.
 #
+# CONFIDENCE / CAVEAT (honest):
+#   The env var route below is GUARANTEED — it is the exact escape hatch named by mise itself
+#   in the build error ("To disable attestation verification, set
+#   MISE_PYTHON_GITHUB_ATTESTATIONS=false"). Setting it on the Railway service needs NO repo
+#   change and cannot be mis-parsed.
+#   This in-repo file is the DURABLE route, but it has NOT been verified end-to-end against
+#   Railpack: Railpack generates its own mise config during the build ("create mise config"),
+#   so it is UNVERIFIED whether repo-level [settings] are honoured. Treat this file as the
+#   durable intent and the env var as the reliable unblock.
+#
 # WHAT IT DOES
 # Disables attestation verification for the Python provider only, so the already-pinned
 # interpreter in runtime.txt installs again.
