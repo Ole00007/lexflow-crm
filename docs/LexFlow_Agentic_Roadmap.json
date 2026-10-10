@@ -2,7 +2,7 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-10-06",
+  "last_updated": "2026-10-10",
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
@@ -397,9 +397,10 @@
     {
       "id": "T-017",
       "title": "SEAT_LIMIT_DEFAULT config value (5 seats/tenant, DB-configurable, no redeploy)",
-      "column": "backlog",
-      "assigned_agent": "operator_installer",
-      "deploy_status": null,
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": "local",
+      "local_preview_url": "tests/test_seat_limit.py (automated local test; no browser preview applies to a config change)",
       "tenant_scope": [
         "ws7",
         "ws9",
@@ -409,7 +410,7 @@
       ],
       "priority": "P4",
       "depends_on": [],
-      "notes": "Confirmed in v2 roadmap §4: 5 seats/tenant decided, reconfigure later via SEAT_LIMIT_DEFAULT config value — DB-configurable, no redeploy needed. Small config task."
+      "notes": "DONE 2026-10-06 (kanban t_4af8abb6). Implemented: Config.SEAT_LIMIT_DEFAULT (env-overridable, default 5); workspaces.seat_limit NULLable DB column + Workspace.effective_seat_limit() (DB override wins, else config default); seat-check enforced on POST /api/workspace/<id>/user (blocks with 403 when existing seats >= effective limit); additive boot-time _ensure_schema ALTER + alembic migration 5a6b7c8d9e0f. Local test .venv/bin/python tests/test_seat_limit.py ALL PASSED — default 5 (seats 1-5=201, 6th=403 5/5), then DB-only override to 8 took effect with NO redeploy (seats 6-8=201, 9th=403 8/8), to_dict exposes seat_limit. NO push, NO deploy. Cross-audit (process_rules) route: operator-installer reviews these 5 files + the T-009 files were NOT touched by this task."
     },
     {
       "id": "T-018",
@@ -612,5 +613,29 @@
       "future_ai_agent": "reads activity_log + notifications, decision layer on top of scheduled_actions, planned end of September"
     }
   },
-  "integration_note_for_hermes": "Render this file's 'tasks' array as Kanban cards using 'column' as the board column and 'id' as card ID. Suggested location: new tab/panel next to /kanban route, e.g. /kanban/roadmap, reading this JSON directly. Update this file (not just chat replies) whenever task status changes, so it stays the single source of truth alongside chat reports."
+  "integration_note_for_hermes": "Render this file's 'tasks' array as Kanban cards using 'column' as the board column and 'id' as card ID. Suggested location: new tab/panel next to /kanban route, e.g. /kanban/roadmap, reading this JSON directly. Update this file (not just chat replies) whenever task status changes, so it stays the single source of truth alongside chat reports.",
+  "status_run": {
+    "date": "2026-10-10",
+    "owner": "operator-installer",
+    "reconciliation": "This file is the recovered 2026-10-06 revision (21 task nodes), taken from the legacy Desktop clone's working tree (md5 60bbc9df97f7aaa5f62339db48efd692). It supersedes the 2026-09-03 revision (19 nodes) that was on origin/lexflow_hermes_v1. Worked on branch lexflow_hermes_v1 in /Users/olesiarasing/projects/lexflow-crm.",
+    "previous_last_updated": "2026-10-06",
+    "evidence": {
+      "no_movement": "Status runs did not fire 2026-10-07..2026-10-09 (no commits, no deploys, no pushes).",
+      "kanban": "53 cards, kanban.db mtime 2026-10-06 13:05 - no new card activity.",
+      "git": "No push to origin/lexflow_hermes_v1; the 15 local-only commits of the recovered line remain UNPUSHED (push would trigger a Railway deploy and needs Ole's gate)."
+    },
+    "recovered_not_yet_merged": {
+      "commits": "15 local-only commits on the recovered line, incl. ede8e13 (2026-10-04 status), 016568e (T-005 WhatsApp scoping), 7e4343b (T-008 consolidated audit), and a sweep of daily status commits 2026-09-19..2026-10-06.",
+      "branches_recovered_locally": [
+        "feat/t021-diagram-gantt @ 87b847c (Frappe Gantt + diagram demo, local only)",
+        "feat/rls @ 5d69458",
+        "feat/attachments @ 4d98b4a",
+        "feat/saved-views @ 760c95d",
+        "calendar-grid @ cc29045",
+        "deploy/repoint-b @ 8c17456",
+        "archive/ux-baseline-2026-09-04 (tag)"
+      ],
+      "note": "Fetched read-only from the legacy clone into ~/projects/lexflow-crm as remote 'legacy-recovered'. Objects are now preserved in the canonical repo's object store. Not pushed, not merged to origin."
+    }
+  }
 }
