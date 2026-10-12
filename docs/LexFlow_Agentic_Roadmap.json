@@ -2,12 +2,12 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-10-10",
+  "last_updated": "2026-10-12",
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
       "since": "2026-09-26 (first observed 07:41 CEST)",
-      "status": "OPEN — day 9",
+      "status": "OPEN — day 17",
       "detail": "Production CRM https://web-production-031a6.up.railway.app/ returns HTTP 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\"} with headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: cdg1 — i.e. the Railway edge has NO active service bound to that domain. Reproduced 4/4 probes 2026-09-27 09:20 CEST on /, /health, /healthz, /api/health; /login timed out (curl 000). On 2026-09-25 the same endpoint returned 200, so this is a real regression, not a stale state. Still down 2026-09-28 09:01 CEST (probes: / 404, /health 404, /login 404, /api/health 000 after a 12s timeout); the 08:12 LEXFLOW TRY-DEMO REGRESSION CHECK cron independently recorded health=000, /login?ws=lexflow=000, /login?ws=romanelli-studio=000 and anon /api/admin/users=000 (expected 401). Still down 2026-09-29 09:00 CEST (probes: / 404, /health 404, /login 404, /api/health 404 — all fast, ~0.3-0.4s, no timeout unlike 2026-09-28's 12s /api/health 000; body carries request_id WaDnnWF9RAe0xwmQLPU1MQ). This is an APP-LAYER outage: it is NOT visible in the repo, and no roadmap task status change can fix it. kanban card: t_8cbc766e (blocked). DAY 9 (2026-10-04 09:04 CEST): still down — probes / 404 (0.30s), /health 404 (0.26s), /api/health 404 (0.27s), /login?ws=lexflow 404 (0.26s). Signature unchanged; still no Railway access to inspect or restart the service. Independently corroborated 2026-10-04 08:00 by lexflow-try-demo-daily-check (exit 1: health=404, /login?ws=lexflow=404, /login?ws=romanelli-studio=404, anon /api/admin/users=404 instead of 401, kanban siteMap missing lexflow). No status run occurred 2026-09-30..2026-10-03 (this job failed at the provider/credit layer on all four days), so this is the first confirmation since 2026-09-29.",
       "owner": "Ole (Railway prod access) — Railway CLI token gets 403 on Backboard GraphQL, so operator-installer cannot inspect or restart the service",
       "blocked_by": "credentials/access, not code",
@@ -36,7 +36,7 @@
       "Two hubs named LexFlow-INDEX.md (~/Obsidian/01-Projects/LexFlow/ and ~/Obsidian/01-Projects/AVibe-CRM/LexFlow/) — [[LexFlow-INDEX]] links remain ambiguous. Flagged, not renamed (client folder involved).",
       "Stale July-2026 status notes in other folders (AVibe-CRM/LexFlow/LexFlow-Deployment-Status.md, aLEXy/_from-repos/...) — authority is this JSON + LexFlow-Project-Status.md.",
       "Owner-profile drift (§10.3): the lexflow-* / obsidian-* cron jobs live in smoothy_op_dir's cron store while §10.3 names operator-installer as owner, and operator-installer has no jobs.json (0 jobs). Flagged 2026-09-27, still unfixed — needs Ole's decision before any job is re-homed.",
-      "PATH DRIFT: this job's prompt and several notes still say the repo is at ~/Desktop/projects/services/LEGAL/... — it is NOT. The live path is ~/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/lexflow-crm. The §8 migration to ~/projects has not been run for LexFlow; ~/projects/lexflow-crm does not exist."
+      "PATH DRIFT: this job's prompt and several notes still say the repo is at ~/Desktop/projects/services/LEGAL/... — it is NOT. RESOLVED 2026-10-12: the canonical repo is now /Users/olesiarasing/projects/lexflow-crm (branch lexflow_hermes_v1) and THAT is the only LexFlow clone on disk (verified: exactly one LexFlow_Agentic_Roadmap.json, no ~/lexflow-crm). The §8 migration to ~/projects HAS been run for LexFlow. The legacy ~/Desktop/.../LEXFLOW Production/lexflow-crm clone is GONE (no longer on disk) — the 2026-10-10 recovery source no longer exists. ACTION STILL OPEN: this cron job's own prompt text has NOT been updated and still points at the dead path."
     ]
   },
   "kanban_card_map": {
@@ -615,14 +615,18 @@
   },
   "integration_note_for_hermes": "Render this file's 'tasks' array as Kanban cards using 'column' as the board column and 'id' as card ID. Suggested location: new tab/panel next to /kanban route, e.g. /kanban/roadmap, reading this JSON directly. Update this file (not just chat replies) whenever task status changes, so it stays the single source of truth alongside chat reports.",
   "status_run": {
-    "date": "2026-10-10",
-    "owner": "operator-installer",
+    "date": "2026-10-12",
+    "owner": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
     "reconciliation": "This file is the recovered 2026-10-06 revision (21 task nodes), taken from the legacy Desktop clone's working tree (md5 60bbc9df97f7aaa5f62339db48efd692). It supersedes the 2026-09-03 revision (19 nodes) that was on origin/lexflow_hermes_v1. Worked on branch lexflow_hermes_v1 in /Users/olesiarasing/projects/lexflow-crm.",
-    "previous_last_updated": "2026-10-06",
+    "previous_last_updated": "2026-10-10",
     "evidence": {
-      "no_movement": "Status runs did not fire 2026-10-07..2026-10-09 (no commits, no deploys, no pushes).",
-      "kanban": "53 cards, kanban.db mtime 2026-10-06 13:05 - no new card activity.",
-      "git": "No push to origin/lexflow_hermes_v1; the 15 local-only commits of the recovered line remain UNPUSHED (push would trigger a Railway deploy and needs Ole's gate)."
+      "run_health": "2026-10-12 12:40 CEST. This is the first run of this job that reached the model provider since 2026-10-10. failure_streak was 8: 2026-10-05..2026-10-12 all failed at the provider layer — six as 'HTTP 402: requires more credits' on OpenRouter (up to 131072 tokens requested) and two as 'Hermes can't reach the model provider'. The job carries model_snapshot=deepseek/deepseek-v4.1-flash / provider_snapshot=openrouter, which OVERRIDES the profile config.yaml default. Root cause is OpenRouter credit exhaustion, not project state.",
+      "no_movement": "Nothing moved. No CRM commit, no deploy, no push, no Kanban card activity since 2026-10-10 22:23 (kanban.db mtime). All 21 task nodes carried over unchanged.",
+      "git": "lexflow-crm branch lexflow_hermes_v1 HEAD c81372a (2026-10-10 status commit); working tree clean. 16 commits ahead of origin/lexflow_hermes_v1 — all docs/tracker, UNPUSHED (a push triggers a deploy and is gated on Ole). Origin tip unchanged.",
+      "kanban": "53 cards, kanban.db mtime 2026-10-10 22:23 — no new card activity. Every one of the 16 unfinished roadmap tasks still holds exactly one open card (kanban_card_map unchanged), so 0 new cards created today (rules §9 / §10.3). No duplicate card, no duplicate registry.",
+      "single_clone_verified": "Exactly ONE LexFlow clone and ONE tracker on disk: /Users/olesiarasing/projects/lexflow-crm/docs/LexFlow_Agentic_Roadmap.json. The 2026-10-10 dedupe HELD — no ~/lexflow-crm, no second tracker copy. (Note: `find` may report the path under the casing 'Projects'; ~/projects and ~/Projects are the same APFS directory, not two copies.)",
+      "prod": "STILL DOWN — 2026-10-12 12:41 CEST probes: / 404 (0.49s), /health 404 (0.33s), /login?ws=lexflow 404 (0.41s), /login?ws=romanelli-studio 404 (0.36s). Day 17. The 2026-10-10 fix was applied and verified 200, then REMOVED AGAIN by the platform — the identical reversion previously observed. Independently corroborated 2026-10-12 08:36 by lexflow-try-demo-daily-check (exit 1: health=000, /login?ws=lexflow=000, landing login?ws=lexflow refs=0, kanban siteMap missing lexflow — notice 000 = connection/timeout, i.e. the edge is FLAPPING between fast-404 and no-response, not a steady state).",
+      "vault": "05-Daily/2026-10-12.md updated by this run; 2026-10-11.md exists but holds only an autosync line (this job did not run 2026-10-11 — provider failure). LexFlow-Project-Status.md refreshed in place — the single live status note, no second one created."
     },
     "recovered_not_yet_merged": {
       "commits": "15 local-only commits on the recovered line, incl. ede8e13 (2026-10-04 status), 016568e (T-005 WhatsApp scoping), 7e4343b (T-008 consolidated audit), and a sweep of daily status commits 2026-09-19..2026-10-06.",
