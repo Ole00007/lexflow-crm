@@ -84,9 +84,13 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="taskDue">Due Date</label>
-          <input type="date" id="taskDue">
+          <label for="taskStart">Start Date</label>
+          <input type="date" id="taskStart">
         </div>
+      </div>
+      <div class="form-group">
+        <label for="taskDue">Due Date</label>
+        <input type="date" id="taskDue">
       </div>
       <div class="form-group">
         <label for="taskDesc">Description</label>
@@ -164,6 +168,8 @@ function openModal() {
   document.getElementById('taskCaseId').value = '';
   document.getElementById('taskDesc').value = '';
   document.getElementById('taskDue').value = '';
+  var startEl = document.getElementById('taskStart');
+  if (startEl) startEl.value = '';
   selectedFiles = [];
   document.getElementById('fileNames').innerHTML = '';
   document.getElementById('taskFiles').value = '';
@@ -213,6 +219,8 @@ function handleCreate() {
     priority: document.getElementById('taskPriority').value,
     status: document.getElementById('taskStatus').value
   };
+  var start = document.getElementById('taskStart').value;
+  if (start) body.startdate = start;
   var due = document.getElementById('taskDue').value;
   if (due) body.duedate = due;
   var desc = document.getElementById('taskDesc').value.trim();

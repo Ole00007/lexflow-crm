@@ -100,16 +100,69 @@
       .catch(function () { setState('error'); return null; });
   }
 
-  /* ── Rendering — STUB (implemented in M2/M3, not now) ─────────────────────
-   * When implemented this must:
-   *   - drop tasks whose start/end are missing (count them, report the aggregate)
-   *   - drop tasks whose end < start and warn without logging client data
-   *   - map status → custom_class via docs/gantt_bar_semantics.md (canonical)
-   *   - instantiate: new Gantt('#' + GANTT_CONFIG.mountId, tasks, GANTT_OPTIONS)
-   *   - never issue POST/PUT/PATCH
+  /* ── Rendering — M2 implementation ─────────────────────────────────────
+   * Receives the task array from GET /api/gantt/tasks (already workspace-scoped
+   * and whitelisted by the backend). This function:
+   *   1. Drops tasks missing start/end (counts them)
+   *   2. Drops tasks where end < start (warns, no client data in log)
+   *   3. Passes custom_class through (backend already mapped status → class)
+   *   4. Instantiates: new Gantt('#' + mountId, tasks, GANTT_OPTIONS)
+   *   5. NEVER issues POST/PUT/PATCH — strictly read-only
    */
-  function render(/* tasks */) {
-    throw new Error('LexFlowGantt.render() not implemented — M2 scaffold only');
+  function render(tasks) {
+    if (!Array.isArray(tasks) || !tasks.length) { setState('empty'); return; }
+
+    var valid = [];
+    var droppedMissing = 0;
+    var droppedEndBeforeStart = 0;
+
+    for (var i = 0; i < tasks.length; i++) {
+      var t = tasks[i];
+
+      // 1. Drop tasks missing start or end
+      if (!t.start || !t.end) { droppedMissing++; continue; }
+
+      // 2. Drop tasks where end < start (warn, no client data in log)
+      if (t.end < t.start) {
+        droppedEndBeforeStart++;
+        console.warn('LexFlowGantt: task ' + t.id + ' dropped (end < start)');
+        continue;
+      }
+
+      // 3. Build the Gantt-compatible object (custom_class from backend)
+      valid.push({
+        id: t.id,
+        name: t.name,
+        start: t.start,
+        end: t.end,
+        progress: t.progress,
+        dependencies: t.dependencies || '',
+        custom_class: t.custom_class || ''
+      });
+    }
+
+    if (droppedMissing || droppedEndBeforeStart) {
+      console.info('LexFlowGantt: dropped ' + droppedMissing +
+        ' missing-date, ' + droppedEndBeforeStart + ' end-before-start');
+    }
+
+    if (!valid.length) { setState('empty'); return; }
+
+    // 4. Instantiate the read-only Gantt chart
+    setState('loading');
+    try {
+      new Gantt('#' + GANTT_CONFIG.mountId, valid, GANTT_OPTIONS);
+      // Hide loading state — the chart is rendered
+      GANTT_CONFIG.states.forEach(function (s) {
+        var el = document.getElementById('gantt-state-' + s);
+        if (el) el.hidden = true;
+      });
+    } catch (e) {
+      console.error('LexFlowGantt: render failed', e);
+      setState('error');
+    }
+
+    // 5. NEVER issue POST/PUT/PATCH — this view is strictly read-only
   }
 
   /* ── Public surface ───────────────────────────────────────────────────── */
@@ -120,10 +173,9 @@
     render: render,
     setState: setState,
     init: function () {
-      // Wire after DOM ready; rendering intentionally left to M2.
       setState('loading');
       return loadTasks().then(function (tasks) {
-        if (tasks) { setState('empty'); /* TODO(M2): render(tasks) */ }
+        if (tasks && tasks.length) { render(tasks); }
         return tasks;
       });
     }

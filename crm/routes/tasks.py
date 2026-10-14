@@ -64,7 +64,8 @@ def create_task():
         description=data.get('description'),
         status=data.get('status', 'pending'),
         priority=data.get('priority', 'Medium'),
-        duedate=_safe_date(data.get('duedate'))
+        duedate=_safe_date(data.get('duedate')),
+        startdate=_safe_date(data.get('startdate'))
     )
     db.session.add(task)
     db.session.commit()
@@ -107,6 +108,8 @@ def update_task(task_id):
             setattr(task, field, data[field])
     if 'duedate' in data:
         task.duedate = _safe_date(data['duedate'])
+    if 'startdate' in data:
+        task.startdate = _safe_date(data['startdate'])
     if 'userid' in data:
         task.userid = data['userid']
     db.session.commit()

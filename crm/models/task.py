@@ -13,6 +13,7 @@ class Task(db.Model):
     status = db.Column(db.String(50), nullable=False, default="pending")
     priority = db.Column(db.String(20), nullable=False, default="Medium")
     duedate = db.Column(db.Date, nullable=True)
+    startdate = db.Column(db.Date, nullable=True)
     createdat = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updatedat = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
@@ -38,6 +39,7 @@ class Task(db.Model):
             "status": self.status,
             "priority": self.priority,
             "duedate": _iso(self.duedate),
+            "startdate": _iso(self.startdate),
             "createdat": _iso(self.createdat),
             "updatedat": _iso(self.updatedat),
             "is_deleted": self.is_deleted,
