@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from ..extensions import db
@@ -121,10 +122,20 @@ def change_credentials():
 
 
 @auth_bp.post('/seed')
+@jwt_required()
 def seed_production():
-    """Seed initial users and workspaces."""
+    """Seed initial users and workspaces. SUPERADMIN ONLY.
+
+    Passwords are read from environment variables — never hardcoded.
+    Requires: SEED_<EMAIL_LOCAL_PART_UPPER>_PASSWORD env vars.
+    """
     from ..models.workspace import Workspace
-    from datetime import datetime
+
+    # Verify superadmin
+    uid = int(get_jwt_identity())
+    caller = User.query.filter_by(id=uid, is_deleted=False).first()
+    if not caller or caller.role != 'superadmin':
+        return jsonify({'error': 'Superadmin only'}), 403
 
     # Clear existing data first
     User.query.delete()
@@ -147,19 +158,34 @@ def seed_production():
         db.session.flush()
         workspaces.append(ws)
 
-    # Users
+    # Users — passwords from env vars (SEED_<EMAIL_LOCAL_PART_UPPER>_PASSWORD)
     users_data = [
-        ('olesya00007@yahoo.com', 'Test12345!', 'superadmin', workspaces[0].id),
-        ('avibe@lexflow.test', 'Avibe@12345', 'admin', workspaces[0].id),
-        ('pagliano@lexflow.test', 'Pag@12345', 'admin', workspaces[2].id),
-        ('romanelli@lexflow.test', 'Rom@12345', 'admin', workspaces[3].id),
-        ('audit@lexflow.test', 'Audit@12345', 'admin', workspaces[4].id),
-        ('ferro@lexflow.test', 'Ferro@12345', 'admin', workspaces[5].id),
+        ('olesya00007@yahoo.com', 'OLEYA00007YAHOO', 'superadmin', workspaces[0].id),
+        ('avibe@lexflow.test', 'AVIBELEXFLOW', 'admin', workspaces[0].id),
+        ('pagliano@lexflow.test', 'PAGLIANOLEXFLOW', 'admin', workspaces[2].id),
+        ('romanelli@lexflow.test', 'ROMANELLILEXFLOW', 'admin', workspaces[3].id),
+        ('audit@lexflow.test', 'AUDITLEXFLOW', 'admin', workspaces[4].id),
+        ('ferro@lexflow.test', 'FERROLEXFLOW', 'admin', workspaces[5].id),
     ]
-    for email, pw, role, wid in users_data:
+    created = 0
+    missing = []
+    for email, env_key, role, wid in users_data:
+        pw = os.environ.get(f'SEED_{env_key}_PASSWORD')
+        if not pw:
+            missing.append(email)
+            continue
         user = User(email=email, role=role, workspace_id=wid)
         user.set_password(pw)
         db.session.add(user)
+        created += 1
+
+    if missing:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Missing seed passwords',
+            'missing_for': missing,
+            'hint': f'Set SEED_<EMAIL_LOCAL_PART_UPPER>_PASSWORD env vars'
+        }), 400
 
     db.session.commit()
-    return jsonify({'success': True, 'users_created': len(users_data), 'workspaces_created': len(ws_data)}), 201
+    return jsonify({'success': True, 'users_created': created, 'workspaces_created': len(ws_data)}), 201

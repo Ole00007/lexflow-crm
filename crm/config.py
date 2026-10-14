@@ -26,8 +26,9 @@ class Config:
     }
     
     # JWT Configuration - with token expiry
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
+    # No fallback — app must fail fast in production if secrets are missing.
+    SECRET_KEY = os.environ["SECRET_KEY"]
+    JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_EXPIRATION_HOURS", "24")))
     
     # CORS Configuration - allow the landing-page origins (public sites) + local dev

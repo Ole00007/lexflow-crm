@@ -6,6 +6,14 @@ from .config import Config
 from .extensions import db, migrate, jwt, cors, limiter
 
 
+def _seed_password(email, env_key):
+    """Read a seed password from environment. Never hardcode credentials.
+
+    Returns the password string, or None if the env var is unset.
+    """
+    return os.environ.get(f'SEED_{env_key}_PASSWORD')
+
+
 def public_site_url(slug):
     """Workspace slug -> its public website URL ("#" when unknown).
 
@@ -59,7 +67,9 @@ def _seed_default_users():
         db.session.add(ws)
         db.session.flush()
     user = User(email="olesya00007@yahoo.com", role="superadmin", workspace_id=ws.id)
-    user.set_password("Test12345!")
+    pw = _seed_password("olesya00007@yahoo.com", "OLEYA00007YAHOO")
+    if pw:
+        user.set_password(pw)
     db.session.add(user)
     db.session.commit()
 
@@ -75,7 +85,9 @@ def _ensure_test_users():
     gmail_user = User.query.filter_by(email="olesya00007@gmail.com").first()
     if not gmail_user:
         gmail_user = User(email="olesya00007@gmail.com", role="superadmin", workspace_id=ws.id if ws else None)
-        gmail_user.set_password("Test1")
+        pw = _seed_password("olesya00007@gmail.com", "OLEYA00007GMAIL")
+        if pw:
+            gmail_user.set_password(pw)
         db.session.add(gmail_user)
     db.session.commit()
 
@@ -91,32 +103,40 @@ def _ensure_workspace_users():
     from .models.workspace import Workspace
     from .models.user import User
 
-    # (email, password, role, workspace_slug, known_previous_defaults)
+    # (email, env_key, role, workspace_slug, old_default_env_key)
+    # Passwords come from env vars: SEED_<ENV_KEY>_PASSWORD
     roster = [
-        ("superadmin@lexflow.it", "lexflow0826", "superadmin", "lexflow", ["Test12345!"]),
-        ("olesya00007@yahoo.com", "crm0826", "superadmin", "lexflow", ["Test12345!"]),
-        ("alegra_007@proton.me", "avibe0826", "admin", "avibeagency", []),
-        ("ms.okuneva@internet.ru", "pagliano0826", "admin", "pagliano", []),
-        ("olesya00007@google.com", "Romanelli0826", "admin", "romanelli-studio", []),
-        ("preview@romanelli.test", "Romanelli0826", "admin", "romanelli-studio", []),
-        ("ferro@lexflow.it", "ferro0826", "admin", "tommasoferro", []),
+        ("superadmin@lexflow.it", "SUPERADMINLEXFLOW", "superadmin", "lexflow", "OLEYA00007YAHOO"),
+        ("olesya00007@yahoo.com", "OLEYA00007YAHOO", "superadmin", "lexflow", "OLEYA00007YAHOO"),
+        ("alegra_007@proton.me", "ALEGRA007PROTON", "admin", "avibeagency", None),
+        ("ms.okuneva@internet.ru", "MSOKUNEVAINTERNET", "admin", "pagliano", None),
+        ("olesya00007@google.com", "OLEYA00007GOOGLE", "admin", "romanelli-studio", None),
+        ("preview@romanelli.test", "PREVIEWROMANELLI", "admin", "romanelli-studio", None),
+        ("ferro@lexflow.it", "FERROLEXFLOW", "admin", "tommasoferro", None),
     ]
 
-    for email, password, role, slug, old_defaults in roster:
+    for email, env_key, role, slug, old_default_key in roster:
         ws = Workspace.query.filter_by(slug=slug).first()
         if not ws:
             ws = Workspace.query.first()
         user = User.query.filter_by(email=email).first()
         if user:
-            # Only reset password if it's still a known default (not yet changed by the user)
-            if old_defaults and user.check_password(old_defaults[0]):
-                user.set_password(password)
-                user.role = role
-                if ws:
-                    user.workspace_id = ws.id
+            # Only reset password if it still matches the old default (not yet changed)
+            if old_default_key:
+                old_pw = _seed_password(email, old_default_key)
+                if old_pw and user.check_password(old_pw):
+                    new_pw = _seed_password(email, env_key)
+                    if new_pw:
+                        user.set_password(new_pw)
+                    user.role = role
+                    if ws:
+                        user.workspace_id = ws.id
         else:
+            pw = _seed_password(email, env_key)
+            if not pw:
+                continue
             user = User(email=email, role=role, workspace_id=ws.id if ws else None)
-            user.set_password(password)
+            user.set_password(pw)
             db.session.add(user)
     db.session.commit()
 
@@ -124,10 +144,10 @@ def _ensure_workspace_users():
     parent_ws = Workspace.query.filter_by(slug="romanelli-studio").first()
     if parent_ws:
         subs = [
-            ("romanelli-cl1", "Romanelli Client 1", "cl1@romanelli.test", "cl10826"),
-            ("romanelli-cl2", "Romanelli Client 2", "cl2@romanelli.test", "cl20826"),
+            ("romanelli-cl1", "Romanelli Client 1", "cl1@romanelli.test", "CL1ROMANELLI"),
+            ("romanelli-cl2", "Romanelli Client 2", "cl2@romanelli.test", "CL2ROMANELLI"),
         ]
-        for slug, name, email, pw in subs:
+        for slug, name, email, env_key in subs:
             sub = Workspace.query.filter_by(slug=slug).first()
             if not sub:
                 sub = Workspace(parent_workspace_id=parent_ws.id, slug=slug, name=name,
@@ -136,6 +156,9 @@ def _ensure_workspace_users():
                 db.session.flush()
             sub_user = User.query.filter_by(email=email).first()
             if not sub_user:
+                pw = _seed_password(email, env_key)
+                if not pw:
+                    continue
                 sub_user = User(email=email, role="admin", workspace_id=sub.id)
                 sub_user.set_password(pw)
                 db.session.add(sub_user)
