@@ -113,3 +113,13 @@ Decide which flag is canonical before M1.
 branch, or (b) stand down, so `feat/gantt-c` has a clean, attributable working tree —
 then re-run P0. Do **not** begin M0 or write Gantt code on top of an unattributed dirty
 tree.
+
+---
+
+## Addendum — 2026-10-14 11:50 CEST
+
+The concurrent writer **committed its scaffold as `299c151` ("vendor frappe-gantt 1.2.2 +
+read-only C view scaffold (M1)")** before this task's docs commit (`2a6d497`). So the tree
+is now clean, but **M1 scaffold work is already on `feat/gantt-c` ahead of the P0–P4 gates**.
+See the gate report addendum. The dirty-tree stop condition is *resolved as a commit*, but
+the attribution/review requirement still stands.

@@ -218,3 +218,22 @@ git rev-parse HEAD && git status --short && ls docs/gantt_*.md backups/gantt-p0/
 In parallel, put the three approvals to Olesia: (1) confirm **Flask** architecture (P1),
 (2) approve or reject `tasks.startdate` (P2), (3) approve the **staff visibility rule** (P3).
 Do not begin M0 until P0's dirty-state stop condition is cleared.
+
+---
+
+## Addendum — 2026-10-14 11:50 CEST (state after commit)
+
+The concurrent writer **committed its scaffold before this task's docs commit**, so the
+"dirty tree" resolved into a commit:
+
+```
+2a6d497  docs(gantt): P0-P4 prerequisite gate report + architecture/bar-semantics decisions   ← this task
+299c151  feat(gantt): vendor frappe-gantt 1.2.2 + read-only C view scaffold (M1)              ← concurrent writer
+82d1f09  docs(roadmap): daily status 2026-10-14                                              ← original P0 base
+```
+
+- **HEAD is now `2a6d497`**; its parent is the scaffold commit `299c151` (not the P0 base `82d1f09`).
+- The scaffold commit also added **`docs/gantt/gantt_integration_approach.md`** (192 lines) — a doc this task did not author.
+- Working tree is **clean** apart from untracked `.DS_Store`, `Frappe-Gantt/`, and the two backup tarballs.
+- Implication: **M1 work already exists on `feat/gantt-c` ahead of the P0–P4 gates.** The gates are therefore *post-hoc* relative to that commit. Recommend the reviewer diff `299c151` against the P1/P2/P3 decisions here, and treat the vendored-library provenance check (see P0) as an open M1 item.
+- `feat/gantt-c` is **not pushed**; no push to `main` was performed.
