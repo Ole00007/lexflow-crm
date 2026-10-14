@@ -61,11 +61,17 @@
 
 .gantt-state--error { color: var(--warning); }
 
-/* ── Status styling hooks (plan §4 — gantt-status-unknown is mandatory) ──── */
+/* ── Status styling hooks (plan §4 + docs/gantt_bar_semantics.md §2) ─────── */
 /* Frappe Gantt puts `custom_class` on the bar wrapper; the backend sets the
-   class from the approved status→class map (docs/gantt/gantt_bar_semantics.md,
-   not yet authored). The unknown bucket must always be visually distinct and
-   must never be silently dropped. */
+   class from the approved status→class map in docs/gantt_bar_semantics.md.
+   Hooks defined here (visual polish lands with the real page at M2/M3):
+     gantt-status-pending       progress 0
+     gantt-status-in-progress   progress 50
+     gantt-status-done          progress 100
+     gantt-status-overdue       modifier: end < today AND progress < 100
+     gantt-status-unknown       mandatory — any unmapped status value
+   The unknown bucket must always be visually distinct and must never be
+   silently dropped. */
 .gantt .bar-wrapper.gantt-status-unknown .bar {
   fill: transparent;
   stroke: var(--warning);

@@ -33,9 +33,12 @@ There is no React/Next app and no bundler in the active path.
    so the library is loaded with plain `<link>` / `<script>` tags, not an import.
 
 > ⚠️ This record reflects the *current local* repository state. Plan §3 (P1) requires an
-> explicit architecture decision (`docs/gantt_architecture_decision.md`) before M2. If P1
-> later selects the Node/`/apps/web` path, the loader mechanism (script tag → bundler) and
-> the endpoint path change, but the component contract and option semantics below stand.
+> explicit architecture decision before M2; that decision now exists at
+> **`docs/gantt_architecture_decision.md`** and concludes: **use the Flask CRM** (no
+> `apps/web`, no `CLAUDE.md`, Flask-first override active) — pending Olesia's confirmation
+> of the residual conflict. If P1 were later reversed to the Node/`/apps/web` path, the
+> loader mechanism (script tag → bundler) and endpoint path would change, but the component
+> contract and option semantics below would stand.
 
 ---
 
@@ -165,6 +168,16 @@ write code exists.
 | `crm/routes/views.py` | `/gantt` page route, gated by `GANTT_VIEW_ENABLED` (default off) |
 | `templates/base.html` | **additive** `{% block head %}` / `{% block scripts %}` only |
 
+### Feature flags — two distinct concerns
+
+The scaffold introduces **`GANTT_VIEW_ENABLED`** (default **off**) which gates only the
+read-only *page shell* at `/gantt` (disabled → 404). This is **not** the plan's
+`GANTT_WRITE_ENABLED`: that flag (plan §10 Layer 3) governs staff **persistence** and
+remains reserved for the future write layer — no write code and no `GANTT_WRITE_ENABLED`
+exist yet. Keeping them separate means the read-only view can be enabled for inspection at
+M2/M3 without any risk of enabling writes. Before M1 sign-off, confirm the two-flag naming
+is acceptable (flagged in `docs/gantt_p0_inventory.md`).
+
 ---
 
 ## 6. What is needed from the backend team (blocking M2)
@@ -175,18 +188,21 @@ write code exists.
    `duedate` but **no start field**. A Gantt bar needs a real start; `createdat` must not
    be used. This is plan **P2** — requires Olesia's approval of a nullable field (e.g.
    `tasks.startdate DATE NULL`) and an additive, reversible migration before any bar can render.
-3. **The approved status → progress map** in `docs/gantt/gantt_bar_semantics.md` (plan §4).
-   Real Kanban statuses must be inspected; unknown values get `gantt-status-unknown` and
-   fail the semantics cross-test until mapped. No map exists yet.
+3. **The approved status → progress map.** It now exists at
+   **`docs/gantt_bar_semantics.md`** (`pending`→0, `in_progress`→50, `done`→100;
+   any other value → `gantt-status-unknown` and CT3 fails until mapped). The backend must
+   implement exactly that map server-side (the browser must not derive progress itself).
 4. **The approved staff visibility rule** (plan **P3**) — needed for the query scope and the
    CT1 authorization tests. The existing `crm/routes/tasks.py` query is unscoped and must not be reused.
 
 ## 7. Open questions / risks
 
-- **P1 architecture conflict is unresolved.** This scaffold assumes the Flask path because
-  that is what exists locally. Plan §3 requires the decision to be recorded and, if the
-  documents still conflict, escalated to Olesia before M2.
-- **No start date ⇒ no bars.** Until P2 lands, the component can only show the empty state.
+- **P1 architecture:** decided (Flask) in `docs/gantt_architecture_decision.md`; a residual
+  conflict (the plan mentions `/apps/web` rules that exist in no local file) is flagged for
+  Olesia. If she reverses the decision, the loader and endpoint path change but the
+  component contract stands.
+- **No start date ⇒ no bars.** Until P2 lands (approved nullable task start + additive
+  migration), the component can only show the empty state.
 - **Headless verification gap:** this scaffold's Python/JS were syntax-checked by the editor
   linters; a live Flask route smoke test could not be run in this environment (interpreter
   execution was blocked). The route is default-off, so this does not affect production.

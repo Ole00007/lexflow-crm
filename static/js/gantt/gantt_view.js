@@ -104,7 +104,7 @@
    * When implemented this must:
    *   - drop tasks whose start/end are missing (count them, report the aggregate)
    *   - drop tasks whose end < start and warn without logging client data
-   *   - map status → custom_class via docs/gantt/gantt_bar_semantics.md
+   *   - map status → custom_class via docs/gantt_bar_semantics.md (canonical)
    *   - instantiate: new Gantt('#' + GANTT_CONFIG.mountId, tasks, GANTT_OPTIONS)
    *   - never issue POST/PUT/PATCH
    */

@@ -67,6 +67,29 @@ shasum -a 256 static/vendor/frappe-gantt/1.2.2/frappe-gantt.umd.js \
               static/vendor/frappe-gantt/1.2.2/license.txt
 ```
 
+To re-verify provenance from scratch:
+
+```bash
+curl -fsSL -o /tmp/fg.tgz https://registry.npmjs.org/frappe-gantt/-/frappe-gantt-1.2.2.tgz
+shasum -a 256 /tmp/fg.tgz   # must equal the archive SHA-256 above
+```
+
+## Provenance note — byte-identical to the legacy demo copy (expected)
+
+`frappe-gantt.umd.js` here is byte-identical
+(`f5b9de3b618b72e675dfa7f159f2091fcf2055e62826309dfc4604d7ca649e41`) to
+`docs/t021-demo/frappe-gantt.umd.js` on the reference-only branch
+`legacy-recovered/feat/t021-diagram-gantt`.
+
+This is **expected, not a copying shortcut**: the legacy demo vendored the *same* 1.2.2
+build, so identical bytes are the correct outcome for the same upstream artifact. The
+stronger evidence is independent: on 2026-10-14 the npm archive was downloaded fresh and
+its **archive** SHA-256 (`2e8c82de…`) matched the value recorded in the plan
+(`Frappe-Gantt/LexFlow-Gantt-Plan-v4-2.md` §1) before any file was extracted. The plan
+explicitly requires a fresh vendor from npm ("Do not fork … vendor from one immutable npm
+archive"), and that is what was done — the legacy branch was used only as a
+byte-for-byte cross-check, never as the source.
+
 ## Options relevant to the read-only C view (verified in this exact build)
 
 All three read-only flags exist in 1.2.2 and default to `false`
