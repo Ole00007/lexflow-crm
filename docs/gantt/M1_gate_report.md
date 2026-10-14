@@ -21,7 +21,7 @@ file, vendored library/license"* (quick approval).
 | Branch | `feat/gantt-c` (never pushed to `main`) |
 | Base commit | `82d1f09` (`docs(roadmap): daily status 2026-10-14`) |
 | Scaffold commit | `299c151c961067ebefefd8b7c2f4fec4be82ed11` |
-| Gate-report commit | `e7082112c1f9816dbd3f75b86bad9c08efa31c8c` |
+| Gate-report commit | the commit that contains this file — `git log --oneline -1 -- docs/gantt/M1_gate_report.md` |
 
 ## 2. Changed files
 
