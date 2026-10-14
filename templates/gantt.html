@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Timeline — LexFlow{% endblock %}
+
+{#
+  Read-only staff Gantt view (C, Layers 1 + 2).
+
+  SCAFFOLD ONLY — this template renders the page shell and the four UI states.
+  It does NOT render any chart yet: static/js/gantt/gantt_view.js fetches the
+  payload but its render() is an intentional stub (see that file). The real
+  chart lands at M2/M3 once /api/gantt/tasks exists (Backend agent).
+
+  Assets are vendored and served from 'self' — the production CSP
+  (crm/__init__.py) sets script-src/style-src 'self', so a CDN URL would be
+  blocked. See static/vendor/frappe-gantt/1.2.2/VENDOR.md.
+#}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/frappe-gantt/1.2.2/frappe-gantt.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gantt/gantt.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="gantt-page" aria-labelledby="gantt-heading">
+  <div>
+    <p class="eyebrow">Internal staff · read-only</p>
+    <h1 id="gantt-heading">Timeline</h1>
+    <p class="intro">
+      Read-only task timeline. Bars reflect approved task dates and
+      status-derived progress; dates and progress cannot be edited here.
+    </p>
+  </div>
+
+  {# Layer 2 controls (Day / Week / Month switch, filters) land here in M3. #}
+  <div class="gantt-toolbar" role="group" aria-label="Timeline controls">
+    <span class="badge">Read-only</span>
+    {# TODO(M3): view-mode switch (Day/Week/Month) + status/priority filters #}
+  </div>
+
+  {# Exactly one page state is visible at a time (toggled by gantt_view.js). #}
+  <div class="gantt-state" id="gantt-state-loading">Loading timeline…</div>
+  <div class="gantt-state" id="gantt-state-empty" hidden>
+    No tasks with both a start date and a due date to display.
+  </div>
+  <div class="gantt-state gantt-state--error" id="gantt-state-error" hidden>
+    Could not load the timeline. Please retry.
+  </div>
+  <div class="gantt-state" id="gantt-state-denied" hidden>
+    Please sign in to view the timeline.
+  </div>
+
+  {# The single intentional horizontal scroll region (plan §18). #}
+  <div class="gantt-timeline"
+       id="gantt-timeline"
+       tabindex="0"
+       role="region"
+       aria-label="Task timeline, horizontally scrollable">
+    <div id="gantt" data-endpoint="/api/gantt/tasks"></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{# Order matters: vendored library (global `Gantt`) first, component second. #}
+<script src="{{ url_for('static', filename='vendor/frappe-gantt/1.2.2/frappe-gantt.umd.js') }}"></script>
+<script src="{{ url_for('static', filename='js/gantt/gantt_view.js') }}"></script>
+{% endblock %}

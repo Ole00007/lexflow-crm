@@ -1,0 +1,79 @@
+/* ============================================================================
+   LexFlow CRM — Gantt view (C, internal staff, read-only)
+   Isolated styles. Scoped under `.gantt-page` so nothing leaks into the shared
+   shell. Uses the CSS custom properties already defined in templates/base.html
+   (--surface, --border, --text, --accent, --radius-*, --text-*, ...).
+
+   SCAFFOLD ONLY — this file defines the layout hooks and state classes that the
+   read-only view will use. Visual polish lands with the real page (M2/M3).
+   Load order in templates/gantt.html:
+     1. vendor/frappe-gantt/1.2.2/frappe-gantt.css   (library base + --g-* vars)
+     2. this file                                    (LexFlow overrides)
+   ============================================================================ */
+
+.gantt-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Toolbar (view-mode switch, filters) — Layer 2 ───────────────────────── */
+.gantt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.gantt-toolbar .gantt-spacer { flex: 1; }
+
+/* ── Timeline region: the ONE intentional horizontal scroll area ─────────── */
+/* Required by plan §18 (mobile at 375 px): the page itself must not overflow;
+   only this labelled region scrolls sideways. */
+.gantt-timeline {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.gantt-timeline:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Frappe Gantt root mount point */
+#gantt { min-width: 100%; }
+
+/* ── Page states: loading / empty / error / access-denied ────────────────── */
+/* Same four states every other LexFlow page shows (plan §6, §16 CT4). */
+.gantt-state {
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.gantt-state[hidden] { display: none; }
+
+.gantt-state--error { color: var(--warning); }
+
+/* ── Status styling hooks (plan §4 — gantt-status-unknown is mandatory) ──── */
+/* Frappe Gantt puts `custom_class` on the bar wrapper; the backend sets the
+   class from the approved status→class map (docs/gantt/gantt_bar_semantics.md,
+   not yet authored). The unknown bucket must always be visually distinct and
+   must never be silently dropped. */
+.gantt .bar-wrapper.gantt-status-unknown .bar {
+  fill: transparent;
+  stroke: var(--warning);
+  stroke-width: 1;
+  stroke-dasharray: 5;
+}
+
+/* ── Reduced motion (mirrors base.html) ─────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gantt-timeline { scroll-behavior: auto; }
+}

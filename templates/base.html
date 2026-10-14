@@ -107,6 +107,7 @@
             .skip-link { transition: none; }
         }
     </style>
+    {% block head %}{% endblock %}
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
@@ -277,5 +278,6 @@
         .catch(function () { /* non-fatal */ });
     })();
     </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
