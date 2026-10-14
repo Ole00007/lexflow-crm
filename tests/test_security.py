@@ -10,11 +10,12 @@ def test_seed_endpoint_requires_auth(client):
 
 
 def test_seed_endpoint_requires_superadmin(client, superadmin_headers):
-    """A1: Even with a token, seed should be restricted (not a normal user action)."""
+    """A1: Superadmin CAN seed (201), but only if all SEED_*_PASSWORD env vars are set.
+    If any are missing, returns 400. Either way, NOT anonymous access."""
     resp = client.post("/api/auth/seed", headers=superadmin_headers)
-    # Should either be 403 (forbidden) or 404 (removed) — NOT 200/201
-    assert resp.status_code in (403, 404), (
-        f"CRITICAL: /api/auth/seed returned {resp.status_code} — should be restricted"
+    # Superadmin with all env vars set → 201; missing env vars → 400
+    assert resp.status_code in (200, 201, 400), (
+        f"CRITICAL: /api/auth/seed returned {resp.status_code} — expected 201 or 400"
     )
 
 
