@@ -406,6 +406,17 @@ def create_app():
             except Exception as e:
                 log.warning(f"ensure code_prefix skipped: {e}")
 
+            # Ensure tasks.startdate exists (added by M2 migration)
+            try:
+                task_cols = [c['name'] for c in inspector.get_columns('tasks')]
+                if 'startdate' not in task_cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE tasks ADD COLUMN startdate DATE NULL"))
+                        conn.commit()
+                    log.info("✓ Added tasks.startdate")
+            except Exception as e:
+                log.warning(f"ensure tasks.startdate skipped: {e}")
+
             # Seed per-tenant code_prefix for case IDs (additive; only fills blank)
             _seed_code_prefixes()
 
