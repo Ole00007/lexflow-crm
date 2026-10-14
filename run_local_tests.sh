@@ -3,7 +3,7 @@
 # LexFlow Comprehensive Test Suite
 # Automated testing document
 
-cd ~/Desktop/LexFlow/lexflow_hermes_v1
+cd /Users/olesiarasing/Projects/lexflow-crm
 
 # Color codes
 RED='\033[0;31m'
