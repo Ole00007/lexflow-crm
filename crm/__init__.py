@@ -346,6 +346,7 @@ def create_app():
             log = logging.getLogger(__name__)
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
+            db.create_all()
             if tables:
                 cols = [c['name'] for c in inspector.get_columns('cases')]
                 if 'workspace_id' not in cols:
