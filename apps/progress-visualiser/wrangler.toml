@@ -1,0 +1,12 @@
+# Cloudflare Workers — static-assets config for the Progress Visualiser.
+# PREPARED, NOT DEPLOYED. See DEPLOY.md. Deploy only on Ole's explicit go.
+name = "lexflow-progress-visualiser"
+compatibility_date = "2024-11-01"
+
+# Serve the Vite build output as static assets with SPA fallback.
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
+# Custom domain / route — fill in once Ole picks a hostname, then uncomment:
+# routes = [{ pattern = "progress.example.com", custom_domain = true }]
