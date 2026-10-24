@@ -9,6 +9,7 @@
   'use strict';
 
   var ENDPOINT = '/api/roadmap/graph';
+  var NOTES_ENDPOINT = '/api/context/notes';   // superadmin-only; 403/404/offline => silently no notes
   var POLL_MS = 30000;
   var FINISHED = { done: 1, closed: 1, completed: 1, archived: 1, resolved: 1, won: 1, lost: 1 };
 
@@ -18,7 +19,8 @@
     contact: { color: '#F59E0B', label: 'Contacts', href: '/contacts' },
     staff:   { color: '#A78BFA', label: 'Staff',    href: '/workspace' },
     event:   { color: '#0F9B8E', label: 'Events',   href: '/calendar' },
-    status:  { color: '#7E90A9', label: 'Statuses', href: null }
+    status:  { color: '#7E90A9', label: 'Statuses', href: null },
+    note:    { color: '#E879F9', label: 'Notes',    href: null }
   };
   var TODAY_COLOR = { overdue: '#EF4444', today: '#F59E0B', active: '#3B7DD8', soon: '#7E90A9' };
 
@@ -98,6 +100,32 @@
     buildTypeChips(); renderToday(); renderDetail();
   }
 
+  /* ── vault notes (optional; never breaks the graph) ───────────────── */
+  function fetchNotes(t) {
+    return fetch(NOTES_ENDPOINT, { headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+  function mergeNotes(graph, notes) {
+    if (!notes || !Array.isArray(notes.nodes) || !notes.nodes.length) { state.vaultName = null; return graph; }
+    state.vaultName = notes.vault_name || null;
+    var taskByRef = {};
+    (graph.nodes || []).forEach(function (n) {
+      if (n.type !== 'task') { return; }
+      var m = /\[(T-\d{3})\]/.exec(n.label || '');
+      if (m) { taskByRef[m[1]] = n.id; }
+    });
+    var edges = (notes.edges || []).map(function (e) {
+      var tgt = e.target;
+      if (typeof tgt === 'string' && tgt.indexOf('task-ref:') === 0) { tgt = taskByRef[tgt.slice(9)] || null; }
+      return tgt ? { source: e.source, target: tgt, type: e.type, label: e.label } : null;
+    }).filter(Boolean);
+    return {
+      nodes: (graph.nodes || []).concat(notes.nodes),
+      edges: (graph.edges || []).concat(edges)
+    };
+  }
+
   function load(manual) {
     var t = token();
     if (!t) { showState('Sign in to see your context graph.'); setLive('signed out', true); return Promise.resolve(); }
@@ -106,6 +134,9 @@
         if (r.status === 401 || r.status === 403) { throw new Error('denied'); }
         if (!r.ok) { throw new Error('http ' + r.status); }
         return r.json();
+      })
+      .then(function (j) {
+        return fetchNotes(t).then(function (notes) { return mergeNotes(j, notes); });
       })
       .then(function (j) {
         ingest(j);
@@ -181,7 +212,7 @@
     }
     state.edges.forEach(function (e) {
       if (!isVisible(e.a) || !isVisible(e.b)) { return; }
-      var weak = e.type === 'status' || e.type === 'assigned_to';   // hubs (status / the one owner) must not collapse the graph
+      var weak = e.type === 'status' || e.type === 'assigned_to' || e.type === 'mentions';   // hubs must not collapse the graph
       dx = e.b.x - e.a.x; dy = e.b.y - e.a.y; d = Math.sqrt(dx * dx + dy * dy) || 1;
       f = (d - (weak ? 220 : 70)) * (weak ? 0.004 : 0.045) * a; var fx = dx / d * f, fy = dy / d * f;
       e.a.vx += fx; e.a.vy += fy; e.b.vx -= fx; e.b.vy -= fy;
@@ -208,7 +239,7 @@
       if (!isVisible(e.a) || !isVisible(e.b)) { return; }
       var em = Math.min(emphasis(e.a), emphasis(e.b));
       var on = focus && (e.a.id === focus || e.b.id === focus);
-      ctx.globalAlpha = on ? 0.95 : ((e.type === 'status' || e.type === 'assigned_to') ? 0.14 : 0.55) * em;
+      ctx.globalAlpha = on ? 0.95 : ((e.type === 'status' || e.type === 'assigned_to' || e.type === 'mentions') ? 0.14 : 0.55) * em;
       ctx.strokeStyle = on ? css('--accent-h', '#5A96F0') : faint;
       ctx.lineWidth = (on ? 1.8 : 1) / v.k;
       ctx.beginPath(); ctx.moveTo(e.a.x, e.a.y); ctx.lineTo(e.b.x, e.b.y); ctx.stroke();
@@ -406,6 +437,11 @@
     if (d.duedate) { row('Due', fmtDate(d.duedate)); }
     if (n.today) { row('Today', { overdue: 'Overdue', today: 'Due today', active: 'In progress', soon: 'Due within 7 days' }[n.today]); }
     row('Email', d.email); row('Phone', d.phone); row('Company', d.company); row('Role', d.role);
+    if (n.type === 'note') {
+      row('Note path', d.path_rel); row('Updated', fmtDate(d.updated));
+      if (d.tags && d.tags.length) { row('Tags', d.tags.join(', ')); }
+      if (d.excerpt) { var ex = el('p', 'gp-excerpt', d.excerpt); host.appendChild(ex); }
+    }
     if (d.start_datetime) { row('Starts', fmtDate(d.start_datetime)); }
     row('Links', Object.keys(state.adj[n.id] || {}).length);
     host.appendChild(dl);
@@ -422,6 +458,11 @@
       });
     }
     var act = el('div', 'gp-actions');
+    if (n.type === 'note' && state.vaultName && d.path_rel) {
+      var ob = el('a', 'gp-btn', 'Open in Obsidian');
+      ob.href = 'obsidian://open?vault=' + encodeURIComponent(state.vaultName) + '&file=' + encodeURIComponent(d.path_rel.replace(/\.md$/i, ''));
+      act.appendChild(ob);
+    }
     var tinfo = TYPE[n.type];
     if (tinfo && tinfo.href) { var a = el('a', 'gp-btn', 'Open in ' + tinfo.label.toLowerCase()); a.href = tinfo.href; act.appendChild(a); }
     var f = el('button', 'gp-btn', 'Focus neighbourhood'); f.type = 'button'; f.addEventListener('click', function () { setMode('local', true); }); act.appendChild(f);
