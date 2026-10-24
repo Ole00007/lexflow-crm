@@ -121,8 +121,11 @@ html[data-theme="dark"] {
 
 /* ── 6. Grid background & rows ─────────────────────────────────────────── */
 
+/* grid-background is the LAST svg child (drawn above bars) — must stay
+   transparent, same as upstream (fill:none) or it hides every bar. */
 .gantt .grid-background {
-  fill: var(--surface);
+  fill: none;
+  pointer-events: none;
 }
 
 .gantt .grid-row {
