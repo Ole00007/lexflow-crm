@@ -33,6 +33,19 @@ _STATUS_MAP = {
 _UNKNOWN_STATUS = (0, 'gantt-status-unknown')
 
 
+def _label(task):
+    """Bar label: prefix the matter number (e.g. 'LF-02 · Send notice') so tasks of
+    different matters are distinguishable on one timeline. Roadmap tasks already
+    start with '[T-xxx]' and are left as-is."""
+    try:
+        no = task.case.case_no if task.case is not None else None
+    except Exception:
+        no = None
+    if no and not str(task.title).startswith('['):
+        return f"{no} · {task.title}"
+    return task.title
+
+
 @gantt_bp.get('/tasks')
 @jwt_required()
 def get_gantt_tasks():
@@ -62,6 +75,8 @@ def get_gantt_tasks():
         )
 
     tasks = query.all()
+    # Chronological order (start date, then id) so the matters in play today sit together
+    tasks.sort(key=lambda t: (t.startdate or date.max, t.id))
     # ids that can legally be referenced as a dependency (visible + dated + valid)
     visible_ids = {t.id for t in tasks if t.startdate and t.duedate and t.duedate >= t.startdate}
 
@@ -103,7 +118,7 @@ def get_gantt_tasks():
 
         result.append({
             'id': task.id,
-            'name': task.title,
+            'name': _label(task),
             'start': start.isoformat(),
             'end': end.isoformat(),
             'progress': progress,
