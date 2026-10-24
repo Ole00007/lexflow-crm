@@ -98,7 +98,7 @@ def get_gantt_tasks():
         deps = []
         for part in (task.depends_on or '').split(','):
             part = part.strip()
-            if part.isdigit() and int(part) in visible_ids and int(part) != task.id and part not in deps:
+            if part.isascii() and part.isdigit() and int(part) in visible_ids and int(part) != task.id and part not in deps:
                 deps.append(part)
 
         result.append({
