@@ -287,6 +287,7 @@ def create_app():
     from .routes.firm_team import firm_team_bp
     from .routes.roadmap import roadmap_bp
     from .routes.gantt import gantt_bp
+    from .routes.context_notes import context_notes_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -305,6 +306,7 @@ def create_app():
     app.register_blueprint(firm_team_bp)
     app.register_blueprint(roadmap_bp)
     app.register_blueprint(gantt_bp)
+    app.register_blueprint(context_notes_bp)
 
     # Google Calendar OAuth
     from .routes.google_oauth_routes import google_oauth_bp
