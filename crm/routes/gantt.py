@@ -62,6 +62,8 @@ def get_gantt_tasks():
         )
 
     tasks = query.all()
+    # ids that can legally be referenced as a dependency (visible + dated + valid)
+    visible_ids = {t.id for t in tasks if t.startdate and t.duedate and t.duedate >= t.startdate}
 
     today = date.today()
     result = []
@@ -91,13 +93,21 @@ def get_gantt_tasks():
         if end < today and progress < 100:
             custom_class = custom_class + ' gantt-status-overdue'
 
+        # Dependencies: only ids that are themselves in this response (no leak of
+        # hidden/other-workspace tasks, no dangling arrows), never self-reference.
+        deps = []
+        for part in (task.depends_on or '').split(','):
+            part = part.strip()
+            if part.isdigit() and int(part) in visible_ids and int(part) != task.id and part not in deps:
+                deps.append(part)
+
         result.append({
             'id': task.id,
             'name': task.title,
             'start': start.isoformat(),
             'end': end.isoformat(),
             'progress': progress,
-            'dependencies': '',
+            'dependencies': ','.join(deps),
             'custom_class': custom_class,
         })
 

@@ -142,6 +142,7 @@ def main():
         # Create cases and tasks from roadmap
         cases_created = 0
         tasks_created = 0
+        roadmap_row_by_tid = {}
         
         for i, rt in enumerate(roadmap_tasks):
             task_id = rt["id"]
@@ -190,8 +191,16 @@ def main():
             db.session.add(task)
             db.session.flush()
             tasks_created += 1
+            roadmap_row_by_tid[task_id] = task
             
             print(f"  {task_id}: {title[:60]}... | {column} → {status} | {start} → {end}")
+        
+        # Second pass: roadmap depends_on -> Task.depends_on (comma-separated DB ids)
+        for rt in roadmap_tasks:
+            row = roadmap_row_by_tid.get(rt["id"])
+            deps = [str(roadmap_row_by_tid[d].id) for d in rt.get("depends_on", []) if d in roadmap_row_by_tid]
+            if row is not None and deps:
+                row.depends_on = ",".join(deps)
         
         db.session.commit()
         print(f"\n✓ Seeded {cases_created} cases and {tasks_created} tasks from roadmap")

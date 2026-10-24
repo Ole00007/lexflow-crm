@@ -420,6 +420,17 @@ def create_app():
             except Exception as e:
                 log.warning(f"ensure tasks.startdate skipped: {e}")
 
+            # Ensure tasks.depends_on exists (Gantt dependency arrows; additive, nullable)
+            try:
+                task_cols2 = [c['name'] for c in inspector.get_columns('tasks')]
+                if 'depends_on' not in task_cols2:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE tasks ADD COLUMN depends_on VARCHAR(255) NULL"))
+                        conn.commit()
+                    log.info("✓ Added tasks.depends_on")
+            except Exception as e:
+                log.warning(f"ensure tasks.depends_on skipped: {e}")
+
             # Seed per-tenant code_prefix for case IDs (additive; only fills blank)
             _seed_code_prefixes()
 

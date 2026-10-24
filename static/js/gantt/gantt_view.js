@@ -131,7 +131,7 @@
 
       // 3. Build the Gantt-compatible object (custom_class from backend)
       valid.push({
-        id: t.id,
+        id: String(t.id),
         name: t.name,
         start: t.start,
         end: t.end,
