@@ -1272,17 +1272,20 @@ document.addEventListener('keydown', function(e) {
     fetch(API + '/api/auth/me', {
       headers: {'Authorization': 'Bearer ' + t}
     })
-    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, status: r.status, data: d}; }); })
     .then(function(res) {
       if (res.ok) {
         onLoginSuccess(res.data);   // real user → populates chip / superadmin / site link
       } else {
-        localStorage.removeItem('jwt');
+        // Only an auth failure invalidates the token (a 5xx must not log the user out)
+        if (res.status === 401 || res.status === 403 || res.status === 422) localStorage.removeItem('jwt');
         document.getElementById('loginForm').style.display = 'flex';
       }
     })
     .catch(function() {
-      localStorage.removeItem('jwt');
+      // Network error / fetch aborted because the user navigated away right after login:
+      // keep the token — wiping it here silently logged people out of every other page
+      // (Timeline, Context graph, Matters then rendered empty).
       document.getElementById('loginForm').style.display = 'flex';
     });
   } else {
