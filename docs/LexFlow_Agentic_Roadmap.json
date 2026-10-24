@@ -2,7 +2,7 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-10-14",
+  "last_updated": "2026-10-24",
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
@@ -464,9 +464,9 @@
     {
       "id": "T-021",
       "title": "Diagram view of task/case execution (n8n/Obsidian-graph style) on roadmap",
-      "column": "backlog",
-      "assigned_agent": null,
-      "deploy_status": null,
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": "local",
       "tenant_scope": [
         "ws7",
         "ws9",
@@ -476,7 +476,126 @@
       "depends_on": [
         "T-019"
       ],
-      "notes": "Ole 2026-09-04: add a visual architecture-style diagram of task execution to the roadmap (like Obsidian graph / n8n nodes) — native, clear who has what. Spec first, then local implementation on Pagliano, then replicate."
+      "notes": "Ole 2026-09-04: add a visual architecture-style diagram of task execution to the roadmap (like Obsidian graph / n8n nodes) — native, clear who has what. Spec first, then local implementation on Pagliano, then replicate. | 2026-10-24: built locally as live /graph (Obsidian-style context graph, vault notes as nodes) on branch integration/graph-gantt-local, merged to local lexflow_hermes_v1 (NOT pushed). Cross-tested by independent agent + Admy: GO local merge. Flags GRAPH_VIEW_ENABLED / CONTEXT_NOTES_ENABLED default off.",
+      "start_date": "2026-10-20",
+      "due_date": "2026-10-27"
+    },
+    {
+      "id": "T-022",
+      "title": "Gantt view (Frappe Gantt) with dependency arrows on /gantt",
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": "local",
+      "priority": "P2",
+      "depends_on": [
+        "T-002"
+      ],
+      "notes": "Local: bars fix (grid-background), tasks.depends_on + migration g8b9c0d1e2f3, overdue-crash fix (multi-class custom_class), chronological order. Flag GANTT_VIEW_ENABLED default off. Not pushed.",
+      "start_date": "2026-10-21",
+      "due_date": "2026-10-26",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-023",
+      "title": "Kanban: stop wiping the JWT on aborted fetch (empty Timeline/Graph/Matters after login)",
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": "local",
+      "priority": "P1",
+      "depends_on": [],
+      "notes": "templates/kanban.html removed localStorage jwt on any network error, so clicking away right after login logged users out. Commit 73765bd, local only. Bug exists on main/prod too.",
+      "start_date": "2026-10-24",
+      "due_date": "2026-10-24",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-024",
+      "title": "Railway: set SECRET_KEY + JWT_SECRET_KEY (no fallback in config.py) before any deploy",
+      "column": "blocked",
+      "assigned_agent": null,
+      "deploy_status": null,
+      "priority": "P1",
+      "depends_on": [],
+      "notes": "Admy cross-test 2026-10-24: crm/config.py now refuses to boot without them. Needs Ole Railway access (see open_p0 P0-PROD-DOWN).",
+      "start_date": "2026-10-25",
+      "due_date": "2026-10-27",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-025",
+      "title": "Staging smoke test: /gantt, /graph, /api/context/notes with flags on + migration on Postgres",
+      "column": "backlog",
+      "assigned_agent": "operator_installer",
+      "deploy_status": null,
+      "priority": "P1",
+      "depends_on": [
+        "T-022",
+        "T-021",
+        "T-024"
+      ],
+      "notes": "Deploy gate before any push: run alembic upgrade to g8b9c0d1e2f3 on staging, tenant-isolation checks (Romanelli admin, client sub-workspace), flags on.",
+      "start_date": "2026-10-28",
+      "due_date": "2026-10-31",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-026",
+      "title": "Decide scope of local merge: keep or split apps/progress-visualiser + auth hardening",
+      "column": "backlog",
+      "assigned_agent": "lexflow_head_admin",
+      "deploy_status": null,
+      "priority": "P2",
+      "depends_on": [
+        "T-022"
+      ],
+      "notes": "lexflow_hermes_v1..integration branch carries a React app and auth.py seed hardening beyond Gantt/graph. Ole to decide.",
+      "start_date": "2026-10-25",
+      "due_date": "2026-10-28",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-027",
+      "title": "Graph: real Hindsight memory nodes (currently stub) + daily Today digest",
+      "column": "backlog",
+      "assigned_agent": "backend_dev",
+      "deploy_status": null,
+      "priority": "P3",
+      "depends_on": [
+        "T-021"
+      ],
+      "notes": "Context graph shows vault notes only. Add Hindsight recall as node source (superadmin only) and a daily Today-panel digest.",
+      "start_date": "2026-11-02",
+      "due_date": "2026-11-13",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-028",
+      "title": "Roadmap: real start/due dates per task (Gantt currently derives dates from column)",
+      "column": "backlog",
+      "assigned_agent": "operator_installer",
+      "deploy_status": null,
+      "priority": "P2",
+      "depends_on": [
+        "T-022"
+      ],
+      "notes": "seed_gantt_data.py now upserts from this file and honours optional start_date/due_date; fill them for T-001..T-020 so the Gantt shows real plan, not derived dates.",
+      "start_date": "2026-10-26",
+      "due_date": "2026-10-30",
+      "tenant_scope": [
+        "ws7"
+      ]
     }
   ],
   "reflection_rules": [

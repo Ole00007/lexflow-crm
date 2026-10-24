@@ -122,9 +122,8 @@ def main():
         existing_cases = Case.query.filter_by(is_deleted=False).count()
         print(f"Existing: {existing_tasks} tasks, {existing_cases} cases")
         
-        if existing_tasks > 0:
-            print("Tasks already exist — skipping seed (delete tasks first to reseed)")
-            return
+        # Idempotent UPSERT keyed by case_no "ROAD-<id>": the roadmap JSON is the single
+        # source of truth, the DB rows are a derived view (re-run after editing the JSON).
         
         # Create a contact for cases
         contact = Contact.query.filter_by(email="roadmap@lexflow.it").first()
@@ -155,44 +154,60 @@ def main():
             prio_map = {"P1": "High", "P2": "High", "P3": "Medium", "P4": "Low"}
             priority = prio_map.get(priority, "Medium")
             
-            # Create a case for this task
+            # Create a case for this task (or reuse the existing one)
             case_title = f"[{task_id}] {title[:80]}"
-            case = Case(
-                workspace_id=ws.id,
-                contactid=contact.id,
-                ownerid=admin.id,
-                title=case_title,
-                casetype="Roadmap",
-                status="In Progress" if status == "in_progress" else ("Intake" if status == "pending" else "Active"),
-                priority=priority,
-                openedat=date.today() - timedelta(days=30),
-                assignedto=admin.id,
-                case_no=f"ROAD-{task_id}",
-            )
-            db.session.add(case)
-            db.session.flush()
-            cases_created += 1
+            case_status = "In Progress" if status == "in_progress" else ("Intake" if status == "pending" else "Active")
+            case = Case.query.filter_by(case_no=f"ROAD-{task_id}", is_deleted=False).first()
+            if case is None:
+                case = Case(
+                    workspace_id=ws.id,
+                    contactid=contact.id,
+                    ownerid=admin.id,
+                    title=case_title,
+                    casetype="Roadmap",
+                    status=case_status,
+                    priority=priority,
+                    openedat=date.today() - timedelta(days=30),
+                    assignedto=admin.id,
+                    case_no=f"ROAD-{task_id}",
+                )
+                db.session.add(case)
+                db.session.flush()
+                cases_created += 1
+            else:
+                case.title, case.status, case.priority = case_title, case_status, priority
             
-            # Derive dates
-            start, end = derive_dates(column, i)
+            # Dates: explicit roadmap fields win; otherwise derive (only if the row has none yet)
+            d_start, d_end = derive_dates(column, i)
+            if rt.get("start_date"):
+                d_start = date.fromisoformat(rt["start_date"])
+            if rt.get("due_date"):
+                d_end = date.fromisoformat(rt["due_date"])
             
-            # Create the task
-            task = Task(
-                workspace_id=ws.id,
-                caseid=case.id,
-                userid=admin.id,
-                title=f"[{task_id}] {title}",
-                description=f"Roadmap task {task_id}: {title}",
-                status=status,
-                priority=priority,
-                startdate=start,
-                duedate=end,
-            )
-            db.session.add(task)
+            task = Task.query.filter_by(caseid=case.id, is_deleted=False).first()
+            if task is None:
+                task = Task(
+                    workspace_id=ws.id,
+                    caseid=case.id,
+                    userid=admin.id,
+                    title=f"[{task_id}] {title}",
+                    description=f"Roadmap task {task_id}: {title}",
+                    status=status,
+                    priority=priority,
+                    startdate=d_start,
+                    duedate=d_end,
+                )
+                db.session.add(task)
+                tasks_created += 1
+            else:
+                task.title, task.status, task.priority = f"[{task_id}] {title}", status, priority
+                if rt.get("start_date") or task.startdate is None:
+                    task.startdate = d_start
+                if rt.get("due_date") or task.duedate is None:
+                    task.duedate = d_end
             db.session.flush()
-            tasks_created += 1
             roadmap_row_by_tid[task_id] = task
-            
+            start, end = task.startdate, task.duedate
             print(f"  {task_id}: {title[:60]}... | {column} → {status} | {start} → {end}")
         
         # Second pass: roadmap depends_on -> Task.depends_on (comma-separated DB ids)
