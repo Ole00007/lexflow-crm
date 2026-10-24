@@ -121,6 +121,9 @@ html[data-theme="dark"] {
 
 /* ── 6. Grid background & rows ─────────────────────────────────────────── */
 
+/* dependency arrows: visible on the dark surface (library default is too faint) */
+.gantt .arrow { stroke: var(--accent-h, #5A96F0); stroke-width: 1.6; opacity: 0.8; }
+
 /* grid-background is the LAST svg child (drawn above bars) — must stay
    transparent, same as upstream (fill:none) or it hides every bar. */
 .gantt .grid-background {

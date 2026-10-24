@@ -113,6 +113,7 @@
     if (!Array.isArray(tasks) || !tasks.length) { setState('empty'); return; }
 
     var valid = [];
+    var extras = {};
     var droppedMissing = 0;
     var droppedEndBeforeStart = 0;
 
@@ -130,6 +131,11 @@
       }
 
       // 3. Build the Gantt-compatible object (custom_class from backend)
+      // Frappe Gantt 1.2.2 calls classList.add(custom_class) — a value with a space
+      // ("gantt-status-x gantt-status-overdue") throws InvalidCharacterError and kills
+      // the whole chart. Pass ONE token to the library, re-apply the rest after render.
+      var classes = String(t.custom_class || '').split(/\s+/).filter(Boolean);
+      extras[String(t.id)] = classes.slice(1);
       valid.push({
         id: String(t.id),
         name: t.name,
@@ -137,7 +143,7 @@
         end: t.end,
         progress: t.progress,
         dependencies: t.dependencies || '',
-        custom_class: t.custom_class || ''
+        custom_class: classes[0] || ''
       });
     }
 
@@ -152,6 +158,12 @@
     setState('loading');
     try {
       new Gantt('#' + GANTT_CONFIG.mountId, valid, GANTT_OPTIONS);
+      // Re-apply modifier classes (e.g. gantt-status-overdue) that cannot go through the library
+      Object.keys(extras).forEach(function (id) {
+        if (!extras[id].length) return;
+        var w = document.querySelector('#' + GANTT_CONFIG.mountId + ' .bar-wrapper[data-id="' + id + '"]');
+        if (w) extras[id].forEach(function (c) { w.classList.add(c); });
+      });
       // Hide loading state — the chart is rendered
       GANTT_CONFIG.states.forEach(function (s) {
         var el = document.getElementById('gantt-state-' + s);
