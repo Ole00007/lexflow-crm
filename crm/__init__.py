@@ -256,7 +256,10 @@ def create_app():
                 f"{user.workspace.name} Secure Workspace",
             )
 
+        _on = ('1', 'true', 'yes', 'on')
         return {
+            "graph_enabled": os.environ.get('GRAPH_VIEW_ENABLED', 'false').strip().lower() in _on,
+            "gantt_enabled": os.environ.get('GANTT_VIEW_ENABLED', 'false').strip().lower() in _on,
             "current_user": user,
             "main_site_url": main_site_url,
             "favicon_url": favicon_url,

@@ -393,6 +393,18 @@ def gantt():
     return render_template('gantt.html')
 
 
+# ── Live context graph (Obsidian-style, read-only) ────────────────
+@views_bp.route('/graph')
+@jwt_required(optional=True)
+def graph_view():
+    """Live context graph. Page shell only — data + isolation come from
+    GET /api/roadmap/graph (workspace_filter, JWT). Off unless
+    GRAPH_VIEW_ENABLED is truthy, so production is unchanged by default."""
+    if os.environ.get('GRAPH_VIEW_ENABLED', 'false').strip().lower() not in ('1', 'true', 'yes', 'on'):
+        abort(404)
+    return render_template('graph.html')
+
+
 @views_bp.route('/settings')
 @jwt_required(optional=True)
 def settings_page():

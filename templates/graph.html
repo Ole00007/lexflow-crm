@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Context graph — LexFlow{% endblock %}
+
+{#
+  Live context graph (Obsidian-style). Read-only. All data comes from
+  GET /api/roadmap/graph (workspace-scoped, JWT) — this shell enforces nothing.
+  Script/style are served from 'self' (production CSP) — no inline JS, no CDN.
+#}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/graph/graph.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="graph-page" aria-labelledby="graph-heading">
+  <div class="gp-head">
+    <div>
+      <p class="eyebrow">Context · live · read-only</p>
+      <h1 id="graph-heading">Context graph</h1>
+      <p class="intro">Every case, task, contact, staff member and event as one connected map. Refreshes by itself.
+        Use <strong>Today</strong> to dim everything that is not due, overdue or in progress.</p>
+    </div>
+    <nav class="gp-tabs" aria-label="Views">
+      <a class="gp-tab active" href="{{ url_for('views.graph_view') }}">◉ Graph</a>
+      {% if gantt_enabled %}<a class="gp-tab" href="{{ url_for('views.gantt') }}">▤ Timeline</a>{% endif %}
+      <a class="gp-tab" href="{{ url_for('views.kanban') }}">▦ Kanban</a>
+    </nav>
+  </div>
+
+  <div class="gp-bar" id="gp-filters" role="group" aria-label="Graph controls">
+    <input type="search" id="gp-search" placeholder="Search nodes…" aria-label="Search nodes">
+    <span class="chip mode" id="gp-mode-today" role="button" tabindex="0" aria-pressed="false">☀ Today</span>
+    <span class="chip mode" id="gp-mode-local" role="button" tabindex="0" aria-pressed="false" title="Show only the selected node and its neighbours">◎ Local</span>
+    <span id="gp-type-chips"></span>
+    <span class="gp-live" id="gp-live"><b></b><span id="gp-live-text">loading…</span></span>
+  </div>
+
+  <div class="gp-main">
+    <div class="gp-canvas-wrap">
+      <canvas id="gp-canvas" aria-label="Context graph canvas" role="img"></canvas>
+      <div class="gp-state" id="gp-state">Loading graph…</div>
+      <div class="gp-hint">drag node · drag background to pan · scroll to zoom · click to inspect · double-click to focus</div>
+      <div class="gp-zoom"><button id="gp-zin" aria-label="Zoom in">+</button><button id="gp-zout" aria-label="Zoom out">−</button><button id="gp-fit" aria-label="Fit to view">⤢</button></div>
+    </div>
+    <aside class="gp-side">
+      <div class="gp-card" id="gp-today-card"><h2>Today</h2><div id="gp-today"></div></div>
+      <div class="gp-card" id="gp-detail-card"><h2>Selection</h2><div id="gp-detail"><p class="gp-empty">Click a node to see its context.</p></div></div>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/graph/graph_view.js') }}" defer></script>
+{% endblock %}
