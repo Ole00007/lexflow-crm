@@ -1,0 +1,52 @@
+/* LexFlow — Context graph (Obsidian-style, live). Scoped under .graph-page.
+   Uses the design tokens from templates/base.html (--surface, --border, ...). */
+.graph-page { display: flex; flex-direction: column; gap: var(--space-3, 12px); height: calc(100vh - 80px); min-height: 520px; }
+.graph-page .gp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.graph-page .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-h, #5A96F0); margin: 0 0 4px; }
+.graph-page h1 { margin: 0; font-size: 26px; }
+.graph-page .intro { margin: 4px 0 0; color: var(--text-muted); font-size: 13px; max-width: 70ch; }
+.graph-page .gp-tabs { display: flex; gap: 4px; }
+.graph-page .gp-tab { padding: 7px 14px; border-radius: 10px; font-size: 13px; color: var(--text-muted); border: 1px solid var(--border); background: var(--surface); text-decoration: none; }
+.graph-page .gp-tab.active { background: var(--accent-glow, rgba(59,125,216,.2)); color: var(--accent-h, #5A96F0); border-color: var(--accent); }
+
+.graph-page .gp-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.graph-page .gp-bar input[type=search] { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 7px 12px; font-size: 13px; width: 220px; }
+.graph-page .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 12px; cursor: pointer; user-select: none; }
+.graph-page .chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.graph-page .chip.off { opacity: .35; }
+.graph-page .chip.mode.on { background: var(--accent-glow, rgba(59,125,216,.2)); color: var(--accent-h, #5A96F0); border-color: var(--accent); }
+.graph-page .gp-live { margin-left: auto; font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 6px; }
+.graph-page .gp-live b { width: 8px; height: 8px; border-radius: 50%; background: var(--success, #10B981); display: inline-block; }
+.graph-page .gp-live.err b { background: var(--danger, #EF4444); }
+
+.graph-page .gp-main { flex: 1; display: grid; grid-template-columns: 1fr 320px; gap: 12px; min-height: 0; }
+.graph-page .gp-canvas-wrap { position: relative; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  background: radial-gradient(900px 500px at 30% 0%, var(--accent-glow, rgba(59,125,216,.2)), transparent 65%), var(--bg, #0E1117); min-height: 0; }
+.graph-page canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+.graph-page canvas.dragging { cursor: grabbing; }
+.graph-page .gp-hint { position: absolute; left: 12px; bottom: 10px; font-size: 11px; color: var(--text-faint); pointer-events: none; }
+.graph-page .gp-zoom { position: absolute; right: 12px; bottom: 10px; display: flex; gap: 4px; }
+.graph-page .gp-zoom button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+.graph-page .gp-state { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 14px; text-align: center; padding: 24px; }
+
+.graph-page .gp-side { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; }
+.graph-page .gp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.graph-page .gp-card h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 8px; font-weight: 600; }
+.graph-page .gp-today-group { margin-bottom: 8px; }
+.graph-page .gp-today-group h3 { font-size: 12px; margin: 0 0 4px; display: flex; justify-content: space-between; }
+.graph-page .gp-today-group h3 span { color: var(--text-faint); font-weight: 400; }
+.graph-page .gp-row { font-size: 12.5px; padding: 5px 8px; border-radius: 8px; cursor: pointer; color: var(--text); display: flex; gap: 8px; align-items: center; }
+.graph-page .gp-row:hover, .graph-page .gp-row.sel { background: var(--surface-2); }
+.graph-page .gp-row i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.graph-page .gp-row em { font-style: normal; color: var(--text-faint); margin-left: auto; font-size: 11px; white-space: nowrap; }
+.graph-page .gp-row .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graph-page .gp-empty { color: var(--text-faint); font-size: 12px; padding: 2px 8px; }
+.graph-page dl.gp-detail { margin: 0; font-size: 12.5px; display: grid; grid-template-columns: 90px 1fr; gap: 4px 8px; }
+.graph-page dl.gp-detail dt { color: var(--text-faint); }
+.graph-page dl.gp-detail dd { margin: 0; word-break: break-word; }
+.graph-page .gp-detail-title { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+.graph-page .gp-actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.graph-page .gp-btn { font-size: 12px; padding: 6px 11px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; text-decoration: none; }
+.graph-page .gp-btn:hover { border-color: var(--accent); }
+.graph-page .gp-excerpt { font-size: 12px; color: var(--text-muted); margin: 8px 0 0; line-height: 1.5; border-left: 2px solid #E879F9; padding-left: 8px; }
+@media (max-width: 960px) { .graph-page .gp-main { grid-template-columns: 1fr; } .graph-page { height: auto; } .graph-page .gp-canvas-wrap { height: 60vh; } }

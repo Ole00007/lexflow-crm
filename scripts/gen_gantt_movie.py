@@ -1,0 +1,319 @@
+#!/usr/bin/env python3
+"""Generate a demo movie HTML walkthrough showing the Gantt in multiple states."""
+import json
+
+tasks = [
+    {"id": 16, "name": "[T-016] A1 - LexFlow landing repoint", "start": "2026-08-28", "end": "2026-09-11", "progress": 100, "class": "done"},
+    {"id": 8, "name": "[T-008] Full read-only app audit", "start": "2026-08-30", "end": "2026-09-27", "progress": 100, "class": "done"},
+    {"id": 7, "name": "[T-007] Contacts redesign: two-model split", "start": "2026-09-08", "end": "2026-09-29", "progress": 100, "class": "done"},
+    {"id": 19, "name": "[T-019] Design/UX audit: legal-SaaS standards", "start": "2026-09-19", "end": "2026-11-11", "progress": 50, "class": "in_progress"},
+    {"id": 17, "name": "[T-017] SEAT_LIMIT_DEFAULT config value", "start": "2026-09-21", "end": "2026-10-28", "progress": 50, "class": "in_progress"},
+    {"id": 15, "name": "[T-015] Uploads persistence (Railway Volume)", "start": "2026-09-23", "end": "2026-11-11", "progress": 50, "class": "in_progress"},
+    {"id": 1, "name": "[T-001] Intake page: manual name entry", "start": "2026-09-27", "end": "2026-10-11", "progress": 100, "class": "done"},
+    {"id": 11, "name": "[T-011] Full inventory (all tenants)", "start": "2026-09-27", "end": "2026-11-11", "progress": 50, "class": "in_progress"},
+    {"id": 10, "name": "[T-010] Resend email integration (Pagliano)", "start": "2026-09-28", "end": "2026-11-04", "progress": 50, "class": "in_progress"},
+    {"id": 2, "name": "[T-002] Cross-section data reflection", "start": "2026-10-06", "end": "2026-11-04", "progress": 50, "class": "in_progress"},
+    {"id": 3, "name": "[T-003] Conflict-check gate (legal-specific)", "start": "2026-10-27", "end": "2026-12-01", "progress": 0, "class": "pending"},
+    {"id": 4, "name": "[T-004] Drip follow-up sequence (24h/72h/7d)", "start": "2026-10-30", "end": "2026-12-11", "progress": 0, "class": "pending"},
+    {"id": 5, "name": "[T-005] WhatsApp Business API integration", "start": "2026-11-02", "end": "2026-12-21", "progress": 0, "class": "pending"},
+    {"id": 6, "name": "[T-006] Client portal notifications", "start": "2026-11-05", "end": "2026-11-26", "progress": 0, "class": "pending"},
+    {"id": 9, "name": "[T-009] scheduled_actions table + worker poll", "start": "2026-11-14", "end": "2026-12-26", "progress": 0, "class": "pending"},
+    {"id": 12, "name": "[T-012] cl1-cl10 local mock test (Romanelli)", "start": "2026-11-23", "end": "2026-12-21", "progress": 0, "class": "pending"},
+    {"id": 13, "name": "[T-013] AI adaptive email agent", "start": "2026-11-26", "end": "2026-12-31", "progress": 0, "class": "pending"},
+    {"id": 14, "name": "[T-014] RLS merge (feat/rls branch)", "start": "2026-11-29", "end": "2027-01-10", "progress": 0, "class": "pending"},
+    {"id": 18, "name": "[T-018] Agentic AI-personalized email spec", "start": "2026-12-11", "end": "2027-01-15", "progress": 0, "class": "pending"},
+    {"id": 20, "name": "[T-020] i18n: CRM English -> Italian", "start": "2026-12-17", "end": "2027-02-04", "progress": 0, "class": "pending"},
+    {"id": 21, "name": "[T-021] Diagram view of task/case execution", "start": "2026-12-20", "end": "2027-01-10", "progress": 0, "class": "pending"},
+]
+
+tasks_json = json.dumps(tasks)
+
+html = '''<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LexFlow Gantt — Demo Movie</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #0E1117; color: #E2E8F0; overflow: hidden; }
+        .movie-container { position: relative; width: 100vw; height: 100vh; }
+        .frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.8s ease; display: flex; flex-direction: column; }
+        .frame.active { opacity: 1; }
+        .frame-header { padding: 20px 30px; background: #161B27; border-bottom: 1px solid #1E2A3A; display: flex; align-items: center; justify-content: space-between; }
+        .frame-header h2 { font-size: 18px; font-weight: 600; }
+        .frame-header .step { font-size: 12px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.1em; }
+        .frame-body { flex: 1; display: flex; overflow: hidden; }
+        .frame-sidebar { width: 200px; background: #161B27; border-right: 1px solid #1E2A3A; padding: 16px; flex-shrink: 0; }
+        .frame-sidebar .brand { font-size: 16px; font-weight: 800; margin-bottom: 24px; }
+        .frame-sidebar .nav-label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: #94A3B8; margin-bottom: 8px; letter-spacing: 0.08em; }
+        .frame-sidebar .nav-item { padding: 6px 10px; border-radius: 6px; font-size: 13px; color: #94A3B8; margin-bottom: 2px; }
+        .frame-sidebar .nav-item.active { background: #1E2535; color: #E2E8F0; }
+        .frame-main { flex: 1; padding: 20px 30px; overflow: auto; }
+        .gantt-chart { background: #161B27; border: 1px solid #1E2A3A; border-radius: 12px; overflow-x: auto; min-height: 400px; }
+        .gantt-row { display: flex; align-items: center; height: 36px; border-bottom: 1px solid #1E2A3A; }
+        .gantt-row:last-child { border-bottom: none; }
+        .gantt-label { width: 260px; padding: 0 12px; font-size: 11px; color: #E2E8F0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+        .gantt-bar-container { flex: 1; position: relative; height: 100%; }
+        .gantt-bar { position: absolute; height: 22px; top: 7px; border-radius: 4px; display: flex; align-items: center; padding: 0 6px; font-size: 9px; color: #fff; }
+        .gantt-bar.done { background: #10B981; }
+        .gantt-bar.in_progress { background: #3B7DD8; }
+        .gantt-bar.pending { background: #1E2535; border: 1px solid #1E2A3A; color: #94A3B8; }
+        .gantt-header { display: flex; padding: 8px 0; border-bottom: 1px solid #1E2A3A; font-size: 10px; color: #94A3B8; }
+        .gantt-header .gantt-label { color: #94A3B8; }
+        .controls { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 8px; }
+        .controls button { padding: 8px 16px; border-radius: 8px; border: 1px solid #1E2A3A; background: #161B27; color: #E2E8F0; cursor: pointer; font-size: 13px; }
+        .controls button:hover { background: #1E2535; }
+        .controls button.primary { background: #3B77D8; border-color: #3B77D8; color: #fff; }
+        .frame-caption { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(22, 27, 39, 0.9); padding: 12px 24px; border-radius: 8px; font-size: 14px; color: #E2E8F0; border: 1px solid #1E2A3A; }
+        .frame-caption strong { color: #5A96F0; }
+        .progress-indicator { position: absolute; top: 20px; right: 30px; display: flex; gap: 4px; }
+        .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: #1E2A3A; }
+        .progress-dot.active { background: #3B7DD8; }
+        .stats { display: flex; gap: 24px; margin: 16px 0; }
+        .stat { background: #1E2535; padding: 12px 20px; border-radius: 8px; }
+        .stat .value { font-size: 24px; font-weight: 700; color: #5A96F0; }
+        .stat .label { font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; }
+    </style>
+</head>
+<body>
+    <div class="movie-container" id="movie">
+        <!-- Frame 1: Login -->
+        <div class="frame active" data-frame="0">
+            <div class="frame-header">
+                <h2>Login</h2>
+                <span class="step">Step 1 of 5</span>
+            </div>
+            <div class="frame-body" style="align-items:center; justify-content:center;">
+                <div style="background:#161B27; border:1px solid #1E2A3A; border-radius:16px; padding:40px; width:360px;">
+                    <div style="text-align:center; margin-bottom:24px;">
+                        <div style="width:48px; height:48px; border-radius:10px; background:#3B7DD8; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px; margin-bottom:12px;">LF</div>
+                        <h3 style="font-size:20px; font-weight:600;">LexFlow</h3>
+                        <p style="color:#94A3B8; font-size:13px; margin-top:4px;">Sign in to your workspace</p>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:12px; color:#94A3B8; display:block; margin-bottom:4px;">Email</label>
+                        <div style="background:#0E1117; border:1px solid #1E2A3A; border-radius:8px; padding:10px 12px; font-size:13px;">olesya00007@yahoo.com</div>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="font-size:12px; color:#94A3B8; display:block; margin-bottom:4px;">Password</label>
+                        <div style="background:#0E1117; border:1px solid #1E2A3A; border-radius:8px; padding:10px 12px; font-size:13px;">••••••••••</div>
+                    </div>
+                    <div style="background:#3B7DD8; color:#fff; text-align:center; padding:10px; border-radius:8px; font-weight:600; font-size:14px;">Sign In</div>
+                </div>
+            </div>
+            <div class="frame-caption">Login with <strong>olesya00007@yahoo.com</strong></div>
+        </div>
+
+        <!-- Frame 2: Dashboard with sidebar -->
+        <div class="frame" data-frame="1">
+            <div class="frame-header">
+                <h2>Dashboard</h2>
+                <span class="step">Step 2 of 5</span>
+            </div>
+            <div class="frame-body">
+                <div class="frame-sidebar">
+                    <div class="brand">LF LexFlow</div>
+                    <div class="nav-label">Workspace</div>
+                    <div class="nav-item active">Dashboard</div>
+                    <div class="nav-item">Contacts</div>
+                    <div class="nav-item">Kanban</div>
+                    <div class="nav-item">Calendar</div>
+                    <div class="nav-item">Tasks</div>
+                    <div class="nav-item">📊 Timeline</div>
+                    <div class="nav-item">Matters</div>
+                    <div class="nav-item">Firm Team</div>
+                </div>
+                <div class="frame-main">
+                    <div class="stats">
+                        <div class="stat"><div class="value">21</div><div class="label">Roadmap Tasks</div></div>
+                        <div class="stat"><div class="value">7</div><div class="label">In Progress</div></div>
+                        <div class="stat"><div class="value">5</div><div class="label">Done</div></div>
+                        <div class="stat"><div class="value">9</div><div class="label">Pending</div></div>
+                    </div>
+                    <p style="color:#94A3B8; font-size:13px;">Welcome to LexFlow. Click <strong style="color:#5A96F0;">📊 Timeline</strong> in the sidebar to view the Gantt chart.</p>
+                </div>
+            </div>
+            <div class="frame-caption">Notice <strong>📊 Timeline</strong> in the sidebar — that's your Gantt chart</div>
+        </div>
+
+        <!-- Frame 3: Gantt view (empty state) -->
+        <div class="frame" data-frame="2">
+            <div class="frame-header">
+                <h2>Timeline</h2>
+                <span class="step">Step 3 of 5</span>
+            </div>
+            <div class="frame-body">
+                <div class="frame-sidebar">
+                    <div class="brand">LF LexFlow</div>
+                    <div class="nav-label">Workspace</div>
+                    <div class="nav-item">Dashboard</div>
+                    <div class="nav-item">Contacts</div>
+                    <div class="nav-item">Kanban</div>
+                    <div class="nav-item">Calendar</div>
+                    <div class="nav-item">Tasks</div>
+                    <div class="nav-item active">📊 Timeline</div>
+                    <div class="nav-item">Matters</div>
+                    <div class="nav-item">Firm Team</div>
+                </div>
+                <div class="frame-main">
+                    <p style="font-size:11px; font-weight:700; text-transform:uppercase; color:#3B7DD8; letter-spacing:0.1em; margin-bottom:4px;">Internal staff · read-only</p>
+                    <h2 style="font-size:28px; font-weight:400; margin-bottom:8px;">Timeline</h2>
+                    <p style="color:#94A3B8; font-size:13px; margin-bottom:16px;">Read-only task timeline. Bars reflect approved task dates and status-derived progress.</p>
+                    <div style="display:flex; gap:8px; margin-bottom:16px;">
+                        <span style="background:#1E2535; color:#5A96F0; padding:2px 8px; border-radius:4px; font-size:11px;">Read-only</span>
+                        <span style="background:#1E2535; color:#5A96F0; padding:2px 8px; border-radius:4px; font-size:11px;">21 tasks</span>
+                    </div>
+                    <div class="gantt-chart" style="display:flex; align-items:center; justify-content:center; min-height:300px; color:#94A3B8;">
+                        Loading timeline…
+                    </div>
+                </div>
+            </div>
+            <div class="frame-caption">The Timeline page loads — <strong>fetching tasks from /api/gantt/tasks</strong></div>
+        </div>
+
+        <!-- Frame 4: Gantt with real data -->
+        <div class="frame" data-frame="3">
+            <div class="frame-header">
+                <h2>Timeline</h2>
+                <span class="step">Step 4 of 5</span>
+            </div>
+            <div class="frame-body">
+                <div class="frame-sidebar">
+                    <div class="brand">LF LexFlow</div>
+                    <div class="nav-label">Workspace</div>
+                    <div class="nav-item">Dashboard</div>
+                    <div class="nav-item">Contacts</div>
+                    <div class="nav-item">Kanban</div>
+                    <div class="nav-item">Calendar</div>
+                    <div class="nav-item">Tasks</div>
+                    <div class="nav-item active">📊 Timeline</div>
+                    <div class="nav-item">Matters</div>
+                    <div class="nav-item">Firm Team</div>
+                </div>
+                <div class="frame-main">
+                    <p style="font-size:11px; font-weight:700; text-transform:uppercase; color:#3B7DD8; letter-spacing:0.1em; margin-bottom:4px;">Internal staff · read-only</p>
+                    <h2 style="font-size:28px; font-weight:400; margin-bottom:8px;">Timeline</h2>
+                    <p style="color:#94A3B8; font-size:13px; margin-bottom:16px;">Read-only task timeline. Bars reflect approved task dates and status-derived progress.</p>
+                    <div style="display:flex; gap:8px; margin-bottom:16px;">
+                        <span style="background:#1E2535; color:#5A96F0; padding:2px 8px; border-radius:4px; font-size:11px;">Read-only</span>
+                        <span style="background:#1E2535; color:#5A96F0; padding:2px 8px; border-radius:4px; font-size:11px;">21 tasks</span>
+                        <span style="background:#1E2535; color:#5A96F0; padding:2px 8px; border-radius:4px; font-size:11px;">Frappe Gantt 1.2.2</span>
+                    </div>
+                    <div class="gantt-chart" id="gantt-final"></div>
+                </div>
+            </div>
+            <div class="frame-caption"><strong>21 real roadmap tasks</strong> rendered as Gantt bars with status colors and progress</div>
+        </div>
+
+        <!-- Frame 5: Gantt with view mode switch -->
+        <div class="frame" data-frame="4">
+            <div class="frame-header">
+                <h2>Timeline — Month View</h2>
+                <span class="step">Step 5 of 5</span>
+            </div>
+            <div class="frame-body">
+                <div class="frame-sidebar">
+                    <div class="brand">LF LexFlow</div>
+                    <div class="nav-label">Workspace</div>
+                    <div class="nav-item">Dashboard</div>
+                    <div class="nav-item">Contacts</div>
+                    <div class="nav-item">Kanban</div>
+                    <div class="nav-item">Calendar</div>
+                    <div class="nav-item">Tasks</div>
+                    <div class="nav-item active">📊 Timeline</div>
+                    <div class="nav-item">Matters</div>
+                    <div class="nav-item">Firm Team</div>
+                </div>
+                <div class="frame-main">
+                    <p style="font-size:11px; font-weight:700; text-transform:uppercase; color:#3B7DD8; letter-spacing:0.1em; margin-bottom:4px;">Internal staff · read-only</p>
+                    <h2 style="font-size:28px; font-weight:400; margin-bottom:8px;">Timeline</h2>
+                    <p style="color:#94A3B8; font-size:13px; margin-bottom:16px;">Read-only task timeline. Switch between Day / Week / Month views.</p>
+                    <div style="display:flex; gap:8px; margin-bottom:16px; align-items:center;">
+                        <span style="background:#1E2535; color:#5A96F0; padding:2px 8px; border-radius:4px; font-size:11px;">Read-only</span>
+                        <span style="background:#1E2535; color:#5A96F0; padding:2px 8px; border-radius:4px; font-size:11px;">21 tasks</span>
+                        <span style="background:#3B7DD8; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:12px;">Day</span>
+                        <span style="background:#1E2535; color:#94A3B8; padding:2px 8px; border-radius:4px; font-size:11px;">Week</span>
+                        <span style="background:#3B7DD8; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">Month</span>
+                    </div>
+                    <div class="gantt-chart" id="gantt-month"></div>
+                </div>
+            </div>
+            <div class="frame-caption">Switch between <strong>Day / Week / Month</strong> views — bars resize automatically</div>
+        </div>
+
+        <!-- Controls -->
+        <div class="progress-indicator" id="progress"></div>
+        <div class="controls">
+            <button onclick="prevFrame()">← Prev</button>
+            <button class="primary" onclick="nextFrame()">Next →</button>
+        </div>
+    </div>
+
+    <script src="/static/vendor/frappe-gantt/1.2.2/frappe-gantt.umd.js"></script>
+    <script>
+    var tasks = ''' + tasks_json + ''';
+    var currentFrame = 0;
+    var totalFrames = 5;
+
+    function parseDate(s) { var p = s.split('-'); return new Date(p[0], p[1]-1, p[2]); }
+
+    function renderGantt(containerId, viewMode) {
+        var el = document.getElementById(containerId);
+        if (!el) return;
+        el.innerHTML = '';
+        var options = {
+            readonly: true, readonly_dates: true, readonly_progress: true,
+            move_dependencies: false, view_mode: viewMode || 'Day',
+            view_mode_select: true, today_button: true, popup_on: 'click',
+            infinite_padding: false, container_height: 'auto', bar_height: 30, padding: 18
+        };
+        try { new Gantt('#' + containerId, tasks, options); } catch(e) { console.error(e); }
+    }
+
+    function showFrame(n) {
+        if (n < 0) n = 0;
+        if (n >= totalFrames) n = totalFrames - 1;
+        currentFrame = n;
+        document.querySelectorAll('.frame').forEach(function(f, i) {
+            f.classList.toggle('active', i === n);
+        });
+        // Update progress dots
+        var prog = document.getElementById('progress');
+        prog.innerHTML = '';
+        for (var i = 0; i < totalFrames; i++) {
+            var dot = document.createElement('div');
+            dot.className = 'progress-dot' + (i === n ? ' active' : '');
+            prog.appendChild(dot);
+        }
+        // Render gantt on relevant frames
+        if (n === 3) renderGantt('gantt-final', 'Day');
+        if (n === 4) renderGantt('gantt-month', 'Month');
+    }
+
+    function nextFrame() { showFrame(currentFrame + 1); }
+    function prevFrame() { showFrame(currentFrame - 1); }
+
+    // Auto-advance every 4 seconds
+    setInterval(function() {
+        if (currentFrame < totalFrames - 1) nextFrame();
+        else showFrame(0);
+    }, 4000);
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight') nextFrame();
+        if (e.key === 'ArrowLeft') prevFrame();
+    });
+
+    // Initial render
+    showFrame(0);
+    </script>
+</body>
+</html>
+'''
+
+with open('docs/gantt/demo/gantt-demo-movie.html', 'w') as f:
+    f.write(html)
+
+print(f"Created docs/gantt/demo/gantt-demo-movie.html ({len(html)} bytes)")

@@ -376,6 +376,35 @@ def tasks():
     return render_template('tasks.html')
 
 
+# ── Gantt timeline (C, internal staff, read-only) ─────────────────
+@views_bp.route('/gantt')
+@jwt_required(optional=True)
+def gantt():
+    """Read-only staff Gantt timeline (C). SCAFFOLD ONLY.
+
+    Disabled unless GANTT_VIEW_ENABLED is truthy, so this route changes no
+    production behaviour until the backend endpoint (/api/gantt/tasks) and the
+    Layer 1/2 implementation exist. The page shell enforces nothing itself —
+    the JWT lives in localStorage, so the client script fetches the payload and
+    all authorization lives on the JSON endpoint (plan §5, §10 Layer 1).
+    """
+    if os.environ.get('GANTT_VIEW_ENABLED', 'false').strip().lower() not in ('1', 'true', 'yes', 'on'):
+        abort(404)
+    return render_template('gantt.html')
+
+
+# ── Live context graph (Obsidian-style, read-only) ────────────────
+@views_bp.route('/graph')
+@jwt_required(optional=True)
+def graph_view():
+    """Live context graph. Page shell only — data + isolation come from
+    GET /api/roadmap/graph (workspace_filter, JWT). Off unless
+    GRAPH_VIEW_ENABLED is truthy, so production is unchanged by default."""
+    if os.environ.get('GRAPH_VIEW_ENABLED', 'false').strip().lower() not in ('1', 'true', 'yes', 'on'):
+        abort(404)
+    return render_template('graph.html')
+
+
 @views_bp.route('/settings')
 @jwt_required(optional=True)
 def settings_page():

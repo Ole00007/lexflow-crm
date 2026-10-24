@@ -1,0 +1,472 @@
+/* ============================================================================
+   LexFlow CRM — Gantt view (C, internal staff, read-only)
+   Isolated styles. Scoped under `.gantt-page` so nothing leaks into the shared
+   shell. Uses the CSS custom properties already defined in templates/base.html
+   (--surface, --border, --text, --accent, --radius-*, --text-*, ...).
+
+   Load order in templates/gantt.html:
+     1. vendor/frappe-gantt/1.2.2/frappe-gantt.css   (library base + --g-* vars)
+     2. this file                                    (LexFlow overrides)
+
+   This file overrides every visual aspect of Frappe Gantt to match the
+   LexFlow design system: colors, typography, spacing, radii, shadows.
+   ============================================================================ */
+
+/* ── 1. CSS variable overrides ────────────────────────────────────────────
+   The vendored library defines --g-* custom properties in :root and
+   html[data-theme=dark]. We override both so the chart matches LexFlow
+   regardless of theme. LexFlow uses data-theme on <html>, so the dark
+   block is the active one in production. */
+
+:root {
+  /* map library vars → LexFlow light-theme tokens */
+  --g-arrow-color: var(--text-faint);
+  --g-bar-color: var(--surface-2);
+  --g-bar-border: var(--border);
+  --g-tick-color-thick: var(--border);
+  --g-tick-color: var(--border);
+  --g-actions-background: var(--surface-2);
+  --g-border-color: var(--border);
+  --g-text-muted: var(--text-muted);
+  --g-text-light: var(--text);
+  --g-text-dark: var(--text);
+  --g-progress-color: var(--surface-2);
+  --g-handle-color: var(--accent);
+  --g-weekend-label-color: var(--surface-2);
+  --g-expected-progress: var(--surface-2);
+  --g-header-background: var(--surface);
+  --g-row-color: var(--surface);
+  --g-row-border-color: var(--border);
+  --g-today-highlight: var(--accent);
+  --g-popup-actions: var(--surface-2);
+  --g-weekend-highlight-color: var(--surface-2);
+}
+
+html[data-theme="dark"] {
+  --g-arrow-color: var(--text-faint);
+  --g-bar-color: var(--surface-2);
+  --g-bar-border: var(--border);
+  --g-tick-color-thick: var(--border);
+  --g-tick-color: var(--border);
+  --g-actions-background: var(--surface-2);
+  --g-border-color: var(--border);
+  --g-text-muted: var(--text-muted);
+  --g-text-light: var(--text);
+  --g-text-dark: var(--text);
+  --g-progress-color: var(--surface-2);
+  --g-handle-color: var(--accent);
+  --g-weekend-label-color: var(--surface-2);
+  --g-expected-progress: var(--surface-2);
+  --g-header-background: var(--surface);
+  --g-row-color: var(--surface);
+  --g-row-border-color: var(--border);
+  --g-today-highlight: var(--accent);
+  --g-popup-actions: var(--surface-2);
+  --g-weekend-highlight-color: var(--surface-2);
+}
+
+/* ── 2. Page layout ─────────────────────────────────────────────────────── */
+
+.gantt-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── 3. Toolbar (view-mode switch, filters) ────────────────────────────── */
+
+.gantt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.gantt-toolbar .gantt-spacer { flex: 1; }
+
+/* ── 4. Timeline region: the ONE intentional horizontal scroll area ─────── */
+/* Required by plan §18 (mobile at 375 px): the page itself must not overflow;
+   only this labelled region scrolls sideways. */
+
+.gantt-timeline {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.gantt-timeline:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Frappe Gantt root mount point */
+#gantt { min-width: 100%; }
+
+/* ── 5. Gantt container ────────────────────────────────────────────────── */
+
+.gantt-container {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+}
+
+/* ── 6. Grid background & rows ─────────────────────────────────────────── */
+
+/* grid-background is the LAST svg child (drawn above bars) — must stay
+   transparent, same as upstream (fill:none) or it hides every bar. */
+.gantt .grid-background {
+  fill: none;
+  pointer-events: none;
+}
+
+.gantt .grid-row {
+  fill: var(--surface);
+}
+
+.gantt .grid-row:nth-child(even) {
+  fill: var(--surface-2);
+}
+
+.gantt .row-line {
+  stroke: var(--border);
+  stroke-width: 0.5;
+}
+
+.gantt .tick {
+  stroke: var(--border);
+  stroke-width: 0.4;
+}
+
+.gantt .tick.thick {
+  stroke: var(--border);
+  stroke-width: 0.7;
+}
+
+.gantt .grid-column:hover {
+  fill: var(--accent-glow);
+}
+
+/* ── 7. Header (date labels) ───────────────────────────────────────────── */
+
+.gantt-container .grid-header {
+  background-color: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.gantt-container .upper-text {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.gantt-container .lower-text {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  fill: var(--text-muted);
+}
+
+.gantt-container .current-upper {
+  background: var(--surface-2);
+  font-weight: 700;
+  fill: var(--accent);
+}
+
+/* ── 8. Side header (view-mode switch + today button) ──────────────────── */
+
+.gantt-container .side-header {
+  background: var(--surface-2);
+  font-family: var(--font-body);
+}
+
+.gantt-container .side-header * {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.gantt-container .side-header *:hover {
+  background-color: var(--accent-glow);
+  color: var(--accent-h);
+  border-color: var(--accent);
+}
+
+.gantt-container .side-header select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--space-6);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.gantt-container .side-header select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── 9. Today highlight ────────────────────────────────────────────────── */
+
+.gantt-container .current-highlight {
+  background: var(--accent);
+  width: 2px;
+  opacity: 0.8;
+}
+
+.gantt-container .current-ball-highlight {
+  background: var(--accent);
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.gantt-container .current-date-highlight {
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+
+/* ── 10. Bars ──────────────────────────────────────────────────────────── */
+
+.gantt .bar-wrapper {
+  cursor: default; /* read-only: no pointer */
+}
+
+.gantt .bar-wrapper .bar {
+  fill: var(--surface-2);
+  stroke: var(--border);
+  stroke-width: 1;
+  rx: var(--radius-sm);
+  ry: var(--radius-sm);
+  transition: fill var(--transition), stroke var(--transition);
+}
+
+.gantt .bar-wrapper:hover .bar {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.gantt .bar-progress {
+  fill: var(--accent);
+  border-radius: var(--radius-sm);
+  opacity: 0.3;
+}
+
+.gantt .bar-expected-progress {
+  fill: var(--surface-2);
+}
+
+/* ── 11. Status-specific bar styling ────────────────────────────────────── */
+/* Status classes are set by the backend per docs/gantt_bar_semantics.md.
+   Each maps to a LexFlow color token. */
+
+/* pending — muted/neutral */
+.gantt .bar-wrapper.gantt-status-pending .bar {
+  fill: var(--surface-2);
+  stroke: var(--text-faint);
+  stroke-width: 1;
+}
+
+.gantt .bar-wrapper.gantt-status-pending .bar-progress {
+  fill: var(--text-faint);
+  opacity: 0.15;
+}
+
+/* in-progress — accent blue */
+.gantt .bar-wrapper.gantt-status-in-progress .bar {
+  fill: var(--accent-glow);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.gantt .bar-wrapper.gantt-status-in-progress .bar-progress {
+  fill: var(--accent);
+  opacity: 0.4;
+}
+
+/* done — success green */
+.gantt .bar-wrapper.gantt-status-done .bar {
+  fill: rgba(16, 185, 129, 0.12);
+  stroke: var(--success);
+  stroke-width: 1.5;
+}
+
+.gantt .bar-wrapper.gantt-status-done .bar-progress {
+  fill: var(--success);
+  opacity: 0.35;
+}
+
+/* overdue — warning red (modifier: end < today AND progress < 100) */
+.gantt .bar-wrapper.gantt-status-overdue .bar {
+  fill: rgba(245, 158, 11, 0.12);
+  stroke: var(--warning);
+  stroke-width: 1.5;
+}
+
+.gantt .bar-wrapper.gantt-status-overdue .bar-progress {
+  fill: var(--warning);
+  opacity: 0.35;
+}
+
+/* unknown — warning with dashed border */
+.gantt .bar-wrapper.gantt-status-unknown .bar {
+  fill: transparent;
+  stroke: var(--warning);
+  stroke-width: 1.5;
+  stroke-dasharray: 5;
+}
+
+.gantt .bar-wrapper.gantt-status-unknown .bar-progress {
+  fill: transparent;
+}
+
+/* ── 12. Bar labels ────────────────────────────────────────────────────── */
+
+.gantt .bar-label {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.gantt .bar-label.big {
+  fill: var(--text);
+  font-weight: 600;
+}
+
+/* ── 13. Dependency arrows ─────────────────────────────────────────────── */
+
+.gantt .arrow {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-width: 1.5;
+}
+
+/* ── 14. Handles (hidden in read-only mode, but styled for safety) ─────── */
+
+.gantt .handle {
+  fill: var(--accent);
+  opacity: 0;
+}
+
+.gantt .handle.active,
+.gantt .handle.visible {
+  cursor: ew-resize;
+  opacity: 1;
+}
+
+.gantt .handle.progress {
+  fill: var(--text-muted);
+}
+
+/* ── 15. Popup ─────────────────────────────────────────────────────────── */
+
+.gantt-container .popup-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-4);
+  font-family: var(--font-body);
+}
+
+.gantt-container .popup-wrapper .title {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.gantt-container .popup-wrapper .subtitle {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+
+.gantt-container .popup-wrapper .details {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.gantt-container .popup-wrapper .actions {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.gantt-container .popup-wrapper .action-btn {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.gantt-container .popup-wrapper .action-btn:hover {
+  background-color: var(--accent-glow);
+  color: var(--accent-h);
+  border-color: var(--accent);
+}
+
+/* ── 16. Holiday / weekend ─────────────────────────────────────────────── */
+
+.gantt-container .holiday-label {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  padding: 2px var(--space-2);
+}
+
+.gantt-container .date-range-highlight {
+  background-color: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+
+/* ── 17. Page states: loading / empty / error / access-denied ──────────── */
+
+.gantt-state {
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.gantt-state[hidden] { display: none; }
+
+.gantt-state--error { color: var(--warning); }
+
+/* ── 18. Reduced motion (mirrors base.html) ────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .gantt-timeline { scroll-behavior: auto; }
+  .gantt .bar-wrapper .bar { transition: none; }
+  .gantt .bar-wrapper:hover .bar { transition: none; }
+  .gantt-container .side-header * { transition: none; }
+  .gantt-container .popup-wrapper .action-btn { transition: none; }
+}

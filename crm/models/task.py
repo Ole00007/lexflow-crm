@@ -13,6 +13,8 @@ class Task(db.Model):
     status = db.Column(db.String(50), nullable=False, default="pending")
     priority = db.Column(db.String(20), nullable=False, default="Medium")
     duedate = db.Column(db.Date, nullable=True)
+    startdate = db.Column(db.Date, nullable=True)
+    depends_on = db.Column(db.String(255), nullable=True)  # comma-separated task ids (Gantt arrows)
     createdat = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updatedat = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
@@ -38,6 +40,8 @@ class Task(db.Model):
             "status": self.status,
             "priority": self.priority,
             "duedate": _iso(self.duedate),
+            "startdate": _iso(self.startdate),
+            "depends_on": self.depends_on,
             "createdat": _iso(self.createdat),
             "updatedat": _iso(self.updatedat),
             "is_deleted": self.is_deleted,

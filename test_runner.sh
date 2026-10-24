@@ -5,7 +5,7 @@
 
 set -e
 
-cd ~/Desktop/LexFlow/lexflow_hermes_v1
+cd /Users/olesiarasing/Projects/lexflow-crm
 export FLASK_APP=run_crm.py
 export JWT_SECRET_KEY="test-secret-key"
 export CORS_ORIGINS="http://localhost:3000,http://localhost:5001"
