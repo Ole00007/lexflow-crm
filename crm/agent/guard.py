@@ -35,6 +35,10 @@ TOOL_SPECS = {
     'next_actions': ToolSpec('next_actions', False, (), ('case_id', 'matter_id', 'query')),
     'flag_lawyer': ToolSpec('flag_lawyer', True, ('task_id', 'reason'), ()),
     'update_task_status': ToolSpec('update_task_status', True, ('task_id', 'status'), ()),
+    'list_documents': ToolSpec('list_documents', False, (), ('query', 'caseid')),
+    'read_document': ToolSpec('read_document', False, ('query',), ('caseid', 'max_chars')),
+    'summarize_document': ToolSpec('summarize_document', False, ('query',), ('caseid',)),
+    'draft_document': ToolSpec('draft_document', False, ('kind', 'caseid'), ('language', 'note')),
     'list_tasks': ToolSpec('list_tasks', False, (), ('query', 'status', 'limit')),
     'create_task': ToolSpec('create_task', True, ('title', 'caseid'), ('description', 'duedate', 'startdate', 'priority', 'userid')),
     'create_calendar_event': ToolSpec('create_calendar_event', True, ('title', 'start_datetime'), ('end_datetime', 'caseid', 'event_type', 'location', 'description')),
@@ -99,7 +103,7 @@ def validate_tool_call(tool: str, args: Dict[str, Any]) -> Dict[str, Any]:
             continue
         if key in spec.optional and (args[key] is None or args[key] == ''):
             continue
-        if key in ('task_id', 'caseid', 'case_id', 'matter_id', 'limit', 'userid'):
+        if key in ('task_id', 'caseid', 'case_id', 'matter_id', 'limit', 'userid', 'max_chars'):
             cleaned[key] = _require_int(args, key)
         elif key in ('deadline_events',):
             if isinstance(args[key], bool):
@@ -113,6 +117,14 @@ def validate_tool_call(tool: str, args: Dict[str, Any]) -> Dict[str, Any]:
         if status not in ('pending', 'in_progress', 'done', 'blocked', 'waiting_docs', 'review', 'closed', 'open'):
             raise AgentGuardError('status is not allowed')
         cleaned['status'] = status
+    if tool == 'read_document':
+        cleaned['max_chars'] = max(200, min(int(cleaned.get('max_chars', 2500)), 3000))
+    if tool == 'draft_document':
+        if cleaned['kind'] not in ('client_update', 'document_request', 'deadline_reminder'):
+            raise AgentGuardError('kind is not allowed')
+        if cleaned.get('language', 'en') not in ('it', 'en'):
+            raise AgentGuardError('language must be it or en')
+        cleaned.setdefault('language', 'en')
     if tool == 'create_task':
         for k in ('duedate', 'startdate'):
             if k in cleaned:

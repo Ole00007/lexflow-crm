@@ -167,3 +167,59 @@ def date_issue(goal: str, today: Optional[date] = None) -> Optional[str]:
     if d and d < today.isoformat():
         return f"{d} is in the past. Which date should I use instead?"
     return None
+
+
+# ---------------------------------------------------------------- documents (Harvey-like)
+_SUMM_RE = re.compile(r"\b(?:summari[sz]e|summary of|sum up|riassumi|riassunto di|sintesi di|sintetizza)\b\s*(?:the\s+|il\s+|lo\s+|la\s+)?(?:document\s+|documento\s+|file\s+)?(?P<q>.*)$", re.I)
+_READ_RE = re.compile(r"\b(?:read|open|leggi|apri)\s+(?:the\s+|il\s+|lo\s+)?(?:document|doc|file|documento)\s+(?P<q>.*)$", re.I)
+_LISTDOC_RE = re.compile(r"\b(?:documents?|documenti|docs|allegati|attachments|files)\b", re.I)
+_DRAFT_RE = re.compile(r"\b(?:draft|write|prepare|compose|bozza|prepara|scrivi|redigi)\b.*\b(?:letter|email|mail|update|reminder|lettera|aggiornamento|promemoria|richiesta|request)\b", re.I)
+_IT_MARK = re.compile(r"\b(bozza|prepara|scrivi|redigi|lettera|aggiornamento|promemoria|richiesta|pratica|cliente|documenti|riassumi|della|per la)\b", re.I)
+
+
+def _clean_doc_query(q: str) -> str:
+    q = _MATTER_RE.sub('', q or '')
+    q = re.sub(r"\b(?:for|of|di|della|del|in|on|per)\s*$", '', q.strip(), flags=re.I)
+    return q.strip(' "“”\'.,;:?!')
+
+
+def doc_query_summarize(goal: str) -> str:
+    m = _SUMM_RE.search(goal or '')
+    return _clean_doc_query(m.group('q')) if m else ''
+
+
+def is_summarize(goal: str) -> bool:
+    return bool(_SUMM_RE.search(goal or '')) and bool(doc_query_summarize(goal))
+
+
+def doc_query_read(goal: str) -> str:
+    m = _READ_RE.search(goal or '')
+    return _clean_doc_query(m.group('q')) if m else ''
+
+
+def is_read_doc(goal: str) -> bool:
+    return bool(doc_query_read(goal))
+
+
+def is_draft(goal: str) -> bool:
+    return bool(_DRAFT_RE.search(goal or ''))
+
+
+def is_list_docs(goal: str) -> bool:
+    g = goal or ''
+    if not _LISTDOC_RE.search(g) or not matter_hint(g):
+        return False
+    return bool(re.search(r"\b(list|show|what|which|elenca|mostra|quali|have|ci sono|available)\b", g, re.I))
+
+
+def draft_kind(goal: str) -> str:
+    t = (goal or '').lower()
+    if any(w in t for w in ('reminder', 'promemoria', 'deadline', 'scadenz')):
+        return 'deadline_reminder'
+    if any(w in t for w in ('request', 'richiesta', 'documents needed', 'chiedere')):
+        return 'document_request'
+    return 'client_update'
+
+
+def draft_language(goal: str) -> str:
+    return 'it' if _IT_MARK.search(goal or '') else 'en'

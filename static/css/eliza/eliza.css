@@ -28,3 +28,4 @@
 .eliza-form input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:var(--text-sm)}
 .eliza-form button{padding:0 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
 @media(max-width:600px){#eliza-panel{right:0;bottom:0;width:100%;height:100vh;max-height:100vh;border-radius:0}#eliza-bubble{right:16px;bottom:16px}}
+.eliza-copy{align-self:flex-start;font-size:var(--text-xs);padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}

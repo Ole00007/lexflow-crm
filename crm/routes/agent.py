@@ -188,7 +188,8 @@ def _chat_payload(payload):
         reply = 'I can do this for you — please confirm:'
     else:
         reply = run.get('final_text') or 'Done.'
-    return {'reply': reply, 'status': run.get('status'), 'run_id': run.get('run_id'), 'pending_action': action}
+    is_draft = (not action) and str(reply).startswith(('BOZZA', 'DRAFT'))
+    return {'reply': reply, 'status': run.get('status'), 'run_id': run.get('run_id'), 'pending_action': action, 'draft': is_draft}
 
 
 @agent_bp.post('/api/agent/chat')
