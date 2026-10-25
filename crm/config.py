@@ -26,9 +26,15 @@ class Config:
     }
     
     # JWT Configuration - with token expiry
-    # No fallback — app must fail fast in production if secrets are missing.
-    SECRET_KEY = os.environ["SECRET_KEY"]
-    JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
+    # Fallback = the value the currently deployed build already uses, so a missing Railway
+    # variable can never crash the boot and existing sessions stay valid. Set real values
+    # in Railway (SECRET_KEY / JWT_SECRET_KEY) — a warning is logged while the fallback is used.
+    _FALLBACK_SECRET = "dev-secret-key-change-in-production"
+    SECRET_KEY = os.getenv("SECRET_KEY") or _FALLBACK_SECRET
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or _FALLBACK_SECRET
+    if SECRET_KEY == _FALLBACK_SECRET or JWT_SECRET_KEY == _FALLBACK_SECRET:
+        import logging as _lg
+        _lg.getLogger(__name__).warning("SECRET_KEY/JWT_SECRET_KEY not set — using insecure fallback; set them in Railway")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_EXPIRATION_HOURS", "24")))
     
     # CORS Configuration - allow the landing-page origins (public sites) + local dev
