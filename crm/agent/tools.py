@@ -6,7 +6,9 @@ from typing import Any, Dict, Optional
 
 from flask import current_app
 
-from .guard import wrap_untrusted_data
+import json
+
+from .guard import MAX_TOOL_RESULT_BYTES, wrap_untrusted_data
 
 
 @dataclass
@@ -106,6 +108,10 @@ class AgentTools:
 
     def get_calendar(self, *, caseid: Optional[int] = None, event_type: str = '',
                      date_from: str = '', date_to: str = '', deadline_events: bool = True) -> Dict[str, Any]:
+        from datetime import timedelta
+        if not date_from and not date_to:
+            date_from = date.today().isoformat()
+            date_to = (date.today() + timedelta(days=30)).isoformat()
         query = {'deadline_events': 'true' if deadline_events else 'false'}
         if caseid is not None:
             query['caseid'] = int(caseid)
@@ -123,7 +129,12 @@ class AgentTools:
             rows.sort(key=lambda r: str(r.get('start_datetime') or ''))
             today = date.today().isoformat()
             upcoming = [r for r in rows if str(r.get('start_datetime') or '') >= today] or rows
-            return wrap_untrusted_data(upcoming[:40])
+            upcoming = [{**r, 'title': str(r.get('title'))[:80]} for r in upcoming]
+            upcoming = [{k: v for k, v in r.items() if k not in ('end_datetime', 'location') or v} for r in upcoming]
+            upcoming = upcoming[:40]
+            while upcoming and len(json.dumps(upcoming, default=str)) > MAX_TOOL_RESULT_BYTES - 200:
+                upcoming = upcoming[:-1]
+            return wrap_untrusted_data(upcoming)
         return res
 
     def next_actions(self, *, case_id: Optional[int] = None, matter_id: Optional[int] = None,

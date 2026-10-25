@@ -167,7 +167,8 @@ def describe_action(tool, args):
         return ', '.join(bits)
     if tool == 'create_calendar_event':
         when = str(args.get('start_datetime', ''))[:16].replace('T', ' ')
-        return f"Add to agenda: “{args.get('title')}” ({args.get('event_type', 'meeting')}) on {when}"
+        note = ' — the client linked to the matter may be notified by email' if args.get('caseid') else ''
+        return f"Add to agenda: “{args.get('title')}” ({args.get('event_type', 'meeting')}) on {when}{note}"
     if tool == 'update_task_status':
         return f"Set task #{args.get('task_id')} to “{args.get('status')}”"
     if tool == 'flag_lawyer':
