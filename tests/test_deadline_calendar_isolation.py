@@ -53,16 +53,22 @@ titles = lambda r: sorted((e.get('title') or e.get('name') or '') for e in r.get
 # flag OFF (env unset)
 r = c.get('/api/calendar', headers=T)
 check('flag off: plain calendar, no deadline/task entries', r.status_code == 200 and all('kind' not in e for e in r.get_json()))
-r = c.get('/api/calendar?deadline_events=true', headers=T); t = titles(r)
-check('flag off + explicit opt-in param: tenant sees ONLY own deadline/task', r.status_code == 200 and any('OTHER' in x for x in t) and not any('LEX' in x for x in t))
+r = c.get('/api/calendar?deadline_events=true', headers=T)
+check('flag off is a kill-switch: deadline_events=true is ignored', r.status_code == 200 and all('kind' not in e for e in r.get_json()))
+os.environ['CALENDAR_DEADLINES_ENABLED'] = 'true'
 r = c.get('/api/calendar?deadline_events=true', headers=S); t = titles(r)
 check('superadmin sees both workspaces', any('LEX' in x for x in t) and any('OTHER' in x for x in t))
 check('done tasks excluded', not any('LEX done' in x for x in t))
 check('task without due date does not crash / not listed', r.status_code == 200 and not any('LEX nodue' in x for x in t))
 check('anonymous rejected', c.get('/api/calendar?deadline_events=true').status_code in (401, 422))
+# the REAL page sends full datetimes (BLOCKER from cross-test): must not 500
+dfrom = (date.today() - timedelta(days=30)).isoformat() + 'T00:00:00'; dto = (date.today() + timedelta(days=30)).isoformat() + 'T23:59:59'
+r = c.get('/api/calendar?date_from=%s&date_to=%s' % (dfrom, dto), headers=S)
+check('datetime date_from/date_to (what calendar.html sends) -> 200, reflected entries present', r.status_code == 200 and any(e.get('kind') for e in r.get_json()))
+r = c.get('/api/calendar?date_from=%s' % ((date.today() + timedelta(days=60)).isoformat() + 'T00:00:00'), headers=S)
+check('range outside the due date excludes reflected entries', r.status_code == 200 and not any(e.get('kind') for e in r.get_json()))
 
 # flag ON
-os.environ['CALENDAR_DEADLINES_ENABLED'] = 'true'
 r = c.get('/api/calendar', headers=T); t = titles(r)
 check('flag on: tenant gets own entries by default, never LEX ones', any('OTHER' in x for x in t) and not any('LEX' in x for x in t))
 r = c.get('/api/calendar?deadline_events=false', headers=T)

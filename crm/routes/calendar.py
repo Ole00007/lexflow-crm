@@ -100,11 +100,11 @@ def list_events():
     events = [e.to_dict() for e in query.order_by(CalendarEvent.start_datetime).all()]
 
     # When CALENDAR_DEADLINES_ENABLED flag is on, merge deadline events
+    # The env flag is authoritative (kill-switch): off => never merge, whatever the client asks.
+    # On => merged by default, a client may still opt out with deadline_events=false.
     _on = ('1', 'true', 'yes', 'on')
-    if os.environ.get('CALENDAR_DEADLINES_ENABLED', 'false').strip().lower() in _on:
-        include_deadlines = args.get('deadline_events', 'true').strip().lower() in _on
-    else:
-        include_deadlines = args.get('deadline_events', 'false').strip().lower() in _on
+    flag_on = os.environ.get('CALENDAR_DEADLINES_ENABLED', 'false').strip().lower() in _on
+    include_deadlines = flag_on and args.get('deadline_events', 'true').strip().lower() in _on
 
     if include_deadlines:
         ws_ids = get_visible_workspace_ids()

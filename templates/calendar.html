@@ -326,11 +326,11 @@ function renderGrid(){
 /* ---------- shared chip ---------- */
 function chipHTML(e){
   var color = _calColor(e.event_type);
-  return '<button class="cal-chip" style="--chip:'+color+'" data-id="'+e.id+'" draggable="true" ondragstart="calDragStart(event,this)" onclick="calEventClick(event,this)">'+esc(e.title)+'</button>';
+  return '<button class="cal-chip" style="--chip:'+color+'" data-id="'+e.id+'" draggable="'+(e.kind?'false':'true')+'" ondragstart="calDragStart(event,this)" onclick="calEventClick(event,this)">'+esc(e.title)+'</button>';
 }
 function chipRowHTML(e){
   var color = _calColor(e.event_type);
-  return '<div class="cal-pop-row"><button class="cal-chip" style="--chip:'+color+'" data-id="'+e.id+'" draggable="true" onclick="calEventClick(event,this)">'+_calHM(_calParse(e.start_datetime))+' — '+esc(e.title)+'</button></div>';
+  return '<div class="cal-pop-row"><button class="cal-chip" style="--chip:'+color+'" data-id="'+e.id+'" draggable="'+(e.kind?'false':'true')+'" onclick="calEventClick(event,this)">'+_calHM(_calParse(e.start_datetime))+' — '+esc(e.title)+'</button></div>';
 }
 
 /* ---------- month ---------- */
@@ -544,8 +544,10 @@ function showPopover(ev, e){
     + '<button class="cal-pop-close" onclick="closePopover()">&times;</button></div>'
     + rows
     + '<div class="cal-pop-actions">'
-    + '<button class="cal-btn cal-btn-danger" onclick="delEvent('+e.id+')">Delete</button>'
-    + '<button class="cal-btn" onclick="editEvent('+e.id+')">Edit</button>'
+    + (e.kind
+        ? '<span class="cal-pop-row">Read-only &middot; reflected from a '+(e.kind==='deadline'?'deadline':'task due date')+'</span>'
+        : '<button class="cal-btn cal-btn-danger" onclick="delEvent('+Number(e.id)+')">Delete</button>'
+          + '<button class="cal-btn" onclick="editEvent('+Number(e.id)+')">Edit</button>')
     + '</div>';
   positionPopover(pop, ev.currentTarget || ev);
 }

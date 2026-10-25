@@ -81,6 +81,17 @@ def _task_due_to_event(task: Task) -> dict:
     }
 
 
+
+def _to_date(value):
+    """Tolerant ISO parse: the calendar page sends full datetimes ('2026-09-28T00:00:00'),
+    other clients send plain dates. Always return a date."""
+    s = str(value).strip()
+    try:
+        return date.fromisoformat(s[:10])
+    except ValueError:
+        return None   # malformed filter value: ignore it rather than 500
+
+
 def get_deadline_events(
     workspace_ids: Optional[List[int]] = None,
     caseid: Optional[int] = None,
@@ -104,6 +115,8 @@ def get_deadline_events(
         'deadline_type' (if kind='deadline'), 'task_id'/'deadline_id',
         and 'source' (API link back to the original record).
     """
+    date_from_d = _to_date(date_from) if date_from else None
+    date_to_d = _to_date(date_to) if date_to else None
     results: List[dict] = []
 
     # 1) Task due dates — only incomplete tasks (not "done"/"completed"/"cancelled")
@@ -116,10 +129,10 @@ def get_deadline_events(
         task_query = task_query.filter(Task.workspace_id.in_(workspace_ids))
     if caseid:
         task_query = task_query.filter(Task.caseid == caseid)
-    if date_from:
-        task_query = task_query.filter(Task.duedate >= date.fromisoformat(date_from))
-    if date_to:
-        task_query = task_query.filter(Task.duedate <= date.fromisoformat(date_to))
+    if date_from_d:
+        task_query = task_query.filter(Task.duedate >= date_from_d)
+    if date_to_d:
+        task_query = task_query.filter(Task.duedate <= date_to_d)
 
     for task in task_query.all():
         results.append(_task_due_to_event(task))
@@ -133,10 +146,10 @@ def get_deadline_events(
         deadline_query = deadline_query.filter(Deadline.workspace_id.in_(workspace_ids))
     if caseid:
         deadline_query = deadline_query.filter(Deadline.caseid == caseid)
-    if date_from:
-        deadline_query = deadline_query.filter(Deadline.deadline_date >= date.fromisoformat(date_from))
-    if date_to:
-        deadline_query = deadline_query.filter(Deadline.deadline_date <= date.fromisoformat(date_to))
+    if date_from_d:
+        deadline_query = deadline_query.filter(Deadline.deadline_date >= date_from_d)
+    if date_to_d:
+        deadline_query = deadline_query.filter(Deadline.deadline_date <= date_to_d)
 
     for deadline in deadline_query.all():
         results.append(_deadline_to_event(deadline))

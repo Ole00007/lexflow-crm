@@ -46,10 +46,13 @@ def test_gantt_whitelist_exact_keys(client, superadmin_headers):
     # Find our task
     gantt_task = next(t for t in tasks if t["name"] == "Gantt Whitelist Test")
 
-    expected_keys = {'id', 'name', 'start', 'end', 'progress', 'dependencies', 'custom_class'}
+    core_keys = {'id', 'name', 'start', 'end', 'progress', 'dependencies', 'custom_class'}
+    # Contract extended by the team-roles feature (WS-A): team[], vault (superadmin only), open_flags
+    expected_keys = core_keys | {'team', 'vault', 'open_flags'}
     assert set(gantt_task.keys()) == expected_keys, (
         f"Whitelist violation: got {set(gantt_task.keys())}, expected {expected_keys}"
     )
+    assert gantt_task['team'] == [] and gantt_task['open_flags'] == 0
 
     # Verify no leaked fields
     for forbidden in ('description', 'notes', 'userid', 'workspace_id', 'caseid',
