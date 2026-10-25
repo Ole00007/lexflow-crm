@@ -4,8 +4,9 @@ GET /api/gantt/tasks — returns a JSON array of task objects for the
 Frappe Gantt chart. Workspace-scoped, JWT-protected, and filtered
 per the approved P3 authorization rule.
 
-Response whitelist (exact — no extra keys):
-  id, name, start, end, progress, dependencies, custom_class
+Response (per task): id, name, start, end, progress, dependencies, custom_class,
+plus team[] (role-coloured members from the firm Team), vault (superadmin only:
+obsidian_url + docs_api for agents) and open_flags (count of open lawyer flags).
 """
 import logging
 from datetime import date
@@ -19,6 +20,7 @@ from ..models.task import Task
 from ..models.case import Case
 from ..models.user import User
 from ..workspace import workspace_filter
+from .task_team import team_payload
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +81,7 @@ def get_gantt_tasks():
     tasks.sort(key=lambda t: (t.startdate or date.max, t.id))
     # ids that can legally be referenced as a dependency (visible + dated + valid)
     visible_ids = {t.id for t in tasks if t.startdate and t.duedate and t.duedate >= t.startdate}
+    extras = team_payload(tasks, user)
 
     today = date.today()
     result = []
@@ -124,6 +127,9 @@ def get_gantt_tasks():
             'progress': progress,
             'dependencies': ','.join(deps),
             'custom_class': custom_class,
+            'team': extras[task.id]['team'],
+            'vault': extras[task.id]['vault'],
+            'open_flags': extras[task.id]['open_flags'],
         })
 
     if dropped_missing_dates or dropped_end_before_start:

@@ -15,6 +15,7 @@ class Task(db.Model):
     duedate = db.Column(db.Date, nullable=True)
     startdate = db.Column(db.Date, nullable=True)
     depends_on = db.Column(db.String(255), nullable=True)  # comma-separated task ids (Gantt arrows)
+    vault_ref = db.Column(db.String(255), nullable=True)   # vault-relative folder/file holding this stage's documents (agents pull docs from here)
     createdat = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updatedat = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)

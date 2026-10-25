@@ -1,0 +1,21 @@
+{#
+  LexFlow — notification buttons partial (WS-C).
+
+  Optional include for case / task pages. Renders an empty container that
+  static/js/notify/notify_buttons.js populates via window.LexFlowNotify.buttonsFor(taskId),
+  so no task data is ever written into the DOM server-side (no XSS surface).
+
+  Usage (backend-dev wires this where tasks are listed):
+    {% include 'partials/notify_buttons.html' with context %}
+    <div class="notify-buttons" data-task-id="{{ task.id }}"></div>
+  and once, on the page:
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notify/notify.css') }}">
+    <script src="{{ url_for('static', filename='js/notify/notify_buttons.js') }}"></script>
+    <script>
+      document.querySelectorAll('.notify-buttons[data-task-id]').forEach(function (el) {
+        var id = el.getAttribute('data-task-id');
+        window.LexFlowNotify.buttonsFor(id).forEach(function (b) { el.appendChild(b); });
+      });
+    </script>
+#}
+<div class="notify-buttons" data-task-id="{{ task_id }}"></div>

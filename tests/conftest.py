@@ -63,3 +63,11 @@ def superadmin_headers(client):
         token = resp.get_json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
     return {}
+
+
+# Plain-script tests (run with `python tests/<file>.py`, they end in sys.exit()) must not be
+# collected by pytest — a module-level sys.exit() crashes collection.
+collect_ignore = [
+    "test_gantt_dependencies.py", "test_context_notes.py", "test_gantt_team.py",
+    "test_notify.py", "test_deadline_calendar_isolation.py",
+]
