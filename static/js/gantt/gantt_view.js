@@ -252,19 +252,26 @@
     // 4. Instantiate the read-only Gantt chart
     setState('loading');
     try {
+      // Frappe redraws the whole SVG on every view-mode switch (Day/Week/Month): anything we add
+      // after construction (overdue modifier classes, team lines) must be re-applied each time.
+      function decorate() {
+        Object.keys(extras).forEach(function (id) {
+          if (!extras[id].length) return;
+          var w = document.querySelector('#' + GANTT_CONFIG.mountId + ' .bar-wrapper[data-id="' + id + '"]');
+          if (w) extras[id].forEach(function (c) { w.classList.add(c); });
+        });
+        var old = document.querySelectorAll('#' + GANTT_CONFIG.mountId + ' .gantt-team');
+        Array.prototype.forEach.call(old, function (n) { n.parentNode.removeChild(n); });
+        drawTeamLines(meta);
+      }
       var opts = Object.assign({}, GANTT_OPTIONS, {
         container_height: chartHeight(valid.length),   // fixed viewport: month/week header stays glued above the bars
         padding: 34,                                    // room for the team line under each bar
-        popup: function (ctx) { return buildPopup(ctx, meta); }
+        popup: function (ctx) { return buildPopup(ctx, meta); },
+        on_view_change: function () { decorate(); }
       });
       new Gantt('#' + GANTT_CONFIG.mountId, valid, opts);
-      // Re-apply modifier classes (e.g. gantt-status-overdue) that cannot go through the library
-      Object.keys(extras).forEach(function (id) {
-        if (!extras[id].length) return;
-        var w = document.querySelector('#' + GANTT_CONFIG.mountId + ' .bar-wrapper[data-id="' + id + '"]');
-        if (w) extras[id].forEach(function (c) { w.classList.add(c); });
-      });
-      drawTeamLines(meta);
+      decorate();
       // Hide loading state — the chart is rendered
       GANTT_CONFIG.states.forEach(function (s) {
         var el = document.getElementById('gantt-state-' + s);
