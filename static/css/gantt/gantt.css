@@ -119,6 +119,27 @@ html[data-theme="dark"] {
   color: var(--text);
 }
 
+/* ── 5b. Team line under each bar + popup roles (one colour per role) ───── */
+.gantt .gantt-team { font-family: var(--font-body); font-size: 11.5px; font-weight: 600; pointer-events: none; }
+.gantt .gantt-team .team-sep { fill: var(--text-faint, #7E90A9); font-weight: 400; }
+.gantt .gantt-team .role-case_owner      { fill: #F5B942; }
+.gantt .gantt-team .role-docs_supply     { fill: #38D6D0; }
+.gantt .gantt-team .role-legal_assistant { fill: #B78CFF; }
+.gantt .gantt-team .role-lawyer_review   { fill: #FF6F91; }
+.gantt .gantt-team .team-docs { fill: #7DD3FC; }
+.gantt .gantt-team .team-flag { fill: #FF6F91; font-weight: 700; }
+.gantt-container .popup-wrapper .role-case_owner      { color: #F5B942; }
+.gantt-container .popup-wrapper .role-docs_supply     { color: #38D6D0; }
+.gantt-container .popup-wrapper .role-legal_assistant { color: #B78CFF; }
+.gantt-container .popup-wrapper .role-lawyer_review   { color: #FF6F91; }
+.gantt-container .popup-wrapper .team-docs { color: #7DD3FC; margin-top: 4px; }
+.gantt-container .popup-wrapper .team-flag { color: #FF6F91; font-weight: 700; margin-top: 4px; }
+.gantt-container .popup-wrapper .team-sep  { color: var(--text-faint, #7E90A9); }
+.gantt-container .popup-wrapper { min-width: 280px; background: var(--surface-2, #1E2535); color: var(--text, #E7ECF5); border: 1px solid var(--border, #2A3550); }
+.gantt-container .popup-wrapper .title, .gantt-container .popup-wrapper .subtitle { color: var(--text, #E7ECF5); }
+.gantt-container .popup-wrapper .details { color: var(--text-muted, #9AA7BD); font-size: .78rem; line-height: 1.5; }
+.gantt-container .popup-wrapper .action-btn { color: var(--text, #E7ECF5); background: var(--surface, #151B2B); cursor: pointer; }
+
 /* ── 6. Grid background & rows ─────────────────────────────────────────── */
 
 /* dependency arrows: visible on the dark surface (library default is too faint) */
