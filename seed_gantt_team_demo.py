@@ -12,6 +12,7 @@ from crm import create_app
 from crm.extensions import db
 from crm.models.case import Case
 from crm.models.contact import Contact
+from crm.models.deadline import Deadline
 from crm.models.firm_team import FirmTeamMember
 from crm.models.task import Task
 from crm.models.task_assignee import TaskAssignee, TaskFlag
@@ -78,6 +79,13 @@ def main():
         for t, (_, _, _, _, deps, _) in zip(rows, spec):
             if deps:
                 t.depends_on = ','.join(str(rows[k].id) for k in deps)
+        # Legal deadlines on the matter (these reach the Calendar via CALENDAR_DEADLINES_ENABLED)
+        for title_, days, kind, prio in (('Termine integrazione documenti', 2, 'termine_perentorio', 'High'),
+                                         ('Deposito ricorso (telematico)', 10, 'deposito', 'High'),
+                                         ('Udienza presidenziale', 38, 'udienza', 'High')):
+            if not Deadline.query.filter_by(caseid=case.id, title=title_, is_deleted=False).first():
+                db.session.add(Deadline(workspace_id=ws.id, caseid=case.id, title=title_, deadline_date=d(days),
+                                        deadline_type=kind, status='pending', priority=prio))
         if not TaskFlag.query.filter_by(task_id=rows[2].id).first():
             db.session.add(TaskFlag(workspace_id=ws.id, task_id=rows[2].id, raised_by_agent='lexflow-agent',
                                     target_member_id=members['Romanelli'].id, status='open',
