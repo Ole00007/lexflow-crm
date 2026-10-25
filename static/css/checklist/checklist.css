@@ -1,0 +1,144 @@
+/* ============================================================================
+   LexFlow CRM — Matter-stage checklist (WS-K, feat/wave2-checklist)
+   Isolated styles, scoped under `.checklist-page`. Uses the shared design
+   tokens from templates/base.html (--surface, --border, --text, --accent,
+   --radius-*, --space-*, --text-*, --success, --warning). No libraries, no CDN.
+   The four Gantt role colours are a cross-feature contract (task_assignee.py).
+   ============================================================================ */
+
+.checklist-page { max-width: 960px; }
+
+.checklist-page .cl-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-4); margin-bottom: var(--space-5);
+}
+.checklist-page .cl-caseno { color: var(--text-muted); font-weight: 600; font-size: var(--text-lg); }
+.checklist-page .cl-disclaimer {
+  margin: var(--space-2) 0 0; padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs); color: var(--warning);
+  border: 1px solid var(--warning); border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+/* progress ring (pure CSS conic-gradient; --pct set inline, 0..100) */
+.checklist-page .cl-progress { text-align: center; flex-shrink: 0; }
+.checklist-page .cl-ring {
+  width: 76px; height: 76px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--surface-2) 0);
+  color: var(--text); font-weight: 800; font-size: var(--text-sm);
+}
+.checklist-page .cl-ring > span {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface);
+}
+.checklist-page .cl-progress-label {
+  display: block; margin-top: var(--space-1);
+  font-size: var(--text-xs); color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+
+/* init panel */
+.checklist-page .cl-init {
+  margin-bottom: var(--space-4); padding: var(--space-4);
+  border: 1px dashed var(--border); border-radius: var(--radius-lg); background: var(--surface);
+}
+.checklist-page .cl-init-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-top: var(--space-2); }
+.checklist-page select, .checklist-page .button {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--surface-2); color: var(--text); font-size: var(--text-sm);
+}
+.checklist-page .button { background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; border-color: var(--accent); }
+.checklist-page .button:hover { background: var(--accent-h); }
+.checklist-page .button.button-secondary { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.checklist-page .button.button-secondary:hover { border-color: var(--accent); }
+
+/* next-missing banner */
+.checklist-page .cl-next {
+  display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+  margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--accent); border-radius: var(--radius-md);
+  background: var(--accent-glow);
+}
+.checklist-page .cl-next-label {
+  font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent-h);
+}
+.checklist-page .cl-next-item { color: var(--text); font-weight: 600; }
+
+/* stepper */
+.checklist-page .cl-stepper {
+  list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-2);
+  padding: 0; margin: 0 0 var(--space-5);
+}
+.checklist-page .cl-step {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-full);
+  font-size: var(--text-xs); color: var(--text-muted); background: var(--surface);
+}
+.checklist-page .cl-step .cl-step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); }
+.checklist-page .cl-step.is-done { color: var(--success); border-color: var(--success); }
+.checklist-page .cl-step.is-done .cl-step-dot { background: var(--success); }
+.checklist-page .cl-step.is-current { color: var(--text); border-color: var(--accent); background: var(--accent-glow); }
+.checklist-page .cl-step.is-current .cl-step-dot { background: var(--accent); }
+
+/* stages + items */
+.checklist-page .cl-stage {
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--surface); margin-bottom: var(--space-4); overflow: hidden;
+}
+.checklist-page .cl-stage-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-3) var(--space-4); background: var(--surface-2);
+  border-bottom: 1px solid var(--border); font-weight: 700; color: var(--text);
+}
+.checklist-page .cl-stage-tag {
+  font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 8px; border-radius: var(--radius-full); color: var(--text-muted); border: 1px solid var(--border);
+}
+.checklist-page .cl-stage.is-current .cl-stage-tag { color: var(--accent-h); border-color: var(--accent); }
+.checklist-page .cl-stage.is-done .cl-stage-tag { color: var(--success); border-color: var(--success); }
+
+.checklist-page .cl-item {
+  display: grid; grid-template-columns: 140px 1fr auto; gap: var(--space-3);
+  align-items: center; padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.checklist-page .cl-item:last-child { border-bottom: 0; }
+.checklist-page .cl-item.is-resolved .cl-item-label { color: var(--text-muted); text-decoration: line-through; }
+
+.checklist-page select.cl-status {
+  width: 100%;
+}
+.checklist-page .cl-item-label { color: var(--text); }
+.checklist-page .cl-item-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+.checklist-page .cl-blocked { color: var(--warning); }
+
+.checklist-page .cl-item-meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
+.checklist-page .cl-owner {
+  font-size: var(--text-xs); font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full);
+  color: #0E1117; /* dark text on the bright role colours for contrast */
+}
+.checklist-page .cl-due { font-size: var(--text-xs); color: var(--text-muted); }
+.checklist-page .cl-due.is-overdue { color: var(--warning); font-weight: 700; }
+.checklist-page .cl-kind {
+  font-size: var(--text-xs); color: var(--text-faint); text-transform: uppercase; letter-spacing: .05em;
+}
+.checklist-page .cl-actbtn {
+  font-size: var(--text-xs); padding: 4px 10px; border-radius: var(--radius-md);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer;
+}
+.checklist-page .cl-actbtn:hover { border-color: var(--accent); }
+.checklist-page .cl-vaultlink { font-size: var(--text-xs); }
+
+.checklist-page .cl-state {
+  padding: var(--space-5); text-align: center; color: var(--text-muted);
+  border: 1px dashed var(--border); border-radius: var(--radius-lg);
+}
+.checklist-page .cl-state--error { color: var(--warning); border-color: var(--warning); }
+
+@media (max-width: 640px) {
+  .checklist-page .cl-item { grid-template-columns: 1fr; }
+  .checklist-page .cl-item-meta { justify-content: flex-start; }
+}
