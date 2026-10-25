@@ -973,5 +973,6 @@ function handleLogout() {
   window.location.href = '/kanban';
 }
 </script>
+{% if agent_enabled %}{% include '_eliza_bubble.html' %}{% endif %}
 </body>
 </html>

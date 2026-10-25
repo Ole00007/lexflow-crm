@@ -1293,5 +1293,6 @@ document.addEventListener('keydown', function(e) {
   }
 })();
 </script>
+{% if agent_enabled %}{% include '_eliza_bubble.html' %}{% endif %}
 </body>
 </html>
