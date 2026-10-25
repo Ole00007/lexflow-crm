@@ -41,12 +41,17 @@
     api('/api/agent/chat', { message: text }).then(function (r) {
       typing.remove(); busy = false;
       if (!r.ok) { add(r.status === 404 ? 'Eliza is not enabled on this workspace.' : (r.data.error || 'Something went wrong.'), 'bot err'); return; }
-      add(r.data.reply, 'bot'); if (r.data.pending_action) card(r.data.pending_action);
+      var bubbleEl = add(r.data.reply, 'bot'); if (r.data.pending_action) card(r.data.pending_action);
+      if (r.data.draft) {
+        var cp = document.createElement('button'); cp.type = 'button'; cp.className = 'eliza-copy'; cp.textContent = 'Copy draft';
+        cp.onclick = function () { try { navigator.clipboard.writeText(r.data.reply); cp.textContent = 'Copied'; } catch (e) { cp.textContent = 'Select & copy manually'; } };
+        msgs.appendChild(cp); msgs.scrollTop = msgs.scrollHeight;
+      }
     }).catch(function () { typing.remove(); busy = false; add('Network error. Try again.', 'bot err'); });
   }
   function chips() {
     var w = document.createElement('div'); w.className = 'eliza-chips';
-    ['Show my open tasks', "What's on my agenda?", 'Create task … for matter …', 'Schedule hearing … on 2026-11-12 at 10:30'].forEach(function (t) {
+    ['Show my open tasks', "What's on my agenda?", 'Summarize document …', 'Draft client update for matter …', 'Create task … for matter …', 'Schedule hearing … on 2026-11-12 at 10:30'].forEach(function (t) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
       b.onclick = function () { if (t.indexOf('…') > -1) { input.value = t.replace(/…/g, '').replace(/\s+/g, ' ').trim() + ' '; input.focus(); } else send(t); };
       w.appendChild(b);

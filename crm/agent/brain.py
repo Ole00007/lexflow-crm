@@ -103,7 +103,74 @@ def _match_matter(hint: str, rows: List[Dict[str, Any]]) -> Optional[Dict[str, A
     return None
 
 
+def _fmt_summary(res: Dict[str, Any]) -> str:
+    if not isinstance(res, dict) or not res.get('found'):
+        return (res or {}).get('message') or 'No matching document.'
+    if res.get('ambiguous'):
+        return 'Several documents match — which one? ' + '; '.join(res.get('candidates', []))
+    if 'summary' not in res:
+        return f"I found “{res.get('name')}” but could not read it: {res.get('note')}."
+    sm = res['summary']
+    lines = [f"Summary of “{res.get('name')}” ({sm.get('chars')} characters" + (f", {res['pages']} pages" if res.get('pages') else '') + ')  — extractive, please check the original.']
+    if sm.get('headings'):
+        lines.append('Sections: ' + '; '.join(sm['headings']))
+    if sm.get('lead'):
+        lines.append('Opening: ' + ' '.join(sm['lead']))
+    if sm.get('key_dates'):
+        lines.append('Dates: ' + ', '.join(sm['key_dates']))
+    if sm.get('amounts'):
+        lines.append('Amounts: ' + ', '.join(sm['amounts']))
+    if sm.get('obligations_and_deadlines'):
+        lines.append('Obligations / deadlines:\n' + '\n'.join('- ' + x for x in sm['obligations_and_deadlines']))
+    return '\n'.join(lines)
+
+
 class RuleBrain(Brain):
+    def _doc_flow(self, goal, g, last, last_tool):
+        # results of document tools
+        if last_tool == 'summarize_document':
+            return {'final': _fmt_summary(_result_data(last))}
+        if last_tool == 'read_document':
+            r = _result_data(last) or {}
+            if not r.get('found') or r.get('ambiguous'):
+                return {'final': _fmt_summary(r)}
+            if r.get('note') and not r.get('excerpt'):
+                return {'final': f"I found “{r.get('name')}” but could not read it: {r.get('note')}."}
+            return {'final': f"Excerpt of “{r.get('name')}” ({r.get('chars')} characters):\n{r.get('excerpt')}"}
+        if last_tool == 'draft_document':
+            r = _result_data(last) or {}
+            return {'final': r.get('draft') if r.get('found') else (r.get('message') or 'Could not build the draft.')}
+        if last_tool == 'list_documents':
+            r = _result_data(last) or {}
+            docs = r.get('documents') or []
+            if not docs:
+                return {'final': 'No documents found.'}
+            return {'final': f"{r.get('count')} document(s):\n" + '\n'.join(f"- {d.get('name')} ({d.get('source')}, {d.get('target')})" for d in docs[:20])}
+        if last_tool == 'list_matters' and (intents.is_draft(goal) or intents.is_list_docs(goal)):
+            hint = intents.matter_hint(goal)
+            rows = _rows_from_result(last)
+            match = _match_matter(hint, rows)
+            if not match:
+                return {'final': f"Which matter? I could not match '{hint}'."}
+            if intents.is_draft(goal):
+                return {'tool': 'draft_document', 'args': {'kind': intents.draft_kind(goal), 'caseid': match['id'],
+                                                           'language': intents.draft_language(goal)}}
+            return {'tool': 'list_documents', 'args': {'caseid': match['id']}}
+        if last_tool is not None:
+            return None
+        # first step
+        if intents.is_summarize(goal):
+            return {'tool': 'summarize_document', 'args': {'query': intents.doc_query_summarize(goal)}}
+        if intents.is_read_doc(goal):
+            return {'tool': 'read_document', 'args': {'query': intents.doc_query_read(goal)}}
+        if intents.is_draft(goal):
+            hint = intents.matter_hint(goal)
+            if not hint:
+                return {'final': 'For which matter should I draft it? Say e.g. "… for matter Rasing separazione".'}
+            return {'tool': 'list_matters', 'args': {'query': hint}}
+        if intents.is_list_docs(goal):
+            return {'tool': 'list_matters', 'args': {'query': intents.matter_hint(goal)}}
+        return None
     def _create_flow(self, goal, history, last, last_tool):
         issue = intents.date_issue(goal)
         if issue:
@@ -138,6 +205,10 @@ class RuleBrain(Brain):
 
         if intents.is_task_create(goal) or intents.is_event_create(goal):
             return self._create_flow(goal, history, last, last_tool)
+
+        doc_out = self._doc_flow(goal, g, last, last_tool)
+        if doc_out is not None:
+            return doc_out
 
         if last_tool == 'list_tasks':
             rows = _rows_from_result(last)

@@ -164,6 +164,106 @@ class AgentTools:
     def update_task_status(self, *, task_id: int, status: str) -> Dict[str, Any]:
         return self._call('PUT', f'/api/tasks/{int(task_id)}', json={'status': status})
 
+    # ------------------------------------------------------------------ documents
+    def _fetch_bytes(self, path: str):
+        resp = current_app.test_client().open(path, method='GET', headers=self._headers())
+        return resp.status_code, resp.data, (resp.mimetype or '')
+
+    def _case_task_ids(self, caseid: int):
+        rows = self._call('GET', '/api/tasks/', raw=True)
+        rows = rows if isinstance(rows, list) else []
+        return [r for r in rows if int(r.get('caseid') or -1) == int(caseid)][:25]
+
+    def _doc_candidates(self, query: str = '', caseid: Optional[int] = None):
+        """All documents the caller may see through LexFlow's own API: attachments + vault docs."""
+        out = []
+        q = (query or '').strip().lower()
+        atts = []
+        if caseid is not None:
+            atts += self._call('GET', '/api/attachments/', query={'target_type': 'case', 'target_id': int(caseid)}, raw=True) or []
+            tasks = self._case_task_ids(caseid)
+            for t in tasks:
+                atts += self._call('GET', '/api/attachments/', query={'target_type': 'task', 'target_id': int(t['id'])}, raw=True) or []
+        else:
+            atts = self._call('GET', '/api/attachments/', raw=True) or []
+            tasks = [r for r in (self._call('GET', '/api/tasks/', raw=True) or []) if isinstance(r, dict)][:60]
+        for a in atts if isinstance(atts, list) else []:
+            out.append({'source': 'attachment', 'id': a.get('id'), 'name': a.get('filename'), 'mime': a.get('mime_type'),
+                        'size': a.get('size_bytes'), 'target': f"{a.get('target_type')} #{a.get('target_id')}"})
+        for t in tasks:  # vault docs: the API itself enforces superadmin-only (403 -> skipped)
+            res = self._call('GET', f"/api/gantt/tasks/{int(t['id'])}/docs", raw=True)
+            for d in (res.get('docs') if isinstance(res, dict) else None) or []:
+                out.append({'source': 'vault', 'task_id': t['id'], 'name': d.get('name'), 'path_rel': d.get('path_rel'),
+                            'size': d.get('size'), 'target': f"task #{t['id']}"})
+        if q:
+            out = [d for d in out if q in str(d.get('name', '')).lower()]
+        return out
+
+    def list_documents(self, *, query: str = '', caseid: Optional[int] = None) -> Dict[str, Any]:
+        docs = self._doc_candidates(query, caseid)[:30]
+        return wrap_untrusted_data({'count': len(docs), 'documents': docs})
+
+    def _load_document(self, doc):
+        from .doctext import extract_text
+        if doc['source'] == 'attachment':
+            status, data, mime = self._fetch_bytes(f"/api/attachments/{int(doc['id'])}/download")
+            if status != 200:
+                return '', {}, f'could not download the document (HTTP {status})'
+            return extract_text(doc['name'] or '', doc.get('mime') or mime, data)
+        import os
+        root = os.environ.get('LEXFLOW_VAULT_DIR', '').strip()
+        if not root:
+            return '', {}, 'vault not configured'
+        root = os.path.realpath(root)
+        real = os.path.realpath(os.path.join(root, doc['path_rel']))
+        if not (real.startswith(root + os.sep) and os.path.isfile(real)):
+            return '', {}, 'document path is outside the vault'
+        with open(real, 'rb') as fh:
+            data = fh.read(8 * 1024 * 1024 + 1)
+        return extract_text(doc['name'] or '', '', data)
+
+    def _pick_document(self, query: str, caseid: Optional[int]):
+        cands = self._doc_candidates(query, caseid)
+        if not cands:
+            return None, {'found': False, 'message': f"No document matching '{query}'."}
+        exact = [d for d in cands if str(d.get('name', '')).lower() == query.strip().lower()]
+        pick = exact or cands
+        if len(pick) > 1:
+            return None, {'found': True, 'ambiguous': True, 'candidates': [d['name'] for d in pick[:8]]}
+        return pick[0], None
+
+    def read_document(self, *, query: str, caseid: Optional[int] = None, max_chars: int = 2500) -> Dict[str, Any]:
+        doc, problem = self._pick_document(query, caseid)
+        if problem:
+            return wrap_untrusted_data(problem)
+        text, meta, note = self._load_document(doc)
+        return wrap_untrusted_data({'found': True, 'name': doc['name'], 'source': doc['source'], 'note': note,
+                                    'chars': len(text), 'excerpt': text[: int(max_chars)]})
+
+    def summarize_document(self, *, query: str, caseid: Optional[int] = None) -> Dict[str, Any]:
+        from .doctext import summarize_text
+        doc, problem = self._pick_document(query, caseid)
+        if problem:
+            return wrap_untrusted_data(problem)
+        text, meta, note = self._load_document(doc)
+        if not text:
+            return wrap_untrusted_data({'found': True, 'name': doc['name'], 'source': doc['source'], 'note': note or 'empty document'})
+        out = {'found': True, 'name': doc['name'], 'source': doc['source'], 'pages': meta.get('pages'), 'summary': summarize_text(text)}
+        return wrap_untrusted_data(out)
+
+    def draft_document(self, *, kind: str, caseid: int, language: str = 'en', note: str = '') -> Dict[str, Any]:
+        from .drafts import build_draft
+        cases = self._call('GET', '/api/cases/', raw=True)
+        matter = next((c for c in (cases if isinstance(cases, list) else []) if int(c.get('id') or -1) == int(caseid)), None)
+        if not matter:
+            return wrap_untrusted_data({'found': False, 'message': f'Matter #{caseid} not found.'})
+        tasks = self._case_task_ids(caseid)
+        events = self._call('GET', '/api/calendar', query={'caseid': int(caseid), 'deadline_events': 'false'}, raw=True)
+        events = [e for e in (events if isinstance(events, list) else []) if str(e.get('start_datetime') or '') >= date.today().isoformat()]
+        events.sort(key=lambda e: str(e.get('start_datetime') or ''))
+        d = build_draft(kind, language, matter, tasks, events, note)
+        return wrap_untrusted_data({'found': True, 'subject': d['subject'], 'draft': d['text'][:3300]})
+
     def list_tasks(self, *, query: str = '', status: str = '', limit: int = 50) -> Dict[str, Any]:
         rows = self._call('GET', '/api/tasks/', raw=True)
         rows = rows if isinstance(rows, list) else []
@@ -218,6 +318,8 @@ class AgentTools:
             return self.update_task_status(**args)
         if tool == 'list_tasks':
             return self.list_tasks(**args)
+        if tool in ('list_documents', 'read_document', 'summarize_document', 'draft_document'):
+            return getattr(self, tool)(**args)
         if tool == 'create_task':
             return self.create_task(**args)
         if tool == 'create_calendar_event':
