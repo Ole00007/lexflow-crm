@@ -288,6 +288,7 @@ def create_app():
     from .routes.roadmap import roadmap_bp
     from .routes.gantt import gantt_bp
     from .routes.context_notes import context_notes_bp
+    from .routes.task_team import task_team_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -307,6 +308,7 @@ def create_app():
     app.register_blueprint(roadmap_bp)
     app.register_blueprint(gantt_bp)
     app.register_blueprint(context_notes_bp)
+    app.register_blueprint(task_team_bp)
 
     # Google Calendar OAuth
     from .routes.google_oauth_routes import google_oauth_bp
@@ -432,6 +434,17 @@ def create_app():
                     log.info("✓ Added tasks.depends_on")
             except Exception as e:
                 log.warning(f"ensure tasks.depends_on skipped: {e}")
+
+            # Ensure tasks.vault_ref exists (documents folder per task; additive, nullable)
+            try:
+                task_cols3 = [c['name'] for c in inspector.get_columns('tasks')]
+                if 'vault_ref' not in task_cols3:
+                    with db.engine.connect() as conn:
+                        conn.execute(text("ALTER TABLE tasks ADD COLUMN vault_ref VARCHAR(255) NULL"))
+                        conn.commit()
+                    log.info("✓ Added tasks.vault_ref")
+            except Exception as e:
+                log.warning(f"ensure tasks.vault_ref skipped: {e}")
 
             # Seed per-tenant code_prefix for case IDs (additive; only fills blank)
             _seed_code_prefixes()
