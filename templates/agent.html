@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}LexFlow Agent{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/agent/agent.css') }}">
+{% endblock %}
+{% block content %}
+<div class="agent-shell">
+  <section class="agent-hero card">
+    <div>
+      <p class="eyebrow">In-app agent spike</p>
+      <h1>LexFlow Agent</h1>
+      <p class="intro">Server-side agent loop over LexFlow's own REST API. Read-only tools run immediately. Write tools stop at human approval.</p>
+    </div>
+    <div class="agent-meta">
+      <div class="meta-item"><span>Scope</span><strong>Superadmin workspace</strong></div>
+      <div class="meta-item"><span>Mode</span><strong>Offline rule brain by default</strong></div>
+      <div class="meta-item"><span>Writes</span><strong>Approval required</strong></div>
+    </div>
+  </section>
+
+  <section class="agent-panel card">
+    <form id="agentGoalForm" class="agent-form">
+      <label for="agentGoal">Goal</label>
+      <textarea id="agentGoal" rows="3" maxlength="500" placeholder="Es. Quali task sono in ritardo? / Flagga il lawyer sul task..." required></textarea>
+      <div class="agent-actions">
+        <button class="button" type="submit">Run agent</button>
+        <button class="button button-secondary" type="button" id="agentRefresh">Refresh</button>
+      </div>
+      <p class="note">The UI uses your browser JWT from localStorage. No service account, no direct DB access.</p>
+    </form>
+  </section>
+
+  <section class="agent-grid">
+    <article class="card agent-column">
+      <div class="column-head"><h2>Runs</h2><span id="agentRunCount">0</span></div>
+      <div id="agentRuns" class="stack"></div>
+    </article>
+    <article class="card agent-column">
+      <div class="column-head"><h2>Pending approvals</h2><span id="agentPendingCount">0</span></div>
+      <div id="agentPending" class="stack"></div>
+    </article>
+  </section>
+
+  <section class="card agent-column">
+    <div class="column-head"><h2>Audit trail</h2><span id="agentAuditCount">0</span></div>
+    <div id="agentAudit" class="stack"></div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='js/agent/agent.js') }}"></script>
+{% endblock %}
