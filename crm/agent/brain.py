@@ -143,6 +143,9 @@ class RuleBrain(Brain):
             lines = [f"{r.get('title')} — {r.get('status')}" + (f" — due {r.get('duedate')}" if r.get('duedate') else '') for r in rows[:15]]
             return {'final': f"{len(rows)} task(s):\n" + '\n'.join(lines)}
 
+        if last_tool is None and not _is_write(g) and 'notif' not in g and any(w in g for w in ('agenda', 'calendar', 'calendario', 'udienze')):
+            return {'tool': 'get_calendar', 'args': {}}
+
         if _wants_task_list(g):
             status = 'pending' if ('open' in g or 'pending' in g or 'aperti' in g) else ''
             return {'tool': 'list_tasks', 'args': {'status': status} if status else {}}
