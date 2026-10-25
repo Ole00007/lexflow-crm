@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Dict, Optional
 
 from flask import current_app
@@ -32,7 +33,8 @@ class AgentTools:
         return headers
 
     def _call(self, method: str, path: str, *, json: Optional[Dict[str, Any]] = None,
-              query: Optional[Dict[str, Any]] = None, extra_headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+              query: Optional[Dict[str, Any]] = None, extra_headers: Optional[Dict[str, str]] = None,
+              raw: bool = False) -> Any:
         client = current_app.test_client()
         response = client.open(
             path,
@@ -44,6 +46,8 @@ class AgentTools:
         payload = response.get_json(silent=True)
         if payload is None:
             payload = {'text': response.get_data(as_text=True)[:2048]}
+        if raw:
+            return payload
         return ToolResult(response.status_code, payload).as_untrusted()
 
     def _body(self, wrapped: Dict[str, Any]) -> Any:
@@ -53,8 +57,7 @@ class AgentTools:
         return data
 
     def list_matters(self, *, query: str = '', status: str = '', limit: int = 200) -> Dict[str, Any]:
-        data = self._call('GET', '/api/cases/')
-        rows = self._body(data)
+        rows = self._call('GET', '/api/cases/', raw=True)
         rows = rows if isinstance(rows, list) else []
         q = (query or '').strip().lower()
         s = (status or '').strip().lower()
@@ -68,11 +71,12 @@ class AgentTools:
                     continue
                 filtered.append(row)
             rows = filtered
-        return wrap_untrusted_data(rows[: max(1, int(limit or 200))])
+        keep = ('id', 'display_id', 'title', 'status', 'casetype', 'contact_name', 'ownerid', 'assignedto')
+        rows = [{k: r.get(k) for k in keep if k in r} for r in rows]
+        return wrap_untrusted_data(rows[: max(1, min(int(limit or 200), 40))])
 
     def get_gantt_tasks(self, *, query: str = '', limit: int = 200) -> Dict[str, Any]:
-        data = self._call('GET', '/api/gantt/tasks')
-        rows = self._body(data)
+        rows = self._call('GET', '/api/gantt/tasks', raw=True)
         rows = rows if isinstance(rows, list) else []
         q = (query or '').strip().lower()
         if q:
@@ -89,7 +93,7 @@ class AgentTools:
         return self._call('GET', f'/api/gantt/tasks/{int(task_id)}/docs')
 
     def get_open_flags(self, *, task_id: Optional[int] = None) -> Dict[str, Any]:
-        rows = self._body(self.get_gantt_tasks())
+        rows = self._call('GET', '/api/gantt/tasks', raw=True)
         rows = rows if isinstance(rows, list) else []
         out = []
         for row in rows:
@@ -111,7 +115,16 @@ class AgentTools:
             query['date_from'] = date_from
         if date_to:
             query['date_to'] = date_to
-        return self._call('GET', '/api/calendar', query=query)
+        rows = self._call('GET', '/api/calendar', query=query, raw=True)
+        res = wrap_untrusted_data(rows)
+        if isinstance(rows, list):
+            keep = ('id', 'title', 'start_datetime', 'end_datetime', 'event_type', 'caseid', 'location')
+            rows = [{k: r.get(k) for k in keep if k in r} for r in rows]
+            rows.sort(key=lambda r: str(r.get('start_datetime') or ''))
+            today = date.today().isoformat()
+            upcoming = [r for r in rows if str(r.get('start_datetime') or '') >= today] or rows
+            return wrap_untrusted_data(upcoming[:40])
+        return res
 
     def next_actions(self, *, case_id: Optional[int] = None, matter_id: Optional[int] = None,
                      query: str = '') -> Dict[str, Any]:
@@ -140,7 +153,7 @@ class AgentTools:
         return self._call('PUT', f'/api/tasks/{int(task_id)}', json={'status': status})
 
     def list_tasks(self, *, query: str = '', status: str = '', limit: int = 50) -> Dict[str, Any]:
-        rows = self._body(self._call('GET', '/api/tasks/'))
+        rows = self._call('GET', '/api/tasks/', raw=True)
         rows = rows if isinstance(rows, list) else []
         q, st = (query or '').strip().lower(), (status or '').strip().lower()
         out = []
@@ -150,7 +163,9 @@ class AgentTools:
             if st and str(row.get('status', '')).strip().lower() != st:
                 continue
             out.append(row)
-        return wrap_untrusted_data(out[: max(1, int(limit or 50))])
+        keep = ('id', 'title', 'status', 'priority', 'duedate', 'caseid')
+        out = [{k: r.get(k) for k in keep if k in r} for r in out]
+        return wrap_untrusted_data(out[: max(1, min(int(limit or 50), 40))])
 
     def create_task(self, **args: Any) -> Dict[str, Any]:
         return self._call('POST', '/api/tasks/', json=args, extra_headers={'X-Agent-Name': 'lexflow-agent'})

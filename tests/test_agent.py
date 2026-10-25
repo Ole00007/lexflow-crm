@@ -413,3 +413,23 @@ def test_eliza_chat_tasks_and_agenda():
     # client-supplied LLM URL header is ignored on chat (SSRF guard)
     h2 = dict(h); h2['X-Lexflow-Agent-LLM-Url'] = 'http://127.0.0.1:9/never'
     assert client.post('/api/agent/chat', headers=h2, json={'message': 'show my open tasks'}).status_code == 200
+
+
+def test_list_tools_filter_before_truncation():
+    """Regression: >4KB API payloads must be filtered/compacted BEFORE the untrusted-data size wrap."""
+    from crm.agent.tools import AgentTools
+
+    class Fake(AgentTools):
+        def _call(self, method, path, **kw):
+            if path.startswith('/api/cases'):
+                return [{'id': i, 'title': f'Matter {i}', 'display_id': f'M-{i}', 'status': 'open', 'blob': 'x' * 400} for i in range(80)]
+            if path.startswith('/api/tasks'):
+                return [{'id': i, 'title': f'Task {i}', 'status': 'pending', 'blob': 'y' * 400} for i in range(80)]
+            return []
+
+    t = Fake('tok')
+    rows = t.list_matters(query='Matter 42')['untrusted_data']
+    assert isinstance(rows, list) and [r['id'] for r in rows] == [42]
+    assert 'blob' not in rows[0]
+    rows = t.list_tasks(query='Task 7')['untrusted_data']
+    assert isinstance(rows, list) and rows and all('Task 7' in r['title'] for r in rows)

@@ -109,7 +109,7 @@ class RuleBrain(Brain):
         is_task = intents.is_task_create(goal)
         if is_task or hint:
             if last_tool != 'list_matters':
-                return {'tool': 'list_matters', 'args': {}}
+                return {'tool': 'list_matters', 'args': {'query': hint} if hint else {}}
             rows = _rows_from_result(last)
             match = _match_matter(hint, rows)
             if not match:
