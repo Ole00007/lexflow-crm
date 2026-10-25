@@ -8,7 +8,8 @@ from ..models.workspace import Workspace
 from ..models.user import User
 from ..notification_service import send_email
 from ..activity_logger import log_activity
-from ..workspace import get_current_workspace_id, workspace_filter
+from ..workspace import get_current_workspace_id, workspace_filter, get_visible_workspace_ids
+from ..services.deadline_sync import get_deadline_events
 from datetime import datetime
 import os
 
@@ -96,7 +97,27 @@ def list_events():
     if args.get('event_type'): query = query.filter_by(event_type=args['event_type'])
     if args.get('date_from'): query = query.filter(CalendarEvent.start_datetime >= datetime.fromisoformat(args['date_from']))
     if args.get('date_to'): query = query.filter(CalendarEvent.start_datetime <= datetime.fromisoformat(args['date_to']))
-    return jsonify([e.to_dict() for e in query.order_by(CalendarEvent.start_datetime).all()]), 200
+    events = [e.to_dict() for e in query.order_by(CalendarEvent.start_datetime).all()]
+
+    # When CALENDAR_DEADLINES_ENABLED flag is on, merge deadline events
+    _on = ('1', 'true', 'yes', 'on')
+    if os.environ.get('CALENDAR_DEADLINES_ENABLED', 'false').strip().lower() in _on:
+        include_deadlines = args.get('deadline_events', 'true').strip().lower() in _on
+    else:
+        include_deadlines = args.get('deadline_events', 'false').strip().lower() in _on
+
+    if include_deadlines:
+        ws_ids = get_visible_workspace_ids()
+        deadline_events = get_deadline_events(
+            workspace_ids=ws_ids,
+            caseid=args.get('caseid', type=int),
+            date_from=args.get('date_from'),
+            date_to=args.get('date_to'),
+        )
+        events.extend(deadline_events)
+        events.sort(key=lambda e: e.get('start_datetime') or '')
+
+    return jsonify(events), 200
 
 @calendar_bp.get('/<int:event_id>')
 @jwt_required()

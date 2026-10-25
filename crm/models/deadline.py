@@ -2,6 +2,18 @@ from ..extensions import db
 from datetime import datetime
 
 class Deadline(db.Model):
+    """Legal deadlines and court dates.
+
+    `deadline_type` vocabulary for Italian legal practice:
+        udienza               — Hearing / court session date
+        termine_perentorio    — Peremptory deadline (forfeit right if missed)
+        termine_ordinatorio   — Procedural deadline (no forfeiture)
+        deposito              — Filing deadline (document submission to court registry)
+        scadenza_interna      — Internal studio deadline (preparatory step)
+        hearing               — Same as udienza (legacy value)
+        filing_deadline       — Same as deposito (legacy value)
+        other                 — Fallback / unspecified
+    """
     __tablename__ = "deadlines"
 
     id = db.Column(db.Integer, primary_key=True)
