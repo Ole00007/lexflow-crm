@@ -139,6 +139,25 @@ class AgentTools:
     def update_task_status(self, *, task_id: int, status: str) -> Dict[str, Any]:
         return self._call('PUT', f'/api/tasks/{int(task_id)}', json={'status': status})
 
+    def list_tasks(self, *, query: str = '', status: str = '', limit: int = 50) -> Dict[str, Any]:
+        rows = self._body(self._call('GET', '/api/tasks/'))
+        rows = rows if isinstance(rows, list) else []
+        q, st = (query or '').strip().lower(), (status or '').strip().lower()
+        out = []
+        for row in rows:
+            if q and q not in ' '.join(str(row.get(k, '')) for k in ('title', 'description', 'caseid')).lower():
+                continue
+            if st and str(row.get('status', '')).strip().lower() != st:
+                continue
+            out.append(row)
+        return wrap_untrusted_data(out[: max(1, int(limit or 50))])
+
+    def create_task(self, **args: Any) -> Dict[str, Any]:
+        return self._call('POST', '/api/tasks/', json=args, extra_headers={'X-Agent-Name': 'lexflow-agent'})
+
+    def create_calendar_event(self, **args: Any) -> Dict[str, Any]:
+        return self._call('POST', '/api/calendar', json=args, extra_headers={'X-Agent-Name': 'lexflow-agent'})
+
     def draft_notification(self, *, subject: str, body: str, recipient: Optional[str] = None,
                            token: Optional[str] = None) -> Dict[str, Any]:
         draft = {
@@ -170,6 +189,12 @@ class AgentTools:
             return self.flag_lawyer(**args)
         if tool == 'update_task_status':
             return self.update_task_status(**args)
+        if tool == 'list_tasks':
+            return self.list_tasks(**args)
+        if tool == 'create_task':
+            return self.create_task(**args)
+        if tool == 'create_calendar_event':
+            return self.create_calendar_event(**args)
         if tool == 'draft_notification':
             return self.draft_notification(**args)
         raise ValueError(f'Unknown tool: {tool}')

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import date, datetime
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List
 
@@ -34,6 +35,9 @@ TOOL_SPECS = {
     'next_actions': ToolSpec('next_actions', False, (), ('case_id', 'matter_id', 'query')),
     'flag_lawyer': ToolSpec('flag_lawyer', True, ('task_id', 'reason'), ()),
     'update_task_status': ToolSpec('update_task_status', True, ('task_id', 'status'), ()),
+    'list_tasks': ToolSpec('list_tasks', False, (), ('query', 'status', 'limit')),
+    'create_task': ToolSpec('create_task', True, ('title', 'caseid'), ('description', 'duedate', 'startdate', 'priority', 'userid')),
+    'create_calendar_event': ToolSpec('create_calendar_event', True, ('title', 'start_datetime'), ('end_datetime', 'caseid', 'event_type', 'location', 'description')),
     'draft_notification': ToolSpec('draft_notification', True, ('subject', 'body'), ('recipient', 'token', 'authorization')),
 }
 
@@ -95,7 +99,7 @@ def validate_tool_call(tool: str, args: Dict[str, Any]) -> Dict[str, Any]:
             continue
         if key in spec.optional and (args[key] is None or args[key] == ''):
             continue
-        if key in ('task_id', 'caseid', 'case_id', 'matter_id', 'limit'):
+        if key in ('task_id', 'caseid', 'case_id', 'matter_id', 'limit', 'userid'):
             cleaned[key] = _require_int(args, key)
         elif key in ('deadline_events',):
             if isinstance(args[key], bool):
@@ -103,12 +107,33 @@ def validate_tool_call(tool: str, args: Dict[str, Any]) -> Dict[str, Any]:
             else:
                 cleaned[key] = str(args[key]).strip().lower() in ('1', 'true', 'yes', 'on')
         else:
-            cleaned[key] = _require_str(args, key, 500 if key == 'reason' else 255)
+            cleaned[key] = _require_str(args, key, 2000 if key == 'description' else 500 if key == 'reason' else 255)
     if tool == 'update_task_status':
         status = cleaned['status'].strip().lower()
         if status not in ('pending', 'in_progress', 'done', 'blocked', 'waiting_docs', 'review', 'closed', 'open'):
             raise AgentGuardError('status is not allowed')
         cleaned['status'] = status
+    if tool == 'create_task':
+        for k in ('duedate', 'startdate'):
+            if k in cleaned:
+                try:
+                    cleaned[k] = date.fromisoformat(cleaned[k][:10]).isoformat()
+                except Exception as exc:
+                    raise AgentGuardError(f'{k} must be YYYY-MM-DD') from exc
+        if 'priority' in cleaned:
+            pr = cleaned['priority'].strip().capitalize()
+            if pr not in ('Low', 'Medium', 'High', 'Urgent'):
+                raise AgentGuardError('priority is not allowed')
+            cleaned['priority'] = pr
+    if tool == 'create_calendar_event':
+        for k in ('start_datetime', 'end_datetime'):
+            if k in cleaned:
+                try:
+                    datetime.fromisoformat(cleaned[k])
+                except Exception as exc:
+                    raise AgentGuardError(f'{k} must be ISO 8601') from exc
+        if 'event_type' in cleaned and cleaned['event_type'] not in ('hearing', 'meeting', 'deadline', 'call', 'appointment', 'other'):
+            cleaned['event_type'] = 'meeting'
     if tool == 'draft_notification':
         cleaned.setdefault('recipient', None)
     return cleaned

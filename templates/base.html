@@ -280,6 +280,7 @@
         .catch(function () { /* non-fatal */ });
     })();
     </script>
+    {% if agent_enabled %}{% include '_eliza_bubble.html' %}{% endif %}
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -260,6 +260,7 @@ def create_app():
         return {
             "graph_enabled": os.environ.get('GRAPH_VIEW_ENABLED', 'false').strip().lower() in _on,
             "gantt_enabled": os.environ.get('GANTT_VIEW_ENABLED', 'false').strip().lower() in _on,
+            "agent_enabled": os.environ.get('AGENT_ENABLED', 'false').strip().lower() in _on,
             "notify_enabled": os.environ.get('NOTIFY_BUTTONS_ENABLED', 'false').strip().lower() in _on,
             "current_user": user,
             "main_site_url": main_site_url,

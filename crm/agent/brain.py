@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from datetime import date
 from typing import Any, Dict, List, Optional
 
+from . import intents
 from .guard import summarize_data
 
 
@@ -84,7 +85,43 @@ def _should_loop(goal: str) -> bool:
     return 'loop' in g or 'keep checking' in g or 'forever' in g or 'repeat' in g
 
 
+def _wants_task_list(g: str) -> bool:
+    if not any(w in g for w in ('task', 'attivit')):
+        return False
+    return any(w in g for w in ('my task', 'open task', 'list', 'show', 'what', 'which', 'quali', 'mostra', 'i miei', 'pending'))
+
+
+def _match_matter(hint: str, rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    h = (hint or '').strip().lower()
+    if not h:
+        return rows[0] if len(rows) == 1 else None
+    for row in rows:
+        title = str(row.get('title', '')).lower()
+        disp = str(row.get('display_id', '')).lower()
+        if h == disp or h in title or (title and title in h):
+            return row
+    return None
+
+
 class RuleBrain(Brain):
+    def _create_flow(self, goal, history, last, last_tool):
+        hint = intents.matter_hint(goal)
+        is_task = intents.is_task_create(goal)
+        if is_task or hint:
+            if last_tool != 'list_matters':
+                return {'tool': 'list_matters', 'args': {}}
+            rows = _rows_from_result(last)
+            match = _match_matter(hint, rows)
+            if not match:
+                opts = ', '.join(str(r.get('title')) for r in rows[:6]) or 'none found'
+                return {'final': f"Which matter is this for? I could not match '{hint or 'a matter'}'. Open matters: {opts}."}
+            caseid = match.get('id')
+        else:
+            caseid = None
+        if is_task:
+            return {'tool': 'create_task', 'args': intents.build_task_args(goal, caseid)}
+        return {'tool': 'create_calendar_event', 'args': intents.build_event_args(goal, caseid)}
+
     """Deterministic offline brain for tests and the spike."""
 
     def next_step(self, goal: str, history: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -95,6 +132,20 @@ class RuleBrain(Brain):
 
         if _should_loop(goal):
             return {'tool': 'get_gantt_tasks', 'args': {'query': ''}}
+
+        if intents.is_task_create(goal) or intents.is_event_create(goal):
+            return self._create_flow(goal, history, last, last_tool)
+
+        if last_tool == 'list_tasks':
+            rows = _rows_from_result(last)
+            if not rows:
+                return {'final': 'No matching tasks.'}
+            lines = [f"{r.get('title')} — {r.get('status')}" + (f" — due {r.get('duedate')}" if r.get('duedate') else '') for r in rows[:15]]
+            return {'final': f"{len(rows)} task(s):\n" + '\n'.join(lines)}
+
+        if _wants_task_list(g):
+            status = 'pending' if ('open' in g or 'pending' in g or 'aperti' in g) else ''
+            return {'tool': 'list_tasks', 'args': {'status': status} if status else {}}
 
         if last_tool == 'list_matters':
             rows = _rows_from_result(last)
@@ -162,7 +213,11 @@ class RuleBrain(Brain):
 
         if last_tool == 'get_calendar':
             rows = _rows_from_result(last)
-            return {'final': f'Calendar returned {len(rows)} items.'}
+            if not rows:
+                return {'final': 'Your agenda is empty for this period.'}
+            rows = sorted(rows, key=lambda r: str(r.get('start_datetime') or r.get('start') or ''))
+            lines = [f"{str(r.get('start_datetime') or r.get('start') or '')[:16].replace('T', ' ')} — {r.get('title')}" for r in rows[:15]]
+            return {'final': f"{len(rows)} item(s) on the agenda:\n" + '\n'.join(lines)}
 
         if last_tool == 'next_actions':
             return {'final': summarize_data(_result_data(last))}
