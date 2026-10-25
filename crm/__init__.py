@@ -260,6 +260,7 @@ def create_app():
         return {
             "graph_enabled": os.environ.get('GRAPH_VIEW_ENABLED', 'false').strip().lower() in _on,
             "gantt_enabled": os.environ.get('GANTT_VIEW_ENABLED', 'false').strip().lower() in _on,
+            "notify_enabled": os.environ.get('NOTIFY_BUTTONS_ENABLED', 'false').strip().lower() in _on,
             "current_user": user,
             "main_site_url": main_site_url,
             "favicon_url": favicon_url,
@@ -289,6 +290,7 @@ def create_app():
     from .routes.gantt import gantt_bp
     from .routes.context_notes import context_notes_bp
     from .routes.task_team import task_team_bp
+    from .routes.notify import notify_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -309,6 +311,7 @@ def create_app():
     app.register_blueprint(gantt_bp)
     app.register_blueprint(context_notes_bp)
     app.register_blueprint(task_team_bp)
+    app.register_blueprint(notify_bp)
 
     # Google Calendar OAuth
     from .routes.google_oauth_routes import google_oauth_bp

@@ -50,7 +50,8 @@ from crm.models.notify_consent import NotifyConsent
 from crm.models.workspace import Workspace
 
 app = create_app()
-app.register_blueprint(notify_bp)  # mirrors the snippet backend-dev adds to __init__
+if 'notify' not in app.blueprints:      # registered by crm/__init__ once integrated
+    app.register_blueprint(notify_bp)
 app.config["TESTING"] = True
 with app.app_context():
     db.create_all()

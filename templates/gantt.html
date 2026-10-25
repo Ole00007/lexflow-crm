@@ -63,4 +63,8 @@
 {# Order matters: vendored library (global `Gantt`) first, component second. #}
 <script src="{{ url_for('static', filename='vendor/frappe-gantt/1.2.2/frappe-gantt.umd.js') }}"></script>
 <script src="{{ url_for('static', filename='js/gantt/gantt_view.js') }}"></script>
+{% if notify_enabled %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notify/notify.css') }}">
+<script src="{{ url_for('static', filename='js/notify/notify_buttons.js') }}"></script>
+{% endif %}
 {% endblock %}
