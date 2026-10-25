@@ -433,3 +433,14 @@ def test_list_tools_filter_before_truncation():
     assert 'blob' not in rows[0]
     rows = t.list_tasks(query='Task 7')['untrusted_data']
     assert isinstance(rows, list) and rows and all('Task 7' in r['title'] for r in rows)
+
+
+def test_eliza_rejects_invalid_and_past_dates():
+    state = build_state()
+    client, h = state['client'], state['headers']['super']
+    os.environ['AGENT_ENABLED'] = '1'
+    for msg, frag in (('Create task Bad date for matter Rasing separazione due 31/02', 'could not read'),
+                      ('Create task Old for matter Rasing separazione due 2020-01-01', 'in the past'),
+                      ('Schedule hearing X on 2020-01-01 matter Rasing separazione', 'in the past')):
+        d = client.post('/api/agent/chat', headers=h, json={'message': msg}).get_json()
+        assert d['pending_action'] is None and frag in d['reply'], d

@@ -105,6 +105,9 @@ def _match_matter(hint: str, rows: List[Dict[str, Any]]) -> Optional[Dict[str, A
 
 class RuleBrain(Brain):
     def _create_flow(self, goal, history, last, last_tool):
+        issue = intents.date_issue(goal)
+        if issue:
+            return {'final': issue}
         hint = intents.matter_hint(goal)
         is_task = intents.is_task_create(goal)
         if is_task or hint:

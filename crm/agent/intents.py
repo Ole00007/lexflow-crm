@@ -154,3 +154,16 @@ def build_event_args(goal: str, caseid: Optional[int] = None) -> Dict[str, Any]:
     if caseid:
         args['caseid'] = int(caseid)
     return args
+
+
+def date_issue(goal: str, today: Optional[date] = None) -> Optional[str]:
+    """Return a clarification message if the goal holds an unparseable or past date, else None."""
+    today = today or date.today()
+    t = (goal or '').lower()
+    has_token = re.search(r"\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[/.\-]\d{1,2}(?:[/.\-]\d{2,4})?\b", t)
+    d = parse_date(goal, today)
+    if has_token and not d:
+        return f"I could not read that date ('{has_token.group(0)}'). Could you give it as YYYY-MM-DD or DD/MM/YYYY?"
+    if d and d < today.isoformat():
+        return f"{d} is in the past. Which date should I use instead?"
+    return None
