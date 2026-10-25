@@ -200,8 +200,11 @@ class AgentTools:
         return out
 
     def list_documents(self, *, query: str = '', caseid: Optional[int] = None) -> Dict[str, Any]:
-        docs = self._doc_candidates(query, caseid)[:30]
-        return wrap_untrusted_data({'count': len(docs), 'documents': docs})
+        all_docs = self._doc_candidates(query, caseid)
+        docs = [{**d, 'name': str(d.get('name'))[:70]} for d in all_docs[:30]]
+        while docs and len(json.dumps({'count': len(all_docs), 'documents': docs}, default=str)) > MAX_TOOL_RESULT_BYTES - 200:
+            docs = docs[:-1]
+        return wrap_untrusted_data({'count': len(all_docs), 'shown': len(docs), 'documents': docs})
 
     def _load_document(self, doc):
         from .doctext import extract_text

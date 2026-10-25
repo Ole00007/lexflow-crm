@@ -64,8 +64,11 @@ def build_draft(kind: str, lang: str, matter: Dict[str, Any], tasks: List[Dict[s
         body = [t['rem_intro'].format(**ctx), _bullets(ev_rows or [f"{x.get('title')}" for x in tasks if x.get('duedate')][:6], t['none'])]
     else:
         subject = t['update_subject'].format(**ctx)
-        body = [t['update_intro'].format(**ctx), '', t['tasks'], _bullets(open_tasks, t['none']),
-                '', t['deadlines'], _bullets(ev_rows, t['none'])]
+        # Internal task titles are NOT put in a client letter (they may be internal workflow labels).
+        n = len(open_tasks)
+        progress = (f"Al momento ci sono {n} attività in corso sulla pratica." if lang == 'it'
+                    else f"There are currently {n} activities in progress on the matter.")
+        body = [t['update_intro'].format(**ctx), '', progress, '', t['deadlines'], _bullets(ev_rows, t['none'])]
         if note.strip():
             body += ['', note.strip()]
     text = '\n'.join([t['banner'], '', subject, '', t['hello'].format(**ctx), ''] + body + ['', t['bye']])

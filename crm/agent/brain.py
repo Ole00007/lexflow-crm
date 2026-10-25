@@ -140,12 +140,15 @@ class RuleBrain(Brain):
         if last_tool == 'draft_document':
             r = _result_data(last) or {}
             return {'final': r.get('draft') if r.get('found') else (r.get('message') or 'Could not build the draft.')}
+        if last_tool in ('list_documents', 'read_document', 'summarize_document', 'draft_document') and isinstance(_result_data(last), dict) and _result_data(last).get('truncated'):
+            return {'final': 'The result was too large to show in full. Please narrow the request (a more specific document name or matter).'}
         if last_tool == 'list_documents':
             r = _result_data(last) or {}
             docs = r.get('documents') or []
             if not docs:
                 return {'final': 'No documents found.'}
-            return {'final': f"{r.get('count')} document(s):\n" + '\n'.join(f"- {d.get('name')} ({d.get('source')}, {d.get('target')})" for d in docs[:20])}
+            more = f"\n…and {r['count'] - len(docs)} more — narrow it with a name, e.g. 'summarize document <name>'." if r.get('count', 0) > len(docs) else ''
+            return {'final': f"{r.get('count')} document(s):\n" + '\n'.join(f"- {d.get('name')} ({d.get('source')}, {d.get('target')})" for d in docs[:20]) + more}
         if last_tool == 'list_matters' and (intents.is_draft(goal) or intents.is_list_docs(goal)):
             hint = intents.matter_hint(goal)
             rows = _rows_from_result(last)

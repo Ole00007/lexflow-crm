@@ -498,6 +498,7 @@ def test_eliza_documents_summarize_read_list_draft():
 
     d = chat('Draft client update letter for matter Rasing separazione')
     assert d['draft'] is True and d['pending_action'] is None
+    assert 'Lawyer review' not in d['reply'] and 'activities in progress' in d['reply']  # no internal task titles to clients
     assert 'DRAFT' in d['reply'] and 'Rasing separazione' in d['reply'] and 'lawyer review' in d['reply']
     d = chat('Prepara una bozza di promemoria scadenze per la pratica Rasing separazione')
     assert d['draft'] is True and 'BOZZA' in d['reply'], d['reply']
@@ -535,3 +536,14 @@ def test_docx_decompression_bomb_is_refused():
     assert len(buf.getvalue()) < 1024 * 1024  # tiny on disk, 40MB expanded
     text, _, note = extract_text('bomb.docx', '', buf.getvalue())
     assert text == '' and 'too large' in note
+
+
+def test_list_documents_never_reads_as_empty_when_large():
+    state = build_state()
+    client, h = state['client'], state['headers']['super']
+    os.environ['AGENT_ENABLED'] = '1'
+    cid = next(c['id'] for c in client.get('/api/cases/', headers=h).get_json() if c['title'] == 'Rasing separazione')
+    for i in range(24):
+        assert _upload(client, h, ('X' * 150) + f'_{i:02d}.txt', b'hello', 'text/plain', cid).status_code == 201
+    r = client.post('/api/agent/chat', headers=h, json={'message': 'List documents for matter Rasing separazione'}).get_json()
+    assert 'No documents found' not in r['reply'] and 'document(s)' in r['reply'] and 'more' in r['reply'], r['reply'][:300]
