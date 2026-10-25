@@ -174,8 +174,12 @@ def task_send(task_id):
     if not member_id:
         return jsonify({"error": "member_id is required"}), 400
 
+    try:
+        member_pk = int(member_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "member_id must be an integer"}), 400
     team_ws = _team_ws_for_task(task)
-    member = FirmTeamMember.query.filter_by(id=int(member_id), workspace_id=team_ws).first()
+    member = FirmTeamMember.query.filter_by(id=member_pk, workspace_id=team_ws).first()
     if not member:
         return jsonify({"error": "Team member not found"}), 404
 
@@ -243,7 +247,11 @@ def put_consent():
             400,
         )
 
-    member = FirmTeamMember.query.filter_by(id=int(member_id)).first()
+    try:
+        member_pk = int(member_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "member_id must be an integer"}), 400
+    member = FirmTeamMember.query.filter_by(id=member_pk).first()
     if not member:
         return jsonify({"error": "Team member not found"}), 404
 
