@@ -11,6 +11,7 @@ from typing import Any, Dict, Tuple
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_PDF_PAGES = 60
+MAX_DOCX_XML_BYTES = 12 * 1024 * 1024
 MAX_TEXT_CHARS = 250_000
 
 _DATE_RE = re.compile(
@@ -34,7 +35,11 @@ def extract_text(name: str, mime: str, data: bytes) -> Tuple[str, Dict[str, Any]
     if ext == 'docx':
         try:
             with zipfile.ZipFile(io.BytesIO(data)) as z:
-                xml = z.read('word/document.xml').decode('utf-8', errors='replace')
+                info = z.getinfo('word/document.xml')
+                if info.file_size > MAX_DOCX_XML_BYTES:
+                    return '', meta, 'this .docx is too large to read safely'
+                with z.open(info) as fh:
+                    xml = fh.read(MAX_DOCX_XML_BYTES + 1).decode('utf-8', errors='replace')
             xml = re.sub(r'</w:p>', '\n', xml)
             xml = re.sub(r'<w:tab/>', '\t', xml)
             text = re.sub(r'<[^>]+>', '', xml)

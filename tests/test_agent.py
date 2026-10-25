@@ -524,3 +524,14 @@ def test_doctext_pdf_and_limits():
     assert t2 == '' and 'no text layer' in n2
     assert extract_text('x.png', 'image/png', b'123')[2]
     assert extract_text('big.txt', 'text/plain', b'a' * (9 * 1024 * 1024))[2]
+
+
+def test_docx_decompression_bomb_is_refused():
+    import io, zipfile
+    from crm.agent.doctext import extract_text
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('word/document.xml', '<w:p>' + 'A' * (40 * 1024 * 1024) + '</w:p>')
+    assert len(buf.getvalue()) < 1024 * 1024  # tiny on disk, 40MB expanded
+    text, _, note = extract_text('bomb.docx', '', buf.getvalue())
+    assert text == '' and 'too large' in note
