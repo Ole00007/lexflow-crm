@@ -3,3 +3,11 @@
 *.db-journal
 *.sqlite
 *.sqlite3
+
+# Secrets / runtime artefacts — never commit (added by push-audit 2026-10-25)
+.env
+.env.*
+!.env.example
+backups/
+uploads/
+node_modules/
