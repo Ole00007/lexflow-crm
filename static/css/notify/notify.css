@@ -1,0 +1,32 @@
+/* LexFlow — notification buttons (WS-C). Minimal, token-free deep-link buttons. */
+.notify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  margin: 0 0.25rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+  background: #555;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.notify-btn:hover { opacity: 0.9; }
+.notify-btn:focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }
+
+.notify-btn-telegram { background: #229ed9; }
+.notify-btn-whatsapp { background: #25d366; color: #0b3d1f; }
+
+.notify-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Container used by templates/partials/notify_buttons.html */
+.notify-buttons {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
