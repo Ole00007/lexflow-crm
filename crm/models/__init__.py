@@ -15,3 +15,4 @@ from .attachment import Attachment
 from .google_token import GoogleCalendarToken
 from .firm_team import FirmTeamMember
 from .task_assignee import TaskAssignee, TaskFlag
+from .notify_consent import NotifyConsent
