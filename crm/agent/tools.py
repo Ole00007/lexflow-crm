@@ -131,6 +131,7 @@ class AgentTools:
             upcoming = [r for r in rows if str(r.get('start_datetime') or '') >= today] or rows
             upcoming = [{**r, 'title': str(r.get('title'))[:80]} for r in upcoming]
             upcoming = [{k: v for k, v in r.items() if k not in ('end_datetime', 'location') or v} for r in upcoming]
+            upcoming.sort(key=lambda r: (r.get('event_type') == 'task_due', str(r.get('start_datetime') or '')))
             upcoming = upcoming[:40]
             while upcoming and len(json.dumps(upcoming, default=str)) > MAX_TOOL_RESULT_BYTES - 200:
                 upcoming = upcoming[:-1]
