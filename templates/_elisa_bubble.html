@@ -1,5 +1,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/elisa/elisa.css') }}">
-<button id="elisa-bubble" type="button" aria-label="Open Elisa assistant" title="Elisa — your LexFlow assistant"><img src="{{ url_for('static', filename='img/elisa-avatar.png') }}" alt="Elisa" width="60" height="60"><span class="elisa-dot"></span></button>
+<button id="elisa-bubble" type="button" aria-label="Talk to Elisa — your LexFlow assistant" title="Elisa — your LexFlow assistant">
+  <img class="elisa-launcher-avatar" src="{{ url_for('static', filename='img/elisa-avatar.png') }}" alt="" aria-hidden="true" width="34" height="34">
+  <span class="elisa-launcher-label">Hi, I'm Elisa! happy to assist</span>
+  <span class="elisa-dot"></span>
+</button>
 <section id="elisa-panel" role="dialog" aria-label="Elisa assistant">
   <header class="elisa-head">
     <div class="elisa-avatar"><img src="{{ url_for('static', filename='img/elisa-avatar.png') }}" alt="" width="40" height="40"></div>

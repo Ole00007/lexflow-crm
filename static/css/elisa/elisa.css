@@ -1,7 +1,8 @@
-#elisa-bubble{position:fixed;right:24px;bottom:24px;width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;z-index:2000;
-  background:var(--accent);color:#fff;font-size:1.5rem;font-weight:700;box-shadow:0 4px 20px var(--accent-glow,rgba(59,125,216,.4));
-  display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
-#elisa-bubble:hover{transform:scale(1.08)}
+#elisa-bubble{position:fixed;right:24px;bottom:24px;display:inline-flex;align-items:center;gap:9px;padding:8px 16px 8px 8px;border-radius:999px;border:1px solid rgba(197,165,90,.45);background:linear-gradient(135deg,#1c2b42 0%,#152238 100%);color:#fff;font-size:13px;font-weight:700;letter-spacing:.01em;cursor:pointer;z-index:2000;box-shadow:0 14px 34px rgba(0,0,0,.42);transition:transform .2s,box-shadow .2s}
+#elisa-bubble:hover{transform:translateY(-2px);box-shadow:0 20px 44px rgba(0,0,0,.5)}
+#elisa-bubble:focus-visible{outline:2px solid var(--gold,#c5a55a);outline-offset:3px}
+#elisa-bubble .elisa-launcher-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(197,165,90,.85);flex-shrink:0;background:#2a3a52}
+#elisa-bubble .elisa-launcher-label{white-space:nowrap}
 #elisa-bubble .elisa-dot{position:absolute;top:6px;right:6px;width:12px;height:12px;border-radius:50%;background:#F5B942;display:none;border:2px solid var(--bg)}
 #elisa-bubble.has-pending .elisa-dot{display:block}
 #elisa-panel{position:fixed;right:24px;bottom:96px;width:380px;height:540px;max-height:calc(100vh - 120px);display:none;flex-direction:column;z-index:2001;
@@ -27,11 +28,5 @@
 .elisa-form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);background:var(--surface)}
 .elisa-form input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:var(--text-sm)}
 .elisa-form button{padding:0 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
-@media(max-width:600px){#elisa-panel{right:0;bottom:0;width:100%;height:100vh;max-height:100vh;border-radius:0}#elisa-bubble{right:16px;bottom:16px}}
+@media(max-width:600px){#elisa-panel{right:0;bottom:0;width:100%;height:100vh;max-height:100vh;border-radius:0}#elisa-bubble{right:16px;bottom:16px;padding:6px}#elisa-bubble .elisa-launcher-label{display:none}}
 .elisa-copy{align-self:flex-start;font-size:var(--text-xs);padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
-
-/* Elisa avatar (same portrait as the LexFlow website widget) */
-#elisa-bubble{padding:0;background:#0F2A4A;border:2px solid #F5B942;box-shadow:0 6px 20px rgba(0,0,0,.35)}
-#elisa-bubble img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
-.elisa-avatar{padding:0;overflow:hidden;background:#0F2A4A}
-.elisa-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
