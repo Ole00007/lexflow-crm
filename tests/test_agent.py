@@ -668,3 +668,12 @@ def test_responsible_visible_on_gantt_and_graph_for_every_task():
     r0 = with_owner[0]['data']['responsible'][0]
     assert set(r0) == {'name', 'role', 'role_label', 'color', 'inferred'} and r0['color'].startswith('#')
     assert 'email' not in r0 and 'phone' not in r0, 'graph payload must not leak contact details'
+
+
+def test_llm_token_floor_for_reasoning_models(monkeypatch):
+    from crm.agent import llm
+    _llm_env(monkeypatch, LEXFLOW_AGENT_LLM_URL='https://x.test/v1', LEXFLOW_AGENT_LLM_MODEL='m', LEXFLOW_AGENT_LLM_DOCS='1')
+    cap = {}
+    monkeypatch.setattr(llm, '_post', lambda u, p, k, t: cap.update(mt=p['max_tokens']) or {'choices': [{'message': {'content': 'ok'}}]})
+    llm.summarize('x')
+    assert cap['mt'] >= 1500

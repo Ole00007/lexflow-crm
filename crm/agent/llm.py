@@ -89,6 +89,13 @@ def complete(system: str, user: str, *, max_tokens: int = 700) -> str:
     except ValueError:
         timeout = 25.0
     key = _env('LEXFLOW_AGENT_LLM_KEY')
+    # Reasoning models (e.g. stepfun/step-3.7-flash) spend part of max_tokens on hidden thinking and can return an
+    # EMPTY answer if the budget is tight -> always leave headroom (cost stays tiny; ~0.0004 USD per call).
+    try:
+        floor = int(_env('LEXFLOW_AGENT_LLM_MIN_TOKENS', '1500'))
+    except ValueError:
+        floor = 1500
+    max_tokens = max(int(max_tokens), floor)
     last = 'no model tried'
     for model in mods:
         payload = {'model': model, 'temperature': 0.2, 'max_tokens': max_tokens,
