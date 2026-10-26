@@ -101,6 +101,67 @@ def _fill_inferred_responsible(tasks, out):
             out[t.id]['team'].append(entry(users[uid]))
 
 
+_RM_CACHE = {'mtime': None, 'data': {}}
+_AGENT_ROLES = {   # agent-bus roles (not DB-assignable TaskAssignee roles)
+    'executor':     ('Executor (agent)', '#4ADE80'),
+    'collaborator': ('Collaborator',     '#60A5FA'),
+    'unassigned':   ('No executor yet',  '#9AA7BD'),
+}
+
+
+def _roadmap_index():
+    """{'T-009': {'agent': 'backend_dev'|None, 'deps': [...]}} from the CANONICAL roadmap JSON (single source of truth)."""
+    import json
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                        'docs', 'LexFlow_Agentic_Roadmap.json')
+    try:
+        mt = os.path.getmtime(path)
+        if _RM_CACHE['mtime'] != mt:
+            with open(path, encoding='utf-8') as fh:
+                tasks = (json.load(fh) or {}).get('tasks') or []
+            _RM_CACHE.update(mtime=mt, data={t['id']: {'agent': t.get('assigned_agent'), 'deps': t.get('depends_on') or []}
+                                              for t in tasks if t.get('id')})
+        return _RM_CACHE['data']
+    except Exception:
+        return {}
+
+
+def _pretty_agent(a):
+    return (a or '').replace('_', '-')
+
+
+def _add_agent_executors(tasks, out, user):
+    """Agent-bus view: who EXECUTES each roadmap task (assigned_agent) + collaborators (agents of the tasks it depends on),
+    or an explicit 'no executor yet'. Only for the LexFlow workspace / superadmin (internal agent names never leak to tenants)."""
+    import re
+    ws = getattr(getattr(user, 'workspace', None), 'slug', None) if user is not None else None
+    if user is None or not (user.role == 'superadmin' or ws == 'lexflow'):
+        return
+    idx = _roadmap_index()
+    if not idx:
+        return
+    for t in tasks:
+        m = re.match(r'^\s*\[?(T-\d+)\]?', t.title or '')
+        node = idx.get(m.group(1)) if m else None
+        if node is None or t.id not in out:
+            continue
+        def entry(role, name):
+            label, color = _AGENT_ROLES[role]
+            return {'member_id': None, 'user_id': None, 'name': name, 'role': role, 'role_label': label, 'color': color,
+                    'email': None, 'phone': None, 'inferred': False, 'kind': 'agent'}
+        team = out[t.id]['team']
+        if node['agent']:
+            team.append(entry('executor', _pretty_agent(node['agent'])))
+        else:
+            team.append(entry('unassigned', 'unassigned'))
+        seen = {node['agent']}
+        for dep in node['deps']:
+            a = (idx.get(dep) or {}).get('agent')
+            if a and a not in seen:
+                seen.add(a)
+                team.append(entry('collaborator', _pretty_agent(a)))
+
+
 def team_payload(tasks, user):
     """Per-task extras for GET /api/gantt/tasks: {task_id: {team, vault, open_flags}}."""
     ids = [t.id for t in tasks]
@@ -113,7 +174,8 @@ def team_payload(tasks, user):
     for f in TaskFlag.query.filter(TaskFlag.task_id.in_(ids), TaskFlag.status == 'open').all():
         out[f.task_id]['open_flags'] += 1
     _fill_inferred_responsible(tasks, out)
-    order = list(TASK_ROLES)
+    _add_agent_executors(tasks, out, user)
+    order = list(TASK_ROLES) + list(_AGENT_ROLES)
     for v in out.values():
         v['team'].sort(key=lambda m: order.index(m['role']) if m['role'] in order else 99)
     if user is not None and user.role == 'superadmin':

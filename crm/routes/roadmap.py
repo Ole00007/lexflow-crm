@@ -110,7 +110,9 @@ def graph():
     task_ids = {t.id for t in tasks}
     from .task_team import team_payload
     try:
-        _resp = team_payload(tasks, None)  # superadmin-only vault data is skipped (user=None); names/roles only
+        from flask_jwt_extended import get_jwt_identity
+        _u = User.query.get(int(get_jwt_identity()))
+        _resp = team_payload(tasks, _u)  # graph copies names/roles/colours only (no contact data, no vault refs)
     except Exception:
         _resp = {}
     for t in tasks:
@@ -129,7 +131,7 @@ def graph():
                 "duedate": _iso(t.duedate),
                 "createdat": _iso(t.createdat),
                 # who is responsible (role-coloured in the UI): [{name, role, role_label, color, inferred}]
-                "responsible": [{k: m.get(k) for k in ('name', 'role', 'role_label', 'color', 'inferred')}
+                "responsible": [{k: m.get(k) for k in ('name', 'role', 'role_label', 'color', 'inferred', 'kind')}
                                 for m in (_resp.get(t.id, {}).get('team') or [])],
             },
         })

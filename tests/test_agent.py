@@ -666,7 +666,7 @@ def test_responsible_visible_on_gantt_and_graph_for_every_task():
     with_owner = [n for n in tn if n['data']['responsible']]
     assert with_owner, 'no task shows a responsible person'
     r0 = with_owner[0]['data']['responsible'][0]
-    assert set(r0) == {'name', 'role', 'role_label', 'color', 'inferred'} and r0['color'].startswith('#')
+    assert set(r0) <= {'name', 'role', 'role_label', 'color', 'inferred', 'kind'} and r0['color'].startswith('#')
     assert 'email' not in r0 and 'phone' not in r0, 'graph payload must not leak contact details'
 
 
@@ -677,3 +677,24 @@ def test_llm_token_floor_for_reasoning_models(monkeypatch):
     monkeypatch.setattr(llm, '_post', lambda u, p, k, t: cap.update(mt=p['max_tokens']) or {'choices': [{'message': {'content': 'ok'}}]})
     llm.summarize('x')
     assert cap['mt'] >= 1500
+
+
+def test_agent_bus_executors_and_collaborators_on_roadmap_tasks():
+    from types import SimpleNamespace as NS
+    from crm.routes import task_team as tt
+    idx = tt._roadmap_index()
+    assert idx.get('T-004', {}).get('deps'), 'roadmap JSON must expose depends_on'
+    sup = NS(role='superadmin', workspace=NS(slug='lexflow'))
+    tasks = [NS(id=1, title='[T-004] Contacts two-split'), NS(id=2, title='[T-002] logic audit'), NS(id=3, title='plain task')]
+    out = {t.id: {'team': [], 'vault': None, 'open_flags': 0} for t in tasks}
+    tt._add_agent_executors(tasks, out, sup)
+    roles = {i: [m['role'] for m in out[i]['team']] for i in out}
+    assert roles[1][0] in ('executor', 'unassigned') and roles[3] == []
+    assert any(r == 'executor' for r in roles[1] + roles[2]) or all(r == 'unassigned' for r in roles[1] + roles[2])
+    assert all(m['kind'] == 'agent' for i in (1, 2) for m in out[i]['team'])
+    # tenants never see internal agent names
+    out2 = {t.id: {'team': [], 'vault': None, 'open_flags': 0} for t in tasks}
+    tt._add_agent_executors(tasks, out2, NS(role='admin', workspace=NS(slug='pagliano')))
+    assert all(v['team'] == [] for v in out2.values())
+    tt._add_agent_executors(tasks, out2, None)
+    assert all(v['team'] == [] for v in out2.values())

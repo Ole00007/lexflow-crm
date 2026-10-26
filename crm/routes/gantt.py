@@ -31,6 +31,7 @@ _STATUS_MAP = {
     'pending':     (0,   'gantt-status-pending'),
     'in_progress': (50,  'gantt-status-in-progress'),
     'done':        (100, 'gantt-status-done'),
+    'blocked':     (0,   'gantt-status-blocked'),
 }
 _UNKNOWN_STATUS = (0, 'gantt-status-unknown')
 

@@ -65,7 +65,7 @@
   };
 
   /* ── Team, docs & agent actions (WS-A) ─────────────────────────────────── */
-  var ROLE_TAG = { case_owner: 'Owner', docs_supply: 'Docs', legal_assistant: 'Assist', lawyer_review: 'Lawyer' };
+  var ROLE_TAG = { case_owner: 'Owner', docs_supply: 'Docs', legal_assistant: 'Assist', lawyer_review: 'Lawyer', executor: 'Exec', collaborator: 'Collab', unassigned: 'No exec' };
   var actionRegistry = [];   // other modules (Telegram / WhatsApp buttons…) plug popup buttons in here
 
   function esc(s) {

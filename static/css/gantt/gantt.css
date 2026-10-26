@@ -350,6 +350,25 @@ html[data-theme="dark"] {
   opacity: 0.35;
 }
 
+/* blocked — danger red hatch + lock (approved blocked-state language) */
+.gantt .bar-wrapper.gantt-status-blocked .bar {
+  fill: rgba(239, 68, 68, 0.14);
+  stroke: var(--danger, #EF4444);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;   /* hatch */
+  animation: gantt-blocked-pulse 2.2s ease-in-out infinite;
+}
+
+.gantt .bar-wrapper.gantt-status-blocked .bar-progress {
+  fill: var(--danger, #EF4444);
+  opacity: 0.45;
+}
+
+@keyframes gantt-blocked-pulse { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+@media (prefers-reduced-motion: reduce) {
+  .gantt .bar-wrapper.gantt-status-blocked .bar { animation: none; }
+}
+
 /* unknown — warning with dashed border */
 .gantt .bar-wrapper.gantt-status-unknown .bar {
   fill: transparent;
@@ -494,3 +513,11 @@ html[data-theme="dark"] {
   .gantt-container .side-header * { transition: none; }
   .gantt-container .popup-wrapper .action-btn { transition: none; }
 }
+
+/* agent-bus roles (executor = agent doing the task, collaborator = agent it depends on) */
+.gantt .gantt-team .role-executor     { fill: #4ADE80; font-weight: 600; }
+.gantt .gantt-team .role-collaborator { fill: #60A5FA; }
+.gantt .gantt-team .role-unassigned   { fill: #9AA7BD; font-style: italic; }
+.gantt-container .popup-wrapper .role-executor     { color: #4ADE80; }
+.gantt-container .popup-wrapper .role-collaborator { color: #60A5FA; }
+.gantt-container .popup-wrapper .role-unassigned   { color: #9AA7BD; }
