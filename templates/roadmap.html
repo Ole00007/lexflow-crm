@@ -168,6 +168,11 @@ header {
 .col-in_progress .node-id { fill: #6CA0F0; }
 .col-blocked .node-bg { fill: #331B1B; stroke: #F87171; stroke-dasharray: 6 4; }
 .col-blocked .node-id { fill: #F87171; }
+.node-lock { font: 700 12px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.node-reason { font: 600 9px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #F87171; }
+.col-blocked .node-bg { animation: blocked-pulse 2.2s ease-in-out infinite; }
+@keyframes blocked-pulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
+@media (prefers-reduced-motion: reduce) { .col-blocked .node-bg { animation: none; } }
 .col-local_verified .node-bg { fill: #2E2413; stroke: #FBBF24; }
 .col-local_verified .node-id { fill: #FBBF24; }
 .col-deployed .node-bg { fill: #123229; stroke: #34D399; }
@@ -631,15 +636,36 @@ nodes.forEach(function(n){
   g.appendChild(tT);
 
   if (n.metaText) {
-    var mT = document.createElementNS(NS, 'text');
-    mT.setAttribute('class', 'node-meta');
-    mT.setAttribute('x', 13);
-    mT.setAttribute('y', n.h - 9);
-    mT.textContent = n.metaText;
-    g.appendChild(mT);
-  }
+      var mT = document.createElementNS(NS, 'text');
+      mT.setAttribute('class', 'node-meta');
+      mT.setAttribute('x', 13);
+      mT.setAttribute('y', n.h - 9);
+      mT.textContent = n.metaText;
+      g.appendChild(mT);
+    }
 
-  nodeLayer.appendChild(g);
+    /* Blocked-state: lock badge + reason chip on blocked nodes */
+    var isBlocked = String(n.column || '').toLowerCase().indexOf('block') >= 0;
+    if (isBlocked) {
+      var lock = document.createElementNS(NS, 'text');
+      lock.setAttribute('class', 'node-lock');
+      lock.setAttribute('x', n.w - 12);
+      lock.setAttribute('y', 19);
+      lock.setAttribute('text-anchor', 'end');
+      lock.textContent = '🔒';
+      g.appendChild(lock);
+      var reason = (n.notes || '').match(/blocked[:\-–]?\s*([^.;\n]{2,60})/i);
+      if (reason) {
+        var rT = document.createElementNS(NS, 'text');
+        rT.setAttribute('class', 'node-reason');
+        rT.setAttribute('x', 13);
+        rT.setAttribute('y', n.h - 9);
+        rT.textContent = '⛔ ' + reason[1].trim();
+        g.appendChild(rT);
+      }
+    }
+
+    nodeLayer.appendChild(g);
   nodeG[n.id] = g;
   setNodePos(n);
 });
