@@ -136,9 +136,10 @@
       // the whole chart. Pass ONE token to the library, re-apply the rest after render.
       var classes = String(t.custom_class || '').split(/\s+/).filter(Boolean);
       extras[String(t.id)] = classes.slice(1);
+      var locked = classes.indexOf('gantt-status-blocked') >= 0;
       valid.push({
         id: String(t.id),
-        name: t.name,
+        name: (locked ? '🔒 ' : '') + t.name,
         start: t.start,
         end: t.end,
         progress: t.progress,
