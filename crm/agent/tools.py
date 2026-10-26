@@ -252,6 +252,12 @@ class AgentTools:
         if not text:
             return wrap_untrusted_data({'found': True, 'name': doc['name'], 'source': doc['source'], 'note': note or 'empty document'})
         out = {'found': True, 'name': doc['name'], 'source': doc['source'], 'pages': meta.get('pages'), 'summary': summarize_text(text)}
+        from . import llm
+        if llm.enabled():  # opt-in, provider-agnostic; extractive summary above is always kept (both ways)
+            try:
+                out['ai_summary'] = llm.summarize(text)
+            except llm.LLMError as e:
+                out['ai_note'] = 'Model summary unavailable (' + str(e)[:60] + '); showing the extractive summary only.'
         return wrap_untrusted_data(out)
 
     def draft_document(self, *, kind: str, caseid: int, language: str = 'en', note: str = '') -> Dict[str, Any]:
@@ -265,7 +271,20 @@ class AgentTools:
         events = [e for e in (events if isinstance(events, list) else []) if str(e.get('start_datetime') or '') >= date.today().isoformat()]
         events.sort(key=lambda e: str(e.get('start_datetime') or ''))
         d = build_draft(kind, language, matter, tasks, events, note)
-        return wrap_untrusted_data({'found': True, 'subject': d['subject'], 'draft': d['text'][:3300]})
+        text, ai = d['text'], False
+        from . import llm
+        if llm.enabled():  # model polishes the template; any failure keeps the template draft
+            try:
+                facts = {'matter': matter.get('title'), 'ref': matter.get('display_id') or matter.get('case_no'),
+                         'status': matter.get('status'), 'client': (matter.get('contact_name') or '').replace('(client)', '').strip(),
+                         'upcoming_dates': [str(e.get('start_datetime'))[:16] + ' ' + str(e.get('title') or '') for e in events[:5]]}
+                polished = llm.polish_draft(kind, language, d['text'], facts, note)
+                first = d['text'].splitlines()[0] if d['text'].lstrip().upper().startswith('DRAFT') else ''
+                text = polished if (not first or polished.lstrip().upper().startswith('DRAFT')) else first + '\n\n' + polished
+                ai = True
+            except llm.LLMError:
+                pass
+        return wrap_untrusted_data({'found': True, 'subject': d['subject'], 'draft': text[:3300], 'ai': ai})
 
     def list_tasks(self, *, query: str = '', status: str = '', limit: int = 50) -> Dict[str, Any]:
         rows = self._call('GET', '/api/tasks/', raw=True)

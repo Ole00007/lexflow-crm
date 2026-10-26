@@ -111,7 +111,12 @@ def _fmt_summary(res: Dict[str, Any]) -> str:
     if 'summary' not in res:
         return f"I found “{res.get('name')}” but could not read it: {res.get('note')}."
     sm = res['summary']
-    lines = [f"Summary of “{res.get('name')}” ({sm.get('chars')} characters" + (f", {res['pages']} pages" if res.get('pages') else '') + ')  — extractive, please check the original.']
+    ai_head = []
+    if res.get('ai_summary'):
+        ai_head = [f"Model-written summary of “{res.get('name')}” (AI — please check the original):\n{res['ai_summary']}\n\n— Extractive summary —"]
+    elif res.get('ai_note'):
+        ai_head = [res['ai_note']]
+    lines = ai_head + [f"Summary of “{res.get('name')}” ({sm.get('chars')} characters" + (f", {res['pages']} pages" if res.get('pages') else '') + ')  — extractive, please check the original.']
     if sm.get('headings'):
         lines.append('Sections: ' + '; '.join(sm['headings']))
     if sm.get('lead'):

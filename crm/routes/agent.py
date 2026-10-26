@@ -35,7 +35,10 @@ def _require_superadmin(user):
 def _chat_brain():
     # Never trust a client-supplied LLM URL (SSRF): chat uses the server env or the offline rule brain.
     import os
-    if (os.environ.get('LEXFLOW_AGENT_LLM_URL') or '').strip():
+    # The LLM URL/key/model also power model-written summaries/drafts (crm/agent/llm.py). LLM *routing* of the chat
+    # is a separate opt-in so enabling summaries never changes the deterministic, approval-gated rule brain.
+    if (os.environ.get('LEXFLOW_AGENT_LLM_URL') or '').strip() and \
+            (os.environ.get('LEXFLOW_AGENT_LLM_ROUTING') or '').strip().lower() in ('1', 'true', 'yes', 'on'):
         return HttpLLMBrain()
     return RuleBrain()
 
