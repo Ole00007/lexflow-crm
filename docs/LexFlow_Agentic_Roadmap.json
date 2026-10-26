@@ -2,7 +2,7 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-10-24",
+  "last_updated": "2026-10-26",
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
@@ -57,13 +57,42 @@
     "T-018": "t_f48b0a11",
     "T-019": "t_bc68191b",
     "T-020": "t_a4e0ad76",
-    "T-021": "t_f0f709f5"
+    "T-021": "t_f0f709f5",
+    "T-030": "t_7fc8830f",
+    "T-031": "t_c0c2b530"
   },
   "report_rule": "Every status update MUST include deploy_status: 'local' (with local_preview_url) or 'deployed' (with prod_url + commit_hash). Never report done without one of these two.",
   "process_rules": {
     "cross_audit": "Before EVERY local test and before any deploy, operator_installer and backend_dev cross-audit each other's code changes: operator reviews backend_dev's code, backend_dev reviews operator's code. Then report to user, then deploy. Applies to all code changes, no exceptions.",
     "implementation_plan_gate": "backend_dev submits an implementation plan for sign-off BEFORE code ONLY when the user explicitly requests it OR when operator_installer has a genuine doubt. Not a routine gate — most tasks proceed to implementation directly.",
-    "report_gate": "Every 'fixed'/'done' must state LOCAL (preview link) or DEPLOYED (URL + commit hash). Permanent global rule."
+    "report_gate": "Every 'fixed'/'done' must state LOCAL (preview link) or DEPLOYED (URL + commit hash). Permanent global rule.",
+        "polish_order": "Ole 2026-10-26: finish ALL polish in the ENGLISH version first, THEN move to Italian, THEN set standards. Do NOT start Italian polish until English polish is done."
+          },
+  "ole_decisions_2026_10_26": {
+    "source": "frontend-developer session, on Ole's direct request (kanban t_1700fadc)",
+    "decisions": [
+      {
+        "id": "D-1",
+        "topic": "CRM assistant name + launcher",
+        "decision": "CRM assistant is 'Elisa' (NOT Eliza) — user must not know it's a different agent. Launcher reuses the LexFlow website Elisa pill-bulb (avatar + label 'Hi, I'm Elisa! happy to assist'), minimal, NO intake sections, just corrected styles.",
+        "status": "committed feat/ui-elisa-nav (wt-merge) 48094c2; local preview port 5003",
+        "roadmap_ref": "T-030"
+      },
+      {
+        "id": "D-2",
+        "topic": "Polish order",
+        "decision": "Finish ALL polish in the ENGLISH version first, THEN move to Italian, THEN set standards. Do NOT start Italian polish until English polish is done.",
+        "status": "active process rule",
+        "roadmap_ref": "process_rules.polish_order"
+      },
+      {
+        "id": "D-3",
+        "topic": "Blocked-state visual (kanban)",
+        "decision": "frontend-developer is building visual proposals (A-E) for blocked-state visibility on kanban/gantt/tasks/context-graph. Ole will assess the proposals and approve before any merge. Do NOT merge blocked-state work until Ole approves.",
+        "status": "proposals A-E in progress; awaiting Ole approval before merge",
+        "roadmap_ref": "T-031"
+      }
+    ]
   },
   "kanban_columns": [
     "backlog",
@@ -537,7 +566,8 @@
       "depends_on": [
         "T-022",
         "T-021",
-        "T-024"
+        "T-024",
+        "T-029"
       ],
       "notes": "Deploy gate before any push: run alembic upgrade to g8b9c0d1e2f3 on staging, tenant-isolation checks (Romanelli admin, client sub-workspace), flags on.",
       "start_date": "2026-10-28",
@@ -591,6 +621,52 @@
         "T-022"
       ],
       "notes": "seed_gantt_data.py now upserts from this file and honours optional start_date/due_date; fill them for T-001..T-020 so the Gantt shows real plan, not derived dates.",
+      "start_date": "2026-10-26",
+      "due_date": "2026-10-30",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-029",
+      "title": "Add Alembic migration for notify_consents (currently create_all-only) before Railway gate",
+      "column": "backlog",
+      "assigned_agent": "backend_dev",
+      "deploy_status": null,
+      "priority": "P1",
+      "depends_on": [],
+      "notes": "MAJOR finding from Wave 1 FINAL GATE (2026-10-25, integration/platform-wave1 @ 78238fe, report xreport_admy_wave1.md): notify_consents has NO Alembic migration — it is created only via runtime db.create_all() in the _ensure_schema before_request hook (checkfirst+additive). On a fresh Postgres deploy where only 'flask db upgrade' runs the migrations, the first db.create_all() still creates it (additive, so it self-heals), but it is ABSENT from the migration chain and from the ORM model registry import graph. MINOR companion: NotifyConsent not in models/__init__. Fix before the Railway deploy gate (T-025).",
+      "start_date": "2026-10-26",
+      "due_date": "2026-10-28",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-030",
+      "title": "CRM assistant launcher: 'Elisa' pill-bulb (reuse LexFlow website Elisa avatar + 'Hi, I'm Elisa! happy to assist'), minimal, NO intake sections",
+      "column": "local_verified",
+      "assigned_agent": "frontend_developer",
+      "deploy_status": "local",
+      "local_preview_url": "http://localhost:5003",
+      "priority": "P2",
+      "depends_on": [],
+      "notes": "Ole 2026-10-26: CRM assistant is 'Elisa' (NOT Eliza) — user must not know it's a different agent. Launcher reuses the LexFlow website Elisa pill-bulb (avatar + label 'Hi, I'm Elisa! happy to assist'), minimal, NO intake sections, just corrected styles. Committed on feat/ui-elisa-nav (wt-merge) 48094c2. Local preview on port 5003 (verified HTTP 200).",
+      "start_date": "2026-10-26",
+      "due_date": "2026-10-27",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-031",
+      "title": "Blocked-state visibility visual proposals (A-E) on kanban/gantt/tasks/context-graph",
+      "column": "awaiting_confirmation",
+      "assigned_agent": "frontend_developer",
+      "deploy_status": null,
+      "priority": "P2",
+      "depends_on": [],
+      "notes": "Ole 2026-10-26: frontend-developer is building visual proposals (A-E) for blocked-state visibility on kanban/gantt/tasks/context-graph. Ole will assess the proposals and approve before any merge. HARD GATE: do NOT merge blocked-state work until Ole approves.",
       "start_date": "2026-10-26",
       "due_date": "2026-10-30",
       "tenant_scope": [
