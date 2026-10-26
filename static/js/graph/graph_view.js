@@ -228,15 +228,14 @@
 
   /* ── agent-bus: who owns / executes / collaborates, blocked-by, subagent runs (data.responsible + data.bus) ── */
   function respSegs(n) {
-    var d = n.data || {}, out = [];
+    var d = n.data || {}, out = [], b = d.bus;
+    // A–E blocked proposal: red = blocked (hard/dependency), amber = awaiting Ole — FIRST so it is never cut off
+    if (b && b.blocked) { out.push({ t: '⛔ ' + (b.blocked_by && b.blocked_by.length ? 'by ' + b.blocked_by.slice(0, 2).join(',') : 'blocked'), c: '#EF4444' }); }
+    else if (b && b.awaiting_ole) { out.push({ t: '⛔ awaiting Ole', c: '#F5B942' }); }
     (d.responsible || []).forEach(function (m) {
-      out.push({ t: (m.role === 'collaborator' ? '+ ' : '') + (m.kind === 'agent' ? '🤖 ' : '👤 ') + shortLabel(m.name, 16), c: m.color || '#9AA7BD' });
+      out.push({ t: (m.role === 'collaborator' ? '+ ' : '') + (m.kind === 'agent' ? '🤖 ' : '👤 ') + shortLabel(m.name, 14), c: m.color || '#9AA7BD' });
     });
-    var b = d.bus;
-    if (b) {
-      if (b.blocked) { out.push({ t: '⛔ ' + (b.blocked_by && b.blocked_by.length ? 'by ' + b.blocked_by.join(',') : 'blocked'), c: '#EF4444' }); }
-      if (b.subagents_dispatched) { out.push({ t: '⚙ ' + b.subagents_dispatched + ' runs', c: '#9AA7BD' }); }
-    }
+    if (b && b.subagents_dispatched) { out.push({ t: '⚙ ' + b.subagents_dispatched + ' runs', c: '#9AA7BD' }); }
     return out;
   }
 
@@ -305,18 +304,18 @@
       placed.push(box);
       ctx.lineWidth = 3 / v.k; ctx.strokeStyle = css('--bg', '#0E1117'); ctx.strokeText(t, n.x, y);
       ctx.fillStyle = textCol; ctx.fillText(t, n.x, y);
-      if (n.type === 'task' && (must || v.k > 0.9)) {            // small role-coloured responsibility line
+      if (n.type === 'task' && (must || v.k > 0.9 || (n.data && n.data.bus && (n.data.bus.blocked || n.data.bus.awaiting_ole)))) {
         var segs = respSegs(n);
-        if (segs.length) {
-          var fs = 10 / Math.max(v.k, 0.8), gap = 6 / Math.max(v.k, 0.8), y2 = y + hgt;
-          ctx.font = fs + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif'; ctx.textAlign = 'left';
+        if (segs.length) {                                       // small role-coloured line on a dark pill (legible over links)
+          var fs = 11 / Math.max(v.k, 0.8), gap = 7 / Math.max(v.k, 0.8), y2 = y + hgt + 1 / v.k;
+          ctx.font = fs + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
           var tw = 0; segs.forEach(function (sg) { sg.w = ctx.measureText(sg.t).width; tw += sg.w + gap; }); tw -= gap;
-          var x = n.x - tw / 2;
-          segs.forEach(function (sg) {
-            ctx.lineWidth = 3 / v.k; ctx.strokeStyle = css('--bg', '#0E1117'); ctx.strokeText(sg.t, x, y2);
-            ctx.fillStyle = sg.c; ctx.fillText(sg.t, x, y2); x += sg.w + gap;
-          });
-          ctx.textAlign = 'center';
+          var x = n.x - tw / 2, ph = fs + 6 / Math.max(v.k, 0.8), pr = ph / 2, yc = y2 + ph / 2;
+          ctx.globalAlpha = 0.82; ctx.fillStyle = css('--bg', '#0E1117');
+          ctx.beginPath(); ctx.moveTo(x - 6, yc - pr + pr); ctx.arc(x - 6 + pr, yc, pr, Math.PI / 2, Math.PI * 1.5);
+          ctx.arc(x + tw + 6 - pr, yc, pr, Math.PI * 1.5, Math.PI / 2); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+          segs.forEach(function (sg) { ctx.fillStyle = sg.c; ctx.fillText(sg.t, x, yc); x += sg.w + gap; });
+          ctx.textAlign = 'center'; ctx.textBaseline = 'top';
           ctx.font = (12 / Math.max(v.k, 0.8)) + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif';
         }
       }

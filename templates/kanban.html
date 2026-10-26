@@ -362,6 +362,21 @@ header {
 @keyframes blocked-pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .blocked-badge { animation: none; } }
 
+/* ── Agent-bus line + A–E blocked proposal (red = hard/dependency, amber = awaiting Ole; pulse ONLY on awaiting-you) ── */
+.card.card-awaiting {
+  border-left: 4px solid var(--warning, #F5B942);
+  background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 4px, color-mix(in srgb, var(--warning, #F5B942) 8%, var(--surface-2)) 4px, color-mix(in srgb, var(--warning, #F5B942) 8%, var(--surface-2)) 8px);
+}
+.card-bus { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: .68rem; line-height: 1.5; color: var(--text-faint, #7E90A9); }
+.card-bus .b-own { color: #F5B942; } .card-bus .b-exe { color: #4ADE80; } .card-bus .b-col { color: #60A5FA; } .card-bus .b-none { color: #9AA7BD; font-style: italic; }
+.reason-badge, .runs-pill { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; font-weight: 700; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.reason-badge.hard { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); }
+.reason-badge.awaiting { color: var(--warning, #F5B942); background: color-mix(in srgb, var(--warning, #F5B942) 14%, transparent); border: 1px solid color-mix(in srgb, var(--warning, #F5B942) 45%, transparent); animation: blocked-pulse 2.2s ease-in-out infinite; }
+.runs-pill { color: var(--text-faint, #9AA7BD); background: color-mix(in srgb, var(--text-faint, #9AA7BD) 12%, transparent); border: 1px solid color-mix(in srgb, var(--text-faint, #9AA7BD) 30%, transparent); font-weight: 600; }
+.lane-head { font-size: .7rem; font-weight: 700; letter-spacing: .02em; color: var(--danger); padding: 4px 6px 2px; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .reason-badge.awaiting { animation: none; } }
+@media (max-width: 480px) { .card-bus { font-size: .72rem; } .reason-badge, .runs-pill { font-size: .72rem; padding: 3px 9px; } }
+
 .card-title {
   font-size: .9rem;
   font-weight: 600;
@@ -1109,15 +1124,26 @@ function decorateBus() {
       var ti = card.querySelector('.card-title'); var m = ti && /^\s*\[?(T-\d+)\]?/.exec(ti.textContent || '');
       var b = m && bus[m[1]]; if (!b) { return; }
       var d = document.createElement('div'); d.className = 'card-bus';
-      d.style.cssText = 'margin-top:6px;font-size:10.5px;line-height:1.5;color:var(--text-faint,#7E90A9)';
-      var part = function (txt, col) { var s = document.createElement('span'); s.textContent = txt; s.style.cssText = 'color:' + col + ';margin-right:8px;white-space:nowrap'; d.appendChild(s); };
-      part('👤 owner', '#F5B942');
-      part('🤖 ' + (b.executor || 'no executor yet'), b.executor ? '#4ADE80' : '#9AA7BD');
-      (b.collaborators || []).forEach(function (c) { part('+ ' + c, '#60A5FA'); });
-      if (b.blocked) { part('⛔ ' + (b.blocked_by && b.blocked_by.length ? 'by ' + b.blocked_by.join(',') : 'blocked'), '#EF4444'); }
-      if (b.subagents_dispatched) { part('⚙ ' + b.subagents_dispatched + ' runs', '#9AA7BD'); }
+      var part = function (txt, cls) { var sp = document.createElement('span'); sp.textContent = txt; sp.className = cls; d.appendChild(sp); };
+      part('👤 owner', 'b-own');
+      part('🤖 ' + (b.executor || 'no executor yet'), b.executor ? 'b-exe' : 'b-none');
+      (b.collaborators || []).forEach(function (c) { part('+ ' + c, 'b-col'); });
+      if (b.blocked) { part('⛔ ' + (b.blocked_by && b.blocked_by.length ? 'blocked by ' + b.blocked_by.join(', ') : 'blocked'), 'reason-badge hard'); card.classList.add('card-blocked'); }
+      else if (b.awaiting_ole) { part('⛔ awaiting Ole', 'reason-badge awaiting'); card.classList.add('card-awaiting'); }
+      if (b.subagents_dispatched) { part('⚙ ' + b.subagents_dispatched + ' runs', 'runs-pill'); }
       card.appendChild(d);
     });
+  document.querySelectorAll('.card-list').forEach(function (list) {
+    var bl = Array.prototype.filter.call(list.children, function (c) { return c.classList.contains('card') && c.querySelector('.card-bus') && (c.classList.contains('card-blocked') || c.classList.contains('card-awaiting')); });
+    var head = list.querySelector(':scope > .lane-head');
+    if (!bl.length) { if (head) { head.remove(); } return; }
+    var aw = bl.filter(function (c) { return c.classList.contains('card-awaiting'); }).length;
+    if (!head) { head = document.createElement('div'); head.className = 'lane-head'; }
+    var txt = '⛔ Blocked — ' + bl.length + (aw ? ' (' + aw + ' awaiting you)' : '');
+    if (head.textContent !== txt) { head.textContent = txt; }
+    var want = [head].concat(bl), ok = want.every(function (n, i) { return list.children[i] === n; });
+    if (!ok) { want.slice().reverse().forEach(function (n) { list.insertBefore(n, list.firstChild); }); }
+  });
   };
   if (_busCache) { apply(_busCache); return; }
   fetch('/api/roadmap/bus', { headers: { Authorization: 'Bearer ' + t } })

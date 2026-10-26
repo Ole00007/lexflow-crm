@@ -209,6 +209,7 @@ def bus_info(user):
         blocked = (t.get('column') == 'blocked') or (bool(open_deps) and t.get('column') not in done)
         out[tid] = {'executor': _pretty_agent(agent) if agent else None, 'collaborators': collabs,
                     'blocked': blocked, 'blocked_by': open_deps, 'column': t.get('column'),
+                    'awaiting_ole': t.get('column') == 'awaiting_confirmation',
                     'subagents_dispatched': runs.get(cards.get(tid)) if cards.get(tid) in runs else (0 if tid in cards else None)}
     return out
 
