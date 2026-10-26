@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path('/Users/olesiarasing/projects/lexflow-crm-wt-agent')
+REPO = Path(__file__).resolve().parents[1]  # repo-relative (was a hard-coded worktree path)
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
