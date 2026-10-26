@@ -1,0 +1,8 @@
+{# Shared "← Main site" button for standalone pages (single source: /api/workspace -> site_url from public_site_url()). #}
+<a id="mainSiteLinkFloat" href="#" target="_blank" rel="noopener" style="display:none;position:fixed;top:14px;right:16px;z-index:1500;padding:6px 12px;border-radius:8px;font:600 13px/1.2 system-ui,sans-serif;text-decoration:none;color:#E2E8F0;background:#161B27;border:1px solid #1E2A3A">← Main site</a>
+<script>
+(function(){var t=localStorage.getItem('jwt');if(!t)return;
+fetch('/api/workspace',{headers:{Authorization:'Bearer '+t}}).then(function(r){return r.json()}).then(function(d){
+var u=Array.isArray(d)&&d[0]&&d[0].workspace&&d[0].workspace.site_url;
+if(u&&u!=='#'){var a=document.getElementById('mainSiteLinkFloat');a.href=u;a.style.display='inline-block';}}).catch(function(){});})();
+</script>

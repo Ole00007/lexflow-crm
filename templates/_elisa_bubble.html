@@ -1,0 +1,15 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/elisa/elisa.css') }}">
+<button id="elisa-bubble" type="button" aria-label="Open Elisa assistant" title="Elisa — your LexFlow assistant"><img src="{{ url_for('static', filename='img/elisa-avatar.png') }}" alt="Elisa" width="60" height="60"><span class="elisa-dot"></span></button>
+<section id="elisa-panel" role="dialog" aria-label="Elisa assistant">
+  <header class="elisa-head">
+    <div class="elisa-avatar"><img src="{{ url_for('static', filename='img/elisa-avatar.png') }}" alt="" width="40" height="40"></div>
+    <div><strong>Elisa</strong><small>Tasks, agenda &amp; documents · asks before acting</small></div>
+    <button id="elisa-close" type="button" aria-label="Close">×</button>
+  </header>
+  <div id="elisa-msgs"></div>
+  <form id="elisa-form" class="elisa-form" autocomplete="off">
+    <input id="elisa-input" type="text" maxlength="500" placeholder="Ask Elisa…" aria-label="Message Elisa">
+    <button type="submit">Send</button>
+  </form>
+</section>
+<script src="{{ url_for('static', filename='js/elisa/elisa.js') }}"></script>

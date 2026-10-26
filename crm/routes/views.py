@@ -731,8 +731,11 @@ def api_workspace():
     out = []
     for ws in workspaces:
         users = User.query.filter_by(workspace_id=ws.id, is_deleted=False).all()
+        from .. import public_site_url
+        ws_d = ws.to_dict()
+        ws_d['site_url'] = public_site_url(ws.slug)
         out.append({
-            'workspace': ws.to_dict(),
+            'workspace': ws_d,
             'users': [{'id': u.id, 'email': u.email, 'role': u.role,
                        'created_at': u.created_at.isoformat() if u.created_at else None} for u in users],
         })

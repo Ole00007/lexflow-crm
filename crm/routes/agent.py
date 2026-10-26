@@ -147,7 +147,7 @@ def reject_action(action_id):
 
 
 # ---------------------------------------------------------------------------
-# Eliza in-app chat (floating bubble). Any authenticated workspace user may chat;
+# Elisa in-app chat (floating bubble). Any authenticated workspace user may chat;
 # every write still stops at a human approval and runs with the caller's own JWT.
 # ---------------------------------------------------------------------------
 def _require_user(user):

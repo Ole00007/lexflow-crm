@@ -12,23 +12,24 @@
         </p>
     </div>
 
+    <style>a.stat-link{display:block;text-decoration:none;color:inherit;cursor:pointer;transition:transform .15s,box-shadow .15s}a.stat-link:hover,a.stat-link:focus-visible{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.28);outline:2px solid var(--accent,#3B7DD8)}</style>
     <div class="grid" id="stats-grid">
-        <div class="feature" style="background:linear-gradient(135deg,rgba(59,125,216,0.15),transparent 60%),var(--surface-2)">
+        <a class="feature stat-link" href="{{ url_for('views.contacts') }}" style="background:linear-gradient(135deg,rgba(59,125,216,0.15),transparent 60%),var(--surface-2)">
             <h3>Contacts</h3>
             <p id="stat-contacts" style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ contact_count }}</p>
-        </div>
-        <div class="feature">
+        </a>
+        <a class="feature stat-link" href="{{ url_for('views.admin_list') }}">
             <h3>Cases</h3>
             <p id="stat-cases" style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ case_count }}</p>
-        </div>
-        <div class="feature">
+        </a>
+        <a class="feature stat-link" href="{{ url_for('views.tasks') }}">
             <h3>Tasks</h3>
             <p id="stat-tasks" style="font-size:var(--text-3xl);font-weight:700;color:var(--accent-h);margin:0">{{ task_count }}</p>
-        </div>
-        <div class="feature">
+        </a>
+        <a class="feature stat-link" href="{{ url_for('views.tasks') }}">
             <h3>Pending</h3>
             <p id="stat-pending" style="font-size:var(--text-3xl);font-weight:700;color:var(--warning);margin:0">{{ pending_count }}</p>
-        </div>
+        </a>
     </div>
 
     <div class="feature-grid">

@@ -1,10 +1,10 @@
 (function () {
   'use strict';
-  var bubble = document.getElementById('eliza-bubble'), panel = document.getElementById('eliza-panel');
+  var bubble = document.getElementById('elisa-bubble'), panel = document.getElementById('elisa-panel');
   if (!bubble || !panel) return;
   try { if (!localStorage.getItem('jwt')) { bubble.style.display = 'none'; return; } } catch (e) {}
-  var msgs = document.getElementById('eliza-msgs'), form = document.getElementById('eliza-form'), input = document.getElementById('eliza-input');
-  var KEY = 'eliza-history-v1', hist = [], busy = false;
+  var msgs = document.getElementById('elisa-msgs'), form = document.getElementById('elisa-form'), input = document.getElementById('elisa-input');
+  var KEY = 'elisa-history-v1', hist = [], busy = false;
 
   function token() { try { return localStorage.getItem('jwt') || ''; } catch (e) { return ''; } }
   function api(path, body) {
@@ -13,11 +13,11 @@
   }
   function save() { try { sessionStorage.setItem(KEY, JSON.stringify(hist.slice(-40))); } catch (e) {} }
   function add(text, cls, noSave) {
-    var d = document.createElement('div'); d.className = 'eliza-msg ' + cls; d.textContent = text; msgs.appendChild(d);
+    var d = document.createElement('div'); d.className = 'elisa-msg ' + cls; d.textContent = text; msgs.appendChild(d);
     msgs.scrollTop = msgs.scrollHeight; if (!noSave) { hist.push({ t: text, c: cls }); save(); } return d;
   }
   function card(action) {
-    var c = document.createElement('div'); c.className = 'eliza-card';
+    var c = document.createElement('div'); c.className = 'elisa-card';
     var p = document.createElement('div'); p.textContent = action.description || action.tool; c.appendChild(p);
     var row = document.createElement('div'); row.className = 'row';
     var ok = document.createElement('button'); ok.className = 'ok'; ok.textContent = 'Confirm';
@@ -27,7 +27,7 @@
       api('/api/agent/chat/actions/' + action.id + '/' + verb).then(function (r) {
         c.classList.add('done'); row.remove(); bubble.classList.remove('has-pending');
         add(r.data.reply || (r.ok ? 'Done.' : 'Something went wrong.'), r.ok ? 'bot' : 'bot err');
-        if (r.ok && verb === 'approve') document.dispatchEvent(new CustomEvent('eliza:changed'));
+        if (r.ok && verb === 'approve') document.dispatchEvent(new CustomEvent('elisa:changed'));
       });
     }
     ok.onclick = function () { resolve('approve'); }; no.onclick = function () { resolve('reject'); };
@@ -40,17 +40,17 @@
     busy = true; add(text, 'user'); var typing = add('…', 'bot', true);
     api('/api/agent/chat', { message: text }).then(function (r) {
       typing.remove(); busy = false;
-      if (!r.ok) { add(r.status === 404 ? 'Eliza is not enabled on this workspace.' : (r.data.error || 'Something went wrong.'), 'bot err'); return; }
+      if (!r.ok) { add(r.status === 404 ? 'Elisa is not enabled on this workspace.' : (r.data.error || 'Something went wrong.'), 'bot err'); return; }
       var bubbleEl = add(r.data.reply, 'bot'); if (r.data.pending_action) card(r.data.pending_action);
       if (r.data.draft) {
-        var cp = document.createElement('button'); cp.type = 'button'; cp.className = 'eliza-copy'; cp.textContent = 'Copy draft';
+        var cp = document.createElement('button'); cp.type = 'button'; cp.className = 'elisa-copy'; cp.textContent = 'Copy draft';
         cp.onclick = function () { try { navigator.clipboard.writeText(r.data.reply); cp.textContent = 'Copied'; } catch (e) { cp.textContent = 'Select & copy manually'; } };
         msgs.appendChild(cp); msgs.scrollTop = msgs.scrollHeight;
       }
     }).catch(function () { typing.remove(); busy = false; add('Network error. Try again.', 'bot err'); });
   }
   function chips() {
-    var w = document.createElement('div'); w.className = 'eliza-chips';
+    var w = document.createElement('div'); w.className = 'elisa-chips';
     ['Show my open tasks', "What's on my agenda?", 'Summarize document …', 'Draft client update for matter …', 'Create task … for matter …', 'Schedule hearing … on 2026-11-12 at 10:30'].forEach(function (t) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
       b.onclick = function () { if (t.indexOf('…') > -1) { input.value = t.replace(/…/g, '').replace(/\s+/g, ' ').trim() + ' '; input.focus(); } else send(t); };
@@ -60,7 +60,7 @@
   function boot() {
     try { hist = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) { hist = []; }
     if (hist.length) hist.forEach(function (m) { add(m.t, m.c, true); });
-    else { add("Hi, I'm Eliza. I help you with your matters, documents, tasks and agenda. I always ask before changing anything.", 'bot'); }
+    else { add("Hi, I'm Elisa. I help you with your matters, documents, tasks and agenda. I always ask before changing anything.", 'bot'); }
     chips();
   }
   function toggle(open) {
@@ -68,7 +68,7 @@
     panel.classList.toggle('open', on); if (on) { input.focus(); msgs.scrollTop = msgs.scrollHeight; }
   }
   bubble.onclick = function () { toggle(); };
-  document.getElementById('eliza-close').onclick = function () { toggle(false); };
+  document.getElementById('elisa-close').onclick = function () { toggle(false); };
   form.onsubmit = function (e) { e.preventDefault(); var v = input.value; input.value = ''; send(v); };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggle(false); });
   boot();

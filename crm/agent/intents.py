@@ -1,4 +1,4 @@
-"""Rule-based intent parsing for Eliza (offline brain): create tasks, manage the agenda.
+"""Rule-based intent parsing for Elisa (offline brain): create tasks, manage the agenda.
 
 English + Italian. Deliberately small: the LLM brain handles free-form language,
 this keeps the feature working (and testable) with no external model.

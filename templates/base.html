@@ -146,9 +146,7 @@
             <div class="sidebar-card">
                 <h3>Trusted Legal Intelligence</h3>
                 <p>Private intake, discreet document receipt, and clear client-facing status updates.</p>
-                {% if current_user and main_site_url and main_site_url != '#' %}
-                <p style="margin-top:var(--space-3)"><a class="button button-secondary" id="returnSiteLink" href="{{ main_site_url }}" target="_blank" rel="noopener">← Return to main website</a></p>
-                {% endif %}
+                <p style="margin-top:var(--space-3)"><a class="button button-secondary" id="returnSiteLink" href="{{ main_site_url or '#' }}" target="_blank" rel="noopener"{% if not (current_user and main_site_url and main_site_url != '#') %} style="display:none"{% endif %}>← Main site</a></p>
             </div>
         </aside>
         <main class="main" id="main-content">
@@ -258,7 +256,7 @@
           if (wn) wn.textContent = name;
         }
         // return-to-site link (client sub-workspaces fall back to the FIRM site)
-        var siteUrl = siteMap[slug];
+        var siteUrl = (ws.site_url && ws.site_url !== '#') ? ws.site_url : siteMap[slug];
         if (!siteUrl && slug) {
           for (var p in firmSiteByPrefix) {
             if (slug.indexOf(p) === 0) { siteUrl = firmSiteByPrefix[p]; break; }
@@ -280,7 +278,7 @@
         .catch(function () { /* non-fatal */ });
     })();
     </script>
-    {% if agent_enabled %}{% include '_eliza_bubble.html' %}{% endif %}
+    {% if agent_enabled %}{% include '_elisa_bubble.html' %}{% endif %}
     {% block scripts %}{% endblock %}
 </body>
 </html>

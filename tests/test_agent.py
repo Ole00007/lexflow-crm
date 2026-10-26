@@ -362,8 +362,8 @@ if __name__ == '__main__':
     sys.exit(0 if not failures else 1)
 
 
-def test_eliza_chat_tasks_and_agenda():
-    """Eliza chat: create task + agenda event with approval, list, role/flag/injection checks."""
+def test_elisa_chat_tasks_and_agenda():
+    """Elisa chat: create task + agenda event with approval, list, role/flag/injection checks."""
     state = build_state()
     client, headers = state['client'], state['headers']
     h = headers['super']
@@ -435,7 +435,7 @@ def test_list_tools_filter_before_truncation():
     assert isinstance(rows, list) and rows and all('Task 7' in r['title'] for r in rows)
 
 
-def test_eliza_rejects_invalid_and_past_dates():
+def test_elisa_rejects_invalid_and_past_dates():
     state = build_state()
     client, h = state['client'], state['headers']['super']
     os.environ['AGENT_ENABLED'] = '1'
@@ -453,7 +453,7 @@ def _upload(client, headers, name, data, mime, case_id):
                        data={'file': (io.BytesIO(data), name, mime), 'target_type': 'case', 'target_id': str(case_id)})
 
 
-def test_eliza_documents_summarize_read_list_draft():
+def test_elisa_documents_summarize_read_list_draft():
     import io, zipfile
     state = build_state()
     client, h = state['client'], state['headers']['super']
@@ -505,7 +505,7 @@ def test_eliza_documents_summarize_read_list_draft():
     d = chat('Draft a request letter')
     assert 'which matter' in d['reply'].lower()
 
-    # non-superadmin cannot read vault docs via Eliza; foreign workspace sees none of these attachments
+    # non-superadmin cannot read vault docs via Elisa; foreign workspace sees none of these attachments
     foreign = state['headers']['foreign']
     r = client.post('/api/agent/chat', headers=foreign, json={'message': 'Summarize document atto_citazione'})
     assert 'No document matching' in r.get_json()['reply'], r.get_json()
