@@ -73,6 +73,34 @@ def _visible_task(task_id):
     return workspace_filter(Task.query.filter_by(id=task_id, is_deleted=False), Task).first()
 
 
+def _fill_inferred_responsible(tasks, out):
+    """Every task shows WHO is responsible: when no explicit team is assigned, fall back to the task's own
+    assignee (tasks.userid), else the matter's owner / assigned lawyer. Marked inferred=True (UI may soften it)."""
+    from ..models.user import User
+    from ..models.case import Case
+    missing = [t for t in tasks if t.id in out and not out[t.id]['team']]
+    if not missing:
+        return
+    case_ids = {t.caseid for t in missing if t.caseid}
+    cases = {c.id: c for c in Case.query.filter(Case.id.in_(case_ids)).all()} if case_ids else {}
+    uids = {t.userid for t in missing if t.userid}
+    for c in cases.values():
+        uids |= {x for x in (c.ownerid, c.assignedto) if x}
+    users = {u.id: u for u in User.query.filter(User.id.in_(uids)).all()} if uids else {}
+    label, color = TASK_ROLES['case_owner']
+
+    def entry(u):
+        local = (u.email or '').split('@')[0].replace('.', ' ').replace('_', ' ').strip()
+        return {'member_id': None, 'user_id': u.id, 'name': local.title() or u.email, 'role': 'case_owner',
+                'role_label': label, 'color': color, 'email': None, 'phone': None, 'inferred': True}
+    for t in missing:
+        uid = t.userid
+        if not uid and t.caseid in cases:
+            uid = cases[t.caseid].assignedto or cases[t.caseid].ownerid
+        if uid and uid in users:
+            out[t.id]['team'].append(entry(users[uid]))
+
+
 def team_payload(tasks, user):
     """Per-task extras for GET /api/gantt/tasks: {task_id: {team, vault, open_flags}}."""
     ids = [t.id for t in tasks]
@@ -84,6 +112,7 @@ def team_payload(tasks, user):
             out[a.task_id]['team'].append(a.to_dict())
     for f in TaskFlag.query.filter(TaskFlag.task_id.in_(ids), TaskFlag.status == 'open').all():
         out[f.task_id]['open_flags'] += 1
+    _fill_inferred_responsible(tasks, out)
     order = list(TASK_ROLES)
     for v in out.values():
         v['team'].sort(key=lambda m: order.index(m['role']) if m['role'] in order else 99)

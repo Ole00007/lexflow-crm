@@ -348,14 +348,14 @@ header {
 /* ── Blocked-state ─────────────────────────────────────────────── */
 .card.card-blocked {
   border-left: 4px solid var(--danger);
-  background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 4px, #2A1B1B 4px, #2A1B1B 8px);
-  opacity: .82;
+  background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 4px, color-mix(in srgb, var(--danger) 7%, var(--surface-2)) 4px, color-mix(in srgb, var(--danger) 7%, var(--surface-2)) 8px);
+  opacity: .9;
 }
 .card.card-blocked:hover { background: color-mix(in srgb, var(--surface-2) 85%, var(--accent-glow)); }
 .blocked-badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: .68rem; font-weight: 700; color: #FCA5A5;
-  background: rgba(239,68,68,.14); border: 1px solid rgba(239,68,68,.4);
+  font-size: .68rem; font-weight: 700; color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
   border-radius: 999px; padding: 2px 8px; margin-left: 4px;
   animation: blocked-pulse 2.2s ease-in-out infinite;
 }

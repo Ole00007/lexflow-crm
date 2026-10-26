@@ -650,3 +650,21 @@ def test_elisa_model_summary_and_draft_end_to_end_with_fallbacks(monkeypatch):
     monkeypatch.setattr(llm, '_post', lambda *a, **k: (_ for _ in ()).throw(RuntimeError('down')))
     d = chat('Draft client update letter for matter Rasing separazione')
     assert d['reply'].upper().lstrip().startswith('DRAFT') and 'la pratica procede' not in d['reply']
+
+
+def test_responsible_visible_on_gantt_and_graph_for_every_task():
+    state = build_state()
+    client, h = state['client'], state['headers']['super']
+    os.environ['GANTT_VIEW_ENABLED'] = '1'
+    g = client.get('/api/gantt/tasks', headers=h).get_json()
+    tasks = g.get('tasks', g) if isinstance(g, dict) else g
+    assert tasks and all(isinstance(t.get('team'), list) for t in tasks)
+    assert any(m.get('inferred') for t in tasks for m in t['team']) or any(t['team'] for t in tasks)
+    gr = client.get('/api/roadmap/graph', headers=h).get_json()
+    tn = [n for n in gr['nodes'] if n['type'] == 'task']
+    assert tn and all('responsible' in n['data'] for n in tn)
+    with_owner = [n for n in tn if n['data']['responsible']]
+    assert with_owner, 'no task shows a responsible person'
+    r0 = with_owner[0]['data']['responsible'][0]
+    assert set(r0) == {'name', 'role', 'role_label', 'color', 'inferred'} and r0['color'].startswith('#')
+    assert 'email' not in r0 and 'phone' not in r0, 'graph payload must not leak contact details'

@@ -108,6 +108,11 @@ def graph():
     # ── Tasks ────────────────────────────────────────────────────────
     tasks = workspace_filter(Task.query.filter_by(is_deleted=False), Task).all()
     task_ids = {t.id for t in tasks}
+    from .task_team import team_payload
+    try:
+        _resp = team_payload(tasks, None)  # superadmin-only vault data is skipped (user=None); names/roles only
+    except Exception:
+        _resp = {}
     for t in tasks:
         tid = f"task-{t.id}"
         nodes.append({
@@ -123,6 +128,9 @@ def graph():
                 "priority": t.priority,
                 "duedate": _iso(t.duedate),
                 "createdat": _iso(t.createdat),
+                # who is responsible (role-coloured in the UI): [{name, role, role_label, color, inferred}]
+                "responsible": [{k: m.get(k) for k in ('name', 'role', 'role_label', 'color', 'inferred')}
+                                for m in (_resp.get(t.id, {}).get('team') or [])],
             },
         })
         if t.status:

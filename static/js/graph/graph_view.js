@@ -258,11 +258,12 @@
       ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 6.2832);
             ctx.fillStyle = col; ctx.fill();
             if (n.blocked) {
+              var blockedCol = css('--danger', '#EF4444');
               ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 3, 0, 6.2832);
-              ctx.setLineDash([5 / v.k, 4 / v.k]); ctx.strokeStyle = '#F87171'; ctx.lineWidth = 2 / v.k; ctx.stroke(); ctx.setLineDash([]);
+              ctx.setLineDash([5 / v.k, 4 / v.k]); ctx.strokeStyle = blockedCol; ctx.lineWidth = 2 / v.k; ctx.stroke(); ctx.setLineDash([]);
               ctx.font = (11 / Math.max(v.k, 0.8)) + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif';
               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              ctx.fillStyle = '#F87171'; ctx.fillText('🔒', n.x, n.y - n.r - 8);
+              ctx.fillStyle = blockedCol; ctx.fillText('🔒', n.x, n.y - n.r - 8);
             }
             if (n.id === state.selected) { ctx.lineWidth = 2.5 / v.k; ctx.strokeStyle = '#fff'; ctx.stroke(); }
       var show = n.id === state.selected || n.id === state.hover || (!state.todayMode && n.deg >= 4 && v.k > 0.7) || (!state.todayMode && v.k > 1.35) || (state.todayMode && n.today && v.k > 0.55) || (state.query && em === 1);
