@@ -280,7 +280,11 @@
     });
     drawLabels.forEach(function (n) {
       var t = shortLabel(n.label, 34), y = n.y + n.r + 3, w = ctx.measureText(t).width, hgt = 15 / Math.max(v.k, 0.8);
-      var box = { x0: n.x - w / 2 - 2, x1: n.x + w / 2 + 2, y0: y - 1, y1: y + hgt };
+      // responsible people (role-coloured) shown under task node labels, smaller
+      var resp = [];
+      if (n.type === 'task' && (n.data && n.data.responsible)) { resp = n.data.responsible; }
+      var respH = resp.length * (11 / Math.max(v.k, 0.8));
+      var box = { x0: n.x - w / 2 - 2, x1: n.x + w / 2 + 2, y0: y - 1, y1: y + hgt + respH };
       var must = n.id === state.selected || n.id === state.hover;
       if (!must) {
         for (var q = 0; q < placed.length; q++) {
@@ -291,6 +295,22 @@
       placed.push(box);
       ctx.lineWidth = 3 / v.k; ctx.strokeStyle = css('--bg', '#0E1117'); ctx.strokeText(t, n.x, y);
       ctx.fillStyle = textCol; ctx.fillText(t, n.x, y);
+      if (resp.length && (n.id === state.selected || n.id === state.hover || v.k > 0.9)) {
+        var ry = y + hgt;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        var rf = (10 / Math.max(v.k, 0.8)) + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif';
+        var rw = 0;
+        resp.forEach(function (m) { rw = Math.max(rw, ctx.measureText(m.name).width); });
+        for (var r = 0; r < resp.length; r++) {
+          var m = resp[r], nm = shortLabel(m.name, 22);
+          ctx.font = rf;
+          ctx.globalAlpha = m.inferred ? 0.6 : 0.92;
+          ctx.lineWidth = 3 / v.k; ctx.strokeStyle = css('--bg', '#0E1117'); ctx.strokeText(nm, n.x, ry);
+          ctx.fillStyle = m.color || textCol; ctx.fillText(nm, n.x, ry);
+          ry += 11 / Math.max(v.k, 0.8);
+        }
+        ctx.globalAlpha = 1;
+      }
     });
     ctx.restore();
   }

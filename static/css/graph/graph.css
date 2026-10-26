@@ -32,6 +32,10 @@
 .graph-page .gp-side { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; }
 .graph-page .gp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
 .graph-page .gp-card h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 8px; font-weight: 600; }
+.graph-page .gp-roles { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.graph-page .gp-roles span { display: flex; align-items: center; gap: 7px; }
+.graph-page .gp-roles .role-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+.graph-page .gp-roles .gp-role-inferred { color: var(--text-faint); font-style: italic; }
 .graph-page .gp-today-group { margin-bottom: 8px; }
 .graph-page .gp-today-group h3 { font-size: 12px; margin: 0 0 4px; display: flex; justify-content: space-between; }
 .graph-page .gp-today-group h3 span { color: var(--text-faint); font-weight: 400; }
