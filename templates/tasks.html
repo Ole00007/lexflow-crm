@@ -27,6 +27,22 @@
 .task-card{border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2);display:flex;justify-content:space-between;align-items:center;gap:12px}
 .task-card .del{background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:1.1rem;padding:4px;line-height:1}
 .task-card .del:hover{color:var(--danger)}
+/* ── Blocked-state (approved language: stripe + hatch + badge + pulse) ── */
+.task-card.task-card-blocked{
+  border-left:4px solid var(--danger,#EF4444);
+  background:repeating-linear-gradient(45deg,var(--surface-2),var(--surface-2) 4px,color-mix(in srgb,var(--danger,#EF4444) 7%,var(--surface-2)) 4px,color-mix(in srgb,var(--danger,#EF4444) 7%,var(--surface-2)) 8px);
+  opacity:.92;
+}
+.task-card.task-card-blocked:hover{background:color-mix(in srgb,var(--surface-2) 85%,var(--accent-glow))}
+.blocked-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.68rem;font-weight:700;color:var(--danger,#EF4444);
+  background:color-mix(in srgb,var(--danger,#EF4444) 14%,transparent);border:1px solid color-mix(in srgb,var(--danger,#EF4444) 40%,transparent);
+  border-radius:999px;padding:2px 8px;
+  animation:task-blocked-pulse 2.2s ease-in-out infinite;
+}
+@keyframes task-blocked-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.blocked-pill{animation:none}}
 </style>
 
 <section class="card stack" aria-labelledby="page-title">
@@ -131,17 +147,22 @@ function load() {
   .then(r=>r.json())
   .then(tasks => {
     if (!tasks.length) { document.getElementById('taskList').innerHTML = '<p style="color:var(--text-muted)">No tasks yet. Use "+ New Task" to create one.</p>'; return; }
-    document.getElementById('taskList').innerHTML = tasks.map(t =>
-      '<div class="task-card">' +
+    document.getElementById('taskList').innerHTML = tasks.map(t => {
+      var isBlocked = String(t.status || '').toLowerCase().indexOf('block') >= 0;
+      var blockedCls = isBlocked ? ' task-card-blocked' : '';
+      var blockedPill = isBlocked
+        ? '<span class="blocked-pill">⛔ ' + esc(t.status) + '</span>'
+        : '<span class="badge">' + esc(t.status) + '</span>';
+      return '<div class="task-card' + blockedCls + '">' +
         '<div><strong>' + esc(t.title) + '</strong><br>' +
         '<span style="color:var(--text-muted);font-size:var(--text-sm)">Case #' + t.caseid +
         (t.duedate ? ' · Due: ' + t.duedate.slice(0,10) : '') + '</span></div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
-          '<span class="badge">' + esc(t.status) + '</span>' +
+          blockedPill +
           '<button class="del" title="Delete task" onclick="delTask(' + t.id + ')">&times;</button>' +
         '</div>' +
-      '</div>'
-    ).join('');
+      '</div>';
+    }).join('');
   })
   .catch(function(){ document.getElementById('taskList').innerHTML = '<p style="color:var(--text-muted)">Failed to load tasks.</p>'; });
 }

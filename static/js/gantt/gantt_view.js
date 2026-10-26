@@ -231,9 +231,10 @@
       var classes = String(t.custom_class || '').split(/\s+/).filter(Boolean);
       extras[String(t.id)] = classes.slice(1);
       meta[String(t.id)] = t;
+      var locked = classes.indexOf('gantt-status-blocked') >= 0;
       valid.push({
         id: String(t.id),
-        name: t.name,
+        name: (locked ? '🔒 ' : '') + t.name,
         start: t.start,
         end: t.end,
         progress: t.progress,
