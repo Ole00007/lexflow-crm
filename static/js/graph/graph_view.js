@@ -83,7 +83,7 @@
       }
       n.type = raw.type; n.label = raw.label || raw.id; n.data = raw.data || {};
             n.today = classify(n); n.deg = 0;
-            n.blocked = String((raw.data && raw.data.status) || '').toLowerCase().indexOf('block') >= 0;
+            n.blocked = String((raw.data && raw.data.status) || '').toLowerCase().indexOf('block') >= 0 || !!(raw.data && raw.data.bus && raw.data.bus.blocked);
             nodes.push(n); byId[n.id] = n; adj[n.id] = {};
     }
     var edges = [];
@@ -226,6 +226,20 @@
     state.alpha *= 0.985;
   }
 
+  /* ── agent-bus: who owns / executes / collaborates, blocked-by, subagent runs (data.responsible + data.bus) ── */
+  function respSegs(n) {
+    var d = n.data || {}, out = [];
+    (d.responsible || []).forEach(function (m) {
+      out.push({ t: (m.role === 'collaborator' ? '+ ' : '') + (m.kind === 'agent' ? '🤖 ' : '👤 ') + shortLabel(m.name, 16), c: m.color || '#9AA7BD' });
+    });
+    var b = d.bus;
+    if (b) {
+      if (b.blocked) { out.push({ t: '⛔ ' + (b.blocked_by && b.blocked_by.length ? 'by ' + b.blocked_by.join(',') : 'blocked'), c: '#EF4444' }); }
+      if (b.subagents_dispatched) { out.push({ t: '⚙ ' + b.subagents_dispatched + ' runs', c: '#9AA7BD' }); }
+    }
+    return out;
+  }
+
   /* ── drawing ───────────────────────────────────────────────────────── */
   function css(name, fb) { var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fb; }
   function draw() {
@@ -291,6 +305,21 @@
       placed.push(box);
       ctx.lineWidth = 3 / v.k; ctx.strokeStyle = css('--bg', '#0E1117'); ctx.strokeText(t, n.x, y);
       ctx.fillStyle = textCol; ctx.fillText(t, n.x, y);
+      if (n.type === 'task' && (must || v.k > 0.9)) {            // small role-coloured responsibility line
+        var segs = respSegs(n);
+        if (segs.length) {
+          var fs = 10 / Math.max(v.k, 0.8), gap = 6 / Math.max(v.k, 0.8), y2 = y + hgt;
+          ctx.font = fs + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif'; ctx.textAlign = 'left';
+          var tw = 0; segs.forEach(function (sg) { sg.w = ctx.measureText(sg.t).width; tw += sg.w + gap; }); tw -= gap;
+          var x = n.x - tw / 2;
+          segs.forEach(function (sg) {
+            ctx.lineWidth = 3 / v.k; ctx.strokeStyle = css('--bg', '#0E1117'); ctx.strokeText(sg.t, x, y2);
+            ctx.fillStyle = sg.c; ctx.fillText(sg.t, x, y2); x += sg.w + gap;
+          });
+          ctx.textAlign = 'center';
+          ctx.font = (12 / Math.max(v.k, 0.8)) + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif';
+        }
+      }
     });
     ctx.restore();
   }
@@ -443,6 +472,17 @@
     function row(k, v) { if (v == null || v === '') { return; } dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, String(v))); }
     var d = n.data;
     row('Type', n.type); row('Status', d.status); row('Priority', d.priority);
+    if (n.type === 'task' && (d.responsible || d.bus)) {
+      var rs = d.responsible || [], nm = function (f) { return rs.filter(f).map(function (m) { return m.name; }).join(', '); };
+      row('Owner', nm(function (m) { return m.kind !== 'agent' && m.role === 'case_owner'; }));
+      row('Team', nm(function (m) { return m.kind !== 'agent' && m.role !== 'case_owner'; }));
+      row('Executor (agent)', nm(function (m) { return m.role === 'executor'; }) || (rs.some(function (m) { return m.role === 'unassigned'; }) ? 'none yet' : ''));
+      row('Collaborators', nm(function (m) { return m.role === 'collaborator'; }));
+      if (d.bus) {
+        row('Blocked', d.bus.blocked ? 'yes' + (d.bus.blocked_by && d.bus.blocked_by.length ? ' — waiting for ' + d.bus.blocked_by.join(', ') : '') : 'no');
+        if (d.bus.subagents_dispatched != null) { row('Subagents dispatched', d.bus.subagents_dispatched); }
+      }
+    }
     if (d.duedate) { row('Due', fmtDate(d.duedate)); }
     if (n.today) { row('Today', { overdue: 'Overdue', today: 'Due today', active: 'In progress', soon: 'Due within 7 days' }[n.today]); }
     row('Email', d.email); row('Phone', d.phone); row('Company', d.company); row('Role', d.role);

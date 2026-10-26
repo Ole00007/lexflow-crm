@@ -162,6 +162,57 @@ def _add_agent_executors(tasks, out, user):
                 team.append(entry('collaborator', _pretty_agent(a)))
 
 
+def _kanban_runs(card_ids):
+    """Subagent dispatches = worker runs recorded on the Kanban card. Local/Hermes-host only (read-only); {} elsewhere."""
+    import sqlite3
+    path = os.environ.get('LEXFLOW_KANBAN_DB') or os.path.expanduser('~/.hermes/kanban.db')
+    if not card_ids or not os.path.isfile(path):
+        return {}
+    try:
+        con = sqlite3.connect('file:%s?mode=ro' % path, uri=True, timeout=2)
+        q = ','.join('?' * len(card_ids))
+        rows = con.execute('SELECT task_id, COUNT(*) FROM task_runs WHERE task_id IN (%s) GROUP BY task_id' % q, list(card_ids)).fetchall()
+        con.close()
+        return {r[0]: r[1] for r in rows}
+    except Exception:
+        return {}
+
+
+def bus_info(user):
+    """{'T-004': {executor, collaborators[], blocked, blocked_by[], column, subagents_dispatched|None}} — agent-bus summary
+    of the canonical roadmap JSON (+ Kanban run counts when available). LexFlow workspace / superadmin only, else {}."""
+    import json
+    ws = getattr(getattr(user, 'workspace', None), 'slug', None) if user is not None else None
+    if user is None or not (user.role == 'superadmin' or ws == 'lexflow'):
+        return {}
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                        'docs', 'LexFlow_Agentic_Roadmap.json')
+    try:
+        with open(path, encoding='utf-8') as fh:
+            doc = json.load(fh) or {}
+    except Exception:
+        return {}
+    rows = {t['id']: t for t in (doc.get('tasks') or []) if t.get('id')}
+    cards = doc.get('kanban_card_map') or {}
+    runs = _kanban_runs(list(cards.values()))
+    done = ('done', 'deployed')
+    out = {}
+    for tid, t in rows.items():
+        agent = t.get('assigned_agent')
+        deps = t.get('depends_on') or []
+        open_deps = [d for d in deps if (rows.get(d) or {}).get('column') not in done]
+        collabs = []
+        for d in deps:
+            a = (rows.get(d) or {}).get('assigned_agent')
+            if a and a != agent and _pretty_agent(a) not in collabs:
+                collabs.append(_pretty_agent(a))
+        blocked = (t.get('column') == 'blocked') or (bool(open_deps) and t.get('column') not in done)
+        out[tid] = {'executor': _pretty_agent(agent) if agent else None, 'collaborators': collabs,
+                    'blocked': blocked, 'blocked_by': open_deps, 'column': t.get('column'),
+                    'subagents_dispatched': runs.get(cards.get(tid)) if cards.get(tid) in runs else (0 if tid in cards else None)}
+    return out
+
+
 def team_payload(tasks, user):
     """Per-task extras for GET /api/gantt/tasks: {task_id: {team, vault, open_flags}}."""
     ids = [t.id for t in tasks]

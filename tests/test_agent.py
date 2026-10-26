@@ -698,3 +698,16 @@ def test_agent_bus_executors_and_collaborators_on_roadmap_tasks():
     assert all(v['team'] == [] for v in out2.values())
     tt._add_agent_executors(tasks, out2, None)
     assert all(v['team'] == [] for v in out2.values())
+
+
+def test_roadmap_bus_endpoint_and_graph_bus_field():
+    state = build_state()
+    client, h = state['client'], state['headers']['super']
+    r = client.get('/api/roadmap/bus', headers=h)
+    assert r.status_code == 200
+    bus = r.get_json()
+    assert 'T-004' in bus and set(bus['T-004']) >= {'executor', 'collaborators', 'blocked', 'blocked_by', 'subagents_dispatched'}
+    assert client.get('/api/roadmap/bus').status_code in (401, 422)
+    gr = client.get('/api/roadmap/graph', headers=h).get_json()
+    t4 = [n for n in gr['nodes'] if n['type'] == 'task' and n['label'].startswith('[T-004]')]
+    assert not t4 or t4[0]['data']['bus']['executor'] == bus['T-004']['executor']

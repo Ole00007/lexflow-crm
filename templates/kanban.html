@@ -1099,7 +1099,35 @@ function cardHTML(c) {
 /* ═══════════════════════════════════════════════════════════════
    Drag & Drop
    ═══════════════════════════════════════════════════════════════ */
+/* Agent-bus line on roadmap cards ([T-0xx]): owner/executor/collaborators, blocked-by, subagent runs (GET /api/roadmap/bus) */
+var _busCache = null;
+function decorateBus() {
+  var t = localStorage.getItem('jwt'); if (!t) { return; }
+  var apply = function (bus) {
+    document.querySelectorAll('.card').forEach(function (card) {
+      if (card.querySelector('.card-bus')) { return; }
+      var ti = card.querySelector('.card-title'); var m = ti && /^\s*\[?(T-\d+)\]?/.exec(ti.textContent || '');
+      var b = m && bus[m[1]]; if (!b) { return; }
+      var d = document.createElement('div'); d.className = 'card-bus';
+      d.style.cssText = 'margin-top:6px;font-size:10.5px;line-height:1.5;color:var(--text-faint,#7E90A9)';
+      var part = function (txt, col) { var s = document.createElement('span'); s.textContent = txt; s.style.cssText = 'color:' + col + ';margin-right:8px;white-space:nowrap'; d.appendChild(s); };
+      part('👤 owner', '#F5B942');
+      part('🤖 ' + (b.executor || 'no executor yet'), b.executor ? '#4ADE80' : '#9AA7BD');
+      (b.collaborators || []).forEach(function (c) { part('+ ' + c, '#60A5FA'); });
+      if (b.blocked) { part('⛔ ' + (b.blocked_by && b.blocked_by.length ? 'by ' + b.blocked_by.join(',') : 'blocked'), '#EF4444'); }
+      if (b.subagents_dispatched) { part('⚙ ' + b.subagents_dispatched + ' runs', '#9AA7BD'); }
+      card.appendChild(d);
+    });
+  };
+  if (_busCache) { apply(_busCache); return; }
+  fetch('/api/roadmap/bus', { headers: { Authorization: 'Bearer ' + t } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j) { _busCache = j; apply(j); } })
+    .catch(function () {});
+}
+
 function wireDnD() {
+  decorateBus();
   document.querySelectorAll('.card').forEach(function(card) {
     card.addEventListener('dragstart', function(e) {
       e.dataTransfer.setData('text/plain', card.dataset.id);

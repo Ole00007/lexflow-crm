@@ -30,6 +30,12 @@ from datetime import datetime
 roadmap_bp = Blueprint('roadmap', __name__, url_prefix='/api/roadmap')
 
 
+def _task_code(title):
+    import re
+    m = re.match(r'^\s*\[?(T-\d+)\]?', title or '')
+    return m.group(1) if m else None
+
+
 def _iso(v):
     try:
         return v.isoformat() if v else None
@@ -113,8 +119,10 @@ def graph():
         from flask_jwt_extended import get_jwt_identity
         _u = User.query.get(int(get_jwt_identity()))
         _resp = team_payload(tasks, _u)  # graph copies names/roles/colours only (no contact data, no vault refs)
+        from .task_team import bus_info
+        _bus = bus_info(_u)
     except Exception:
-        _resp = {}
+        _resp, _bus = {}, {}
     for t in tasks:
         tid = f"task-{t.id}"
         nodes.append({
@@ -133,6 +141,7 @@ def graph():
                 # who is responsible (role-coloured in the UI): [{name, role, role_label, color, inferred}]
                 "responsible": [{k: m.get(k) for k in ('name', 'role', 'role_label', 'color', 'inferred', 'kind')}
                                 for m in (_resp.get(t.id, {}).get('team') or [])],
+                "bus": _bus.get(_task_code(t.title)),
             },
         })
         if t.status:
@@ -238,3 +247,14 @@ def graph():
             "note": "Read-only diagram foundation (T-021). Frontend renders nodes/edges.",
         },
     }), 200
+
+
+
+@roadmap_bp.route('/bus', methods=['GET'])
+@jwt_required()
+def agent_bus():
+    """Agent-bus summary per roadmap task (executor, collaborators, blocked/blocked_by, subagent dispatch count)."""
+    from flask_jwt_extended import get_jwt_identity
+    from .task_team import bus_info
+    user = User.query.get(int(get_jwt_identity()))
+    return jsonify(bus_info(user)), 200
