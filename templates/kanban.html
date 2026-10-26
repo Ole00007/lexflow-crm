@@ -1126,6 +1126,12 @@ function decorateBus() {
     .catch(function () {});
 }
 
+(function () {   // cards are re-rendered on every refresh/filter -> re-apply the agent-bus line (debounced, idempotent)
+  var timer = null;
+  new MutationObserver(function () { clearTimeout(timer); timer = setTimeout(decorateBus, 150); })
+    .observe(document.body, { childList: true, subtree: true });
+})();
+
 function wireDnD() {
   decorateBus();
   document.querySelectorAll('.card').forEach(function(card) {
