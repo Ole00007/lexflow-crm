@@ -345,6 +345,23 @@ header {
 .card-priority-bar.high    { background: var(--danger); }
 .card-priority-bar.urgent  { background: var(--danger); }
 
+/* ── Blocked-state ─────────────────────────────────────────────── */
+.card.card-blocked {
+  border-left: 4px solid var(--danger);
+  background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 4px, #2A1B1B 4px, #2A1B1B 8px);
+  opacity: .82;
+}
+.card.card-blocked:hover { background: color-mix(in srgb, var(--surface-2) 85%, var(--accent-glow)); }
+.blocked-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .68rem; font-weight: 700; color: #FCA5A5;
+  background: rgba(239,68,68,.14); border: 1px solid rgba(239,68,68,.4);
+  border-radius: 999px; padding: 2px 8px; margin-left: 4px;
+  animation: blocked-pulse 2.2s ease-in-out infinite;
+}
+@keyframes blocked-pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .blocked-badge { animation: none; } }
+
 .card-title {
   font-size: .9rem;
   font-weight: 600;
@@ -1062,12 +1079,19 @@ function cardHTML(c) {
     ctype = '<span class="meta-item">📁 ' + esc(c.casetype) + '</span>';
   }
 
-  return '<div class="card" draggable="true" data-id="' + c.id + '">' +
+  /* Blocked-state: stripe + reason badge on blocked cards */
+  var isBlocked = String(c.status || '').toLowerCase().indexOf('block') >= 0;
+  var blockedCls = isBlocked ? ' card-blocked' : '';
+  var blockedBadge = isBlocked
+    ? '<span class="blocked-badge">⛔ blocked</span>'
+    : '';
+
+  return '<div class="card' + blockedCls + '" draggable="true" data-id="' + c.id + '">' +
     '<div class="card-priority-bar ' + esc(pri.toLowerCase()) + '"></div>' +
     '<div class="card-title">' + esc(c.title || 'Untitled') + '</div>' +
     '<div class="card-meta">' +
       '<span class="priority-badge ' + bc + '">' + esc(pri) + '</span>' +
-      ctype + due +
+      ctype + due + blockedBadge +
     '</div>' +
   '</div>';
 }
