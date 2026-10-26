@@ -245,6 +245,22 @@
       ctx.lineWidth = (on ? 1.8 : 1) / v.k;
       ctx.beginPath(); ctx.moveTo(e.a.x, e.a.y); ctx.lineTo(e.b.x, e.b.y); ctx.stroke();
     });
+    // edge labels (client / case task / hearing / calendar event / owner) — readable flow when zoomed
+    if (v.k > 0.75 || state.localMode || state.selected || state.hover) {
+      state.edges.forEach(function (e) {
+        if (!isVisible(e.a) || !isVisible(e.b) || !e.label) { return; }
+        var em = Math.min(emphasis(e.a), emphasis(e.b));
+        if (em < 0.5) { return; }
+        var label = e.label, tgt = focus && (e.a.id === focus || e.b.id === focus);
+        ctx.font = (9 / v.k) + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif';
+        var tw = ctx.measureText(label).width, mx = (e.a.x + e.b.x) / 2, my = (e.a.y + e.b.y) / 2;
+        ctx.globalAlpha = em * (tgt ? 0.95 : 0.5);
+        ctx.fillStyle = css('--bg', '#0E1117'); ctx.fillRect(mx - tw / 2 - 3, my - 9 / v.k / 2 - 3, tw + 6, 9 / v.k + 6);
+        ctx.lineWidth = 1 / v.k; ctx.strokeStyle = css('--border', '#1E2A3A'); ctx.strokeRect(mx - tw / 2 - 3, my - 9 / v.k / 2 - 3, tw + 6, 9 / v.k + 6);
+        ctx.fillStyle = faint; ctx.fillText(label, mx, my);
+        ctx.globalAlpha = 1;
+      });
+    }
 
     var drawLabels = [];
     state.nodes.forEach(function (n) {
@@ -494,8 +510,31 @@
     }
     var tinfo = TYPE[n.type];
     if (tinfo && tinfo.href) { var a = el('a', 'gp-btn', 'Open in ' + tinfo.label.toLowerCase()); a.href = tinfo.href; act.appendChild(a); }
+    if (n.type === 'case') {
+      var fm = el('button', 'gp-btn gp-btn-primary', 'Focus this matter'); fm.type = 'button';
+      fm.addEventListener('click', function () { focusMatter(n.id); });
+      act.appendChild(fm);
+    }
     var f = el('button', 'gp-btn', 'Focus neighbourhood'); f.type = 'button'; f.addEventListener('click', function () { setMode('local', true); }); act.appendChild(f);
     host.appendChild(act);
+  }
+
+  // per-matter execution diagram: case + client + its tasks + their events/staff + statuses (readable by a lawyer)
+  function focusMatter(id) {
+    var seed = neighborsOf(id, 1);            // case + direct neighbours (client, tasks, events, staff, status)
+    var extra = {};
+    Object.keys(seed).forEach(function (k) {  // second hop: each task's staff/event/status
+      var n = state.byId[k]; if (!n) { return; }
+      if (n.type === 'task' || n.type === 'event') {
+        Object.keys(state.adj[k] || {}).forEach(function (j) { extra[j] = 1; });
+      }
+    });
+    focusSet = seed; Object.keys(extra).forEach(function (j) { focusSet[j] = 1; });
+    state.localMode = true;
+    $('gp-mode-local').classList.add('on'); $('gp-mode-local').setAttribute('aria-pressed', 'true');
+    select(id, true);
+    state.alpha = Math.max(state.alpha, 0.5);
+    setTimeout(fitView, 80); setTimeout(fitView, 400);
   }
 
   /* ── boot ──────────────────────────────────────────────────────────── */
