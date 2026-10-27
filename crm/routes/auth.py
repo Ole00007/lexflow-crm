@@ -18,7 +18,11 @@ def login():
     if not user or not user.check_password(data.get('password')):
         return jsonify({'error': 'Invalid email or password'}), 401
 
-    access_token = create_access_token(identity=str(user.id))
+    # Opt-in (env, default OFF => production unchanged): superadmin tokens never expire. Other roles keep the normal expiry.
+    if user.role == 'superadmin' and os.getenv('LEXFLOW_SUPERADMIN_TOKEN_NEVER_EXPIRES') == '1':
+        access_token = create_access_token(identity=str(user.id), expires_delta=False)
+    else:
+        access_token = create_access_token(identity=str(user.id))
     user_data = user.to_dict()
     # Include workspace info
     if user.workspace:

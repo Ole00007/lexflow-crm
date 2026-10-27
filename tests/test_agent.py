@@ -711,3 +711,25 @@ def test_roadmap_bus_endpoint_and_graph_bus_field():
     gr = client.get('/api/roadmap/graph', headers=h).get_json()
     t4 = [n for n in gr['nodes'] if n['type'] == 'task' and n['label'].startswith('[T-004]')]
     assert not t4 or t4[0]['data']['bus']['executor'] == bus['T-004']['executor']
+
+
+def test_superadmin_token_never_expires_only_when_opted_in(monkeypatch):
+    import base64, json
+    def exp_of(tok):
+        pl = tok.split('.')[1]; pl += '=' * (-len(pl) % 4)
+        return json.loads(base64.urlsafe_b64decode(pl)).get('exp')
+    state = build_state()
+    client = state['client']
+    from crm.models.user import User
+    from crm.extensions import db
+    with state['app'].app_context():
+        su = User.query.filter_by(role='superadmin').first()
+        assert su is not None
+        su.set_password('Pw-never-expire-1'); db.session.commit()   # seeded passwords differ per harness
+        su_email = su.email
+    monkeypatch.delenv('LEXFLOW_SUPERADMIN_TOKEN_NEVER_EXPIRES', raising=False)
+    r = client.post('/api/auth/login', json={'email': su_email, 'password': 'Pw-never-expire-1'})
+    assert r.status_code == 200 and exp_of(r.get_json()['access_token']) is not None   # default: expires
+    monkeypatch.setenv('LEXFLOW_SUPERADMIN_TOKEN_NEVER_EXPIRES', '1')
+    r = client.post('/api/auth/login', json={'email': su_email, 'password': 'Pw-never-expire-1'})
+    assert exp_of(r.get_json()['access_token']) is None                                    # opted in: no exp
