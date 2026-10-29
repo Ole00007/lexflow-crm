@@ -286,7 +286,7 @@ class AgentTools:
                 pass
         return wrap_untrusted_data({'found': True, 'subject': d['subject'], 'draft': text[:3300], 'ai': ai})
 
-    def list_tasks(self, *, query: str = '', status: str = '', limit: int = 50) -> Dict[str, Any]:
+    def list_tasks(self, *, query: str = '', status: str = '', limit: int = 15) -> Dict[str, Any]:
         rows = self._call('GET', '/api/tasks/', raw=True)
         rows = rows if isinstance(rows, list) else []
         q, st = (query or '').strip().lower(), (status or '').strip().lower()
@@ -294,12 +294,17 @@ class AgentTools:
         for row in rows:
             if q and q not in ' '.join(str(row.get(k, '')) for k in ('title', 'description', 'caseid')).lower():
                 continue
-            if st and str(row.get('status', '')).strip().lower() != st:
+            cur = str(row.get('status', '')).strip().lower()
+            if st == 'open':                                   # "open" = anything not finished
+                if cur in ('done', 'completed', 'closed'):
+                    continue
+            elif st and cur != st:
                 continue
             out.append(row)
-        keep = ('id', 'title', 'status', 'priority', 'duedate', 'caseid')
-        out = [{k: r.get(k) for k in keep if k in r} for r in out]
-        return wrap_untrusted_data(out[: max(1, min(int(limit or 50), 40))])
+        out.sort(key=lambda r: (str(r.get('duedate') or '9999'), str(r.get('title') or '')))   # soonest due first
+        keep = ('id', 'title', 'status', 'duedate')
+        out = [{**{k: r.get(k) for k in keep if k in r}, 'title': str(r.get('title') or '')[:90]} for r in out]
+        return wrap_untrusted_data(out[: max(1, min(int(limit or 15), 15))])
 
     def create_task(self, **args: Any) -> Dict[str, Any]:
         return self._call('POST', '/api/tasks/', json=args, extra_headers={'X-Agent-Name': 'lexflow-agent'})

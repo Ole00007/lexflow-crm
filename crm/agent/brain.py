@@ -230,6 +230,8 @@ class RuleBrain(Brain):
 
         if last_tool == 'list_tasks':
             rows = _rows_from_result(last)
+            if any(w in g for w in ('open', 'aperti')):          # "open" = anything not finished
+                rows = [r for r in rows if str(r.get('status') or '').lower() not in ('done', 'completed', 'closed')]
             if not rows:
                 return {'final': 'Nothing is blocked right now.' if 'block' in g else 'No matching tasks.'}
             lines = [f"{r.get('title')} — {r.get('status')}" + (f" — due {r.get('duedate')}" if r.get('duedate') else '') for r in rows[:15]]
@@ -239,7 +241,7 @@ class RuleBrain(Brain):
             return {'tool': 'get_calendar', 'args': {}}
 
         if _wants_task_list(g):
-            status = 'blocked' if 'block' in g else ('pending' if ('open' in g or 'pending' in g or 'aperti' in g) else '')
+            status = 'blocked' if 'block' in g else ('open' if any(w in g for w in ('open', 'aperti')) else ('pending' if 'pending' in g else ''))
             return {'tool': 'list_tasks', 'args': {'status': status} if status else {}}
 
         if last_tool == 'list_matters':
