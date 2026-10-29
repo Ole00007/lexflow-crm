@@ -733,3 +733,47 @@ def test_superadmin_token_never_expires_only_when_opted_in(monkeypatch):
     monkeypatch.setenv('LEXFLOW_SUPERADMIN_TOKEN_NEVER_EXPIRES', '1')
     r = client.post('/api/auth/login', json={'email': su_email, 'password': 'Pw-never-expire-1'})
     assert exp_of(r.get_json()['access_token']) is None                                    # opted in: no exp
+
+
+# ---- Elisa conversation layer (dialog.py) + cost-first routing (router.py) ----
+def test_dialog_followups_are_resolved_offline():
+    from crm.agent import dialog
+    p = {'goal': 'draft client update', 'awaiting': 'matter'}
+    assert dialog.resolve('Rasing separazione', [], p) == {'goal': 'draft client update for matter Rasing separazione'}
+    assert 'reply' in dialog.resolve('are you thinking?', [], None)
+    assert dialog.resolve('what is blocking me here?', [], None) == {'goal': 'show my blocked tasks'}
+    assert 'reply' in dialog.resolve('no thanks', [], {'goal': 'x', 'awaiting': 'confirm'})
+    assert dialog.resolve('yes please', [], {'goal': 'draft it', 'awaiting': 'confirm'}) == {'goal': 'draft it'}
+    assert 'Which matter' in dialog.resolve('yes please', [], p)['reply']
+    assert dialog.pending_from_reply('draft x', 'For which matter should I draft it?') == {'goal': 'draft x', 'awaiting': 'matter'}
+    assert len(dialog.clean_history([{'role': 'user', 'content': 'a' * 999}] * 30)) == dialog.MAX_TURNS   # client input is clamped
+    assert dialog.clean_pending({'goal': 'x', 'awaiting': 'bogus'}) is None
+
+
+def test_hybrid_brain_uses_rules_first_and_model_only_for_unknown(monkeypatch):
+    from crm.agent import router
+    calls = []
+    monkeypatch.setattr(router.llm, 'enabled', lambda: True)
+    monkeypatch.setattr(router.llm, 'complete', lambda s, u, max_tokens=0: calls.append(u) or '{"final": "model answer"}')
+    b = router.HybridBrain({})
+    assert b.next_step('show my open tasks', [])['tool'] == 'list_tasks' and not calls      # known -> rules, 0 tokens
+    b2 = router.HybridBrain({})
+    assert b2.next_step('what is the weather like for my hearing?', []) == {'final': 'model answer'} and len(calls) == 1
+    monkeypatch.setattr(router.llm, 'complete', lambda *a, **k: (_ for _ in ()).throw(router.llm.LLMError('down')))
+    b3 = router.HybridBrain({})
+    step = b3.next_step('what is the weather like for my hearing?', [])                      # degrades to rules, never raises
+    assert 'tool' in step or 'final' in step
+
+
+def test_chat_followup_flow_end_to_end():
+    state = build_state()
+    client, h = state['client'], state['headers']['super']
+    os.environ['AGENT_ENABLED'] = '1'
+    r = client.post('/api/agent/chat', json={'message': 'are you thinking?'}, headers=h).get_json()
+    assert 'I can' in r['reply'] and r['run_id'] is None                                    # offline, no run
+    r = client.post('/api/agent/chat', json={'message': 'draft a client update'}, headers=h).get_json()
+    assert r['reply'].startswith('For which matter') and r['pending']['awaiting'] == 'matter'
+    r2 = client.post('/api/agent/chat', json={'message': 'Rasing separazione', 'pending': r['pending']}, headers=h).get_json()
+    assert not r2['reply'].startswith('For which matter')
+    r3 = client.post('/api/agent/chat', json={'message': 'what is blocking me?'}, headers=h).get_json()
+    assert 'blocked' in r3['reply'].lower() or 'task' in r3['reply'].lower()

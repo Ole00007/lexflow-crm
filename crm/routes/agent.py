@@ -8,7 +8,9 @@ from ..extensions import limiter, db
 from ..models.agent_audit import AgentAudit, AgentPendingAction, AgentRun
 from ..models.user import User
 from ..workspace import workspace_filter
+from ..agent import dialog
 from ..agent.brain import HttpLLMBrain, RuleBrain
+from ..agent.router import HybridBrain
 from ..agent.guard import ensure_agent_enabled
 from ..agent.runner import AgentRunner, AgentRuntimeError
 
@@ -32,14 +34,14 @@ def _require_superadmin(user):
     return None
 
 
-def _chat_brain():
+def _chat_brain(context=None):
     # Never trust a client-supplied LLM URL (SSRF): chat uses the server env or the offline rule brain.
     import os
     # The LLM URL/key/model also power model-written summaries/drafts (crm/agent/llm.py). LLM *routing* of the chat
     # is a separate opt-in so enabling summaries never changes the deterministic, approval-gated rule brain.
     if (os.environ.get('LEXFLOW_AGENT_LLM_URL') or '').strip() and \
             (os.environ.get('LEXFLOW_AGENT_LLM_ROUTING') or '').strip().lower() in ('1', 'true', 'yes', 'on'):
-        return HttpLLMBrain()
+        return HybridBrain(context)          # rules first (free); the model only for requests the rules don't know
     return RuleBrain()
 
 
@@ -210,9 +212,20 @@ def chat():
         return jsonify({'error': 'message is required'}), 400
     if len(message) > 500:
         return jsonify({'error': 'message must be 500 characters or fewer'}), 400
-    runner = AgentRunner(user=user, token=request.headers.get('Authorization') or '', brain=_chat_brain())
-    outcome = runner.run_goal(message)
+    history = dialog.clean_history(body.get('history'))
+    pending = dialog.clean_pending(body.get('pending'))
+    page = dialog.clean_page(body.get('page'))
+    step = dialog.resolve(message, history, pending)
+    if 'reply' in step:                       # small talk / "yes" without context: answered offline, no brain, no tokens
+        return jsonify({'reply': step['reply'], 'status': 'completed', 'run_id': None, 'pending_action': None,
+                        'draft': False, 'pending': pending if pending and 'matter' in step['reply'].lower() else None}), 200
+    goal = step['goal']
+    context = {'page': page, 'conversation': history,
+               'user': {'role': getattr(user, 'role', None), 'workspace_id': getattr(user, 'workspace_id', None)}}
+    runner = AgentRunner(user=user, token=request.headers.get('Authorization') or '', brain=_chat_brain(context))
+    outcome = runner.run_goal(goal)
     out = _chat_payload(outcome.payload)
+    out['pending'] = dialog.pending_from_reply(goal, out.get('reply') or '')
     return jsonify(out), (200 if outcome.status_code < 500 else outcome.status_code)
 
 

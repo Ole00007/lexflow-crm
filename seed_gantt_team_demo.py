@@ -19,7 +19,7 @@ from crm.models.task_assignee import TaskAssignee, TaskFlag
 from crm.models.user import User
 from crm.models.workspace import Workspace
 
-VAULT_REF = '_Inbox/Rasing-separazione-docs'
+VAULT_REF = '01-Projects/LexFlow/Agent-Spike/Rasing-separazione-docs'
 TEAM = [('Elena Romanelli', 'avvocato', 'e.romanelli@studio.example'),
         ('Olesia Rasing', 'office', 'o.rasing@studio.example'),
         ('Elisa', 'assistente', 'elisa@studio.example')]

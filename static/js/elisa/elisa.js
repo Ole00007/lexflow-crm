@@ -38,9 +38,13 @@
     text = (text || '').trim(); if (!text || busy) return;
     if (!token()) { add('Please sign in again — your session has expired.', 'bot err'); return; }
     busy = true; add(text, 'user'); var typing = add('…', 'bot', true);
-    api('/api/agent/chat', { message: text }).then(function (r) {
+    var past = hist.slice(0, -1).filter(function (m) { return m.c.indexOf('err') < 0; }).slice(-8)
+      .map(function (m) { return { role: m.c.indexOf('user') > -1 ? 'user' : 'assistant', content: m.t }; });
+    var pend = null; try { pend = JSON.parse(sessionStorage.getItem(KEY + ':pending') || 'null'); } catch (e) {}
+    api('/api/agent/chat', { message: text, history: past, pending: pend, page: { path: location.pathname } }).then(function (r) {
       typing.remove(); busy = false;
       if (!r.ok) { add(r.status === 404 ? 'Elisa is not enabled on this workspace.' : (r.data.error || 'Something went wrong.'), 'bot err'); return; }
+      try { sessionStorage.setItem(KEY + ':pending', JSON.stringify(r.data.pending || null)); } catch (e) {}
       var bubbleEl = add(r.data.reply, 'bot'); if (r.data.pending_action) card(r.data.pending_action);
       if (r.data.draft) {
         var cp = document.createElement('button'); cp.type = 'button'; cp.className = 'elisa-copy'; cp.textContent = 'Copy draft';
@@ -51,7 +55,7 @@
   }
   function chips() {
     var w = document.createElement('div'); w.className = 'elisa-chips';
-    ['Show my open tasks', "What's on my agenda?", 'Summarize document …', 'Draft client update for matter …', 'Create task … for matter …', 'Schedule hearing … on 2026-11-12 at 10:30'].forEach(function (t) {
+    ['What is blocking me?', 'Show my open tasks', "What's on my agenda?", 'Draft a client update'].forEach(function (t) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
       b.onclick = function () { if (t.indexOf('…') > -1) { input.value = t.replace(/…/g, '').replace(/\s+/g, ' ').trim() + ' '; input.focus(); } else send(t); };
       w.appendChild(b);

@@ -131,6 +131,16 @@ def _fmt_summary(res: Dict[str, Any]) -> str:
 
 
 class RuleBrain(Brain):
+    def recognizes(self, goal: str) -> bool:
+        """True when the offline rules know this request (so no model call is needed — zero tokens)."""
+        g = (goal or '').lower()
+        return bool(
+            intents.is_task_create(goal) or intents.is_event_create(goal) or intents.is_summarize(goal)
+            or intents.is_read_doc(goal) or intents.is_draft(goal) or intents.is_list_docs(goal)
+            or _wants_task_list(g) or _is_write(g) or _should_loop(goal)
+            or any(w in g for w in ('agenda', 'calendar', 'calendario', 'udienze', 'deadline', 'overdue', 'next action',
+                                    'lawyer on', 'what docs')))
+
     def _doc_flow(self, goal, g, last, last_tool):
         # results of document tools
         if last_tool == 'summarize_document':
@@ -221,7 +231,7 @@ class RuleBrain(Brain):
         if last_tool == 'list_tasks':
             rows = _rows_from_result(last)
             if not rows:
-                return {'final': 'No matching tasks.'}
+                return {'final': 'Nothing is blocked right now.' if 'block' in g else 'No matching tasks.'}
             lines = [f"{r.get('title')} — {r.get('status')}" + (f" — due {r.get('duedate')}" if r.get('duedate') else '') for r in rows[:15]]
             return {'final': f"{len(rows)} task(s):\n" + '\n'.join(lines)}
 
@@ -229,7 +239,7 @@ class RuleBrain(Brain):
             return {'tool': 'get_calendar', 'args': {}}
 
         if _wants_task_list(g):
-            status = 'pending' if ('open' in g or 'pending' in g or 'aperti' in g) else ''
+            status = 'blocked' if 'block' in g else ('pending' if ('open' in g or 'pending' in g or 'aperti' in g) else '')
             return {'tool': 'list_tasks', 'args': {'status': status} if status else {}}
 
         if last_tool == 'list_matters':

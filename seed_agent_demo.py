@@ -21,7 +21,7 @@ from crm.models.workspace import Workspace
 
 
 MATTTER_TITLE = 'Rasing separazione'
-VAULT_REF = '_Inbox/LexFlow-Agent-Spike/Rasing-separazione'
+VAULT_REF = '01-Projects/LexFlow/Agent-Spike/Rasing-separazione'
 
 
 def _d(days: int):
