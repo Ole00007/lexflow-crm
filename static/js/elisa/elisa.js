@@ -55,11 +55,19 @@
   }
   function chips() {
     var w = document.createElement('div'); w.className = 'elisa-chips';
-    ['What is blocking me?', 'Show my open tasks', "What's on my agenda?", 'Draft a client update'].forEach(function (t) {
+    function addChip(t) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
-      b.onclick = function () { if (t.indexOf('…') > -1) { input.value = t.replace(/…/g, '').replace(/\s+/g, ' ').trim() + ' '; input.focus(); } else send(t); };
-      w.appendChild(b);
-    }); msgs.appendChild(w);
+      b.onclick = function () { send(t); }; w.appendChild(b);
+    }
+    ['What is blocking me?', 'Show my open tasks', "What's on my agenda?"].forEach(addChip);
+    msgs.appendChild(w);
+    // chips built from the user's REAL data: a runnable example with an actual matter name (no "…" placeholders)
+    fetch('/api/cases/', { headers: { 'Authorization': 'Bearer ' + token(), 'Accept': 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        var real = (Array.isArray(rows) ? rows : []).filter(function (c) { return c && c.title && c.title.charAt(0) !== '['; })[0];
+        if (real) { addChip('Draft client update for matter ' + String(real.title).slice(0, 60)); } else { addChip('Draft a client update'); }
+      }).catch(function () { addChip('Draft a client update'); });
   }
   function boot() {
     try { hist = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) { hist = []; }
