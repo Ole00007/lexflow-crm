@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import os
 import urllib.request
 from abc import ABC, abstractmethod
@@ -130,12 +131,15 @@ def _fmt_summary(res: Dict[str, Any]) -> str:
     return '\n'.join(lines)
 
 
+_DESTRUCTIVE = re.compile(r'\b(delete|remove|erase|wipe|elimina|cancella|rimuovi)\b', re.I)
+
+
 class RuleBrain(Brain):
     def recognizes(self, goal: str) -> bool:
         """True when the offline rules know this request (so no model call is needed — zero tokens)."""
         g = (goal or '').lower()
         return bool(
-            intents.is_task_create(goal) or intents.is_event_create(goal) or intents.is_summarize(goal)
+            _DESTRUCTIVE.search(g) or intents.is_task_create(goal) or intents.is_event_create(goal) or intents.is_summarize(goal)
             or intents.is_read_doc(goal) or intents.is_draft(goal) or intents.is_list_docs(goal)
             or _wants_task_list(g) or _is_write(g) or _should_loop(goal)
             or any(w in g for w in ('agenda', 'calendar', 'calendario', 'udienze', 'deadline', 'overdue', 'next action',
@@ -217,6 +221,10 @@ class RuleBrain(Brain):
         g = goal.lower()
         last = history[-1] if history else None
         last_tool = last.get('tool') if last else None
+
+        if last_tool is None and _DESTRUCTIVE.search(g):       # there is no delete tool: say so, never list-and-pretend
+            return {'final': "I can't delete or remove anything. I can only create tasks and agenda items or change a task's status, "
+                             "and each of those needs your confirmation. If something has to be removed, please do it in the CRM."}
 
         if _should_loop(goal):
             return {'tool': 'get_gantt_tasks', 'args': {'query': ''}}

@@ -117,8 +117,10 @@ def event_title(goal: str) -> str:
     g = re.sub(r"\b(\d{4}-\d{2}-\d{2}|\d{1,2}[/.\-]\d{1,2}(?:[/.\-]\d{2,4})?)\b", '', g)
     g = re.sub(r"\b(?:at|alle|ore)\s+\d{1,2}(?:[:.h]\d{2})?\s*(?:am|pm)?\b", '', g, flags=re.I)
     g = re.sub(r"\b(tomorrow|today|domani|oggi|dopodomani|day after tomorrow|on|per|il|a|an|the|to|in|my|agenda|calendar|calendario)\b", ' ', g, flags=re.I)
-    g = re.sub(r"\s+", ' ', g)
-    return g.strip(' "“”\'.,;:-')
+    g = re.sub(r"\s+", ' ', g).strip(' "“”\'.,;:-')
+    g = re.sub(r"^(?:for|with|of|con|per)\b\s*|\s*\b(?:for|with|of|con|per)$", '', g, flags=re.I).strip(' "“”\'.,;:-')
+    g = g or event_type(goal)
+    return g[:1].upper() + g[1:]      # "Schedule hearing on ... for matter X" -> "Hearing", not "hearing for"
 
 
 def event_type(goal: str) -> str:

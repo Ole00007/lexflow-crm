@@ -818,3 +818,14 @@ def test_chat_never_answers_empty_list_and_keeps_focus():
     assert r2['reply'].strip() not in ('', '[]') and r2['focus'] == 'Rasing separazione'
     r3 = client.post('/api/agent/chat', json={'message': 'draft the update', 'focus': r['focus']}, headers=h).get_json()
     assert r3['reply'].startswith(('DRAFT', 'BOZZA')) and 'Rasing' in r3['reply']          # focus filled the missing matter
+
+
+def test_event_title_not_left_with_dangling_for_and_delete_is_refused():
+    from crm.agent import intents
+    from crm.agent.brain import RuleBrain
+    assert intents.event_title('Schedule hearing on 2026-11-12 at 10:30 for matter Rasing separazione') == 'Hearing'
+    assert intents.event_title('Schedule call with Mr Bianchi on 2026-11-12 at 10:30') == 'Call with Mr Bianchi'
+    b = RuleBrain()
+    for goal in ('delete all my tasks', 'cancella tutti i task', 'remove the Rasing matter'):
+        step = b.next_step(goal, [])
+        assert 'final' in step and "can't delete" in step['final'] and b.recognizes(goal)
