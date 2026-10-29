@@ -255,7 +255,9 @@ class RuleBrain(Brain):
                 return {'final': f"I could not find a matter matching '{target or goal}'."}
             if not rows:
                 return {'final': "I did not understand that, and I found no matter with that name. I can list your open or blocked tasks, show the agenda, summarize a document, draft a client update ('draft client update for matter <name>') or create a task. What would you like?"}
-            return {'final': summarize_data(rows)}
+            lines = [f"{r.get('title')}" + (f" ({r.get('display_id')})" if r.get('display_id') else '') + (f" — {r.get('status')}" if r.get('status') else '')
+                     for r in rows[:10]]
+            return {'final': f"I found {len(rows)} matter(s):\n" + '\n'.join(lines) + "\nWhat would you like to do with it — draft an update, list its documents, or create a task?"}
 
         if last_tool == 'get_gantt_tasks':
             rows = _rows_from_result(last)
