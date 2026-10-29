@@ -215,17 +215,21 @@ def chat():
     history = dialog.clean_history(body.get('history'))
     pending = dialog.clean_pending(body.get('pending'))
     page = dialog.clean_page(body.get('page'))
-    step = dialog.resolve(message, history, pending)
+    focus = dialog.clean_focus(body.get('focus'))
+    step = dialog.resolve(message, history, pending, focus)
     if 'reply' in step:                       # small talk / "yes" without context: answered offline, no brain, no tokens
         return jsonify({'reply': step['reply'], 'status': 'completed', 'run_id': None, 'pending_action': None,
-                        'draft': False, 'pending': pending if pending and 'matter' in step['reply'].lower() else None}), 200
+                        'draft': False, 'pending': pending if pending and 'matter' in step['reply'].lower() else None,
+                        'focus': focus}), 200
     goal = step['goal']
-    context = {'page': page, 'conversation': history,
+    focus = dialog.focus_from_goal(goal) or focus
+    context = {'page': page, 'conversation': history, 'focus': focus,
                'user': {'role': getattr(user, 'role', None), 'workspace_id': getattr(user, 'workspace_id', None)}}
     runner = AgentRunner(user=user, token=request.headers.get('Authorization') or '', brain=_chat_brain(context))
     outcome = runner.run_goal(goal)
     out = _chat_payload(outcome.payload)
     out['pending'] = dialog.pending_from_reply(goal, out.get('reply') or '')
+    out['focus'] = focus
     return jsonify(out), (200 if outcome.status_code < 500 else outcome.status_code)
 
 

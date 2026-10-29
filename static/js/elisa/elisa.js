@@ -41,10 +41,11 @@
     var past = hist.slice(0, -1).filter(function (m) { return m.c.indexOf('err') < 0; }).slice(-8)
       .map(function (m) { return { role: m.c.indexOf('user') > -1 ? 'user' : 'assistant', content: m.t }; });
     var pend = null; try { pend = JSON.parse(sessionStorage.getItem(KEY + ':pending') || 'null'); } catch (e) {}
-    api('/api/agent/chat', { message: text, history: past, pending: pend, page: { path: location.pathname } }).then(function (r) {
+    var foc = null; try { foc = sessionStorage.getItem(KEY + ':focus') || null; } catch (e) {}
+    api('/api/agent/chat', { message: text, history: past, pending: pend, focus: foc, page: { path: location.pathname } }).then(function (r) {
       typing.remove(); busy = false;
       if (!r.ok) { add(r.status === 404 ? 'Elisa is not enabled on this workspace.' : (r.data.error || 'Something went wrong.'), 'bot err'); return; }
-      try { sessionStorage.setItem(KEY + ':pending', JSON.stringify(r.data.pending || null)); } catch (e) {}
+      try { sessionStorage.setItem(KEY + ':pending', JSON.stringify(r.data.pending || null)); if (r.data.focus) { sessionStorage.setItem(KEY + ':focus', r.data.focus); } } catch (e) {}
       var bubbleEl = add(r.data.reply, 'bot'); if (r.data.pending_action) card(r.data.pending_action);
       if (r.data.draft) {
         var cp = document.createElement('button'); cp.type = 'button'; cp.className = 'elisa-copy'; cp.textContent = 'Copy draft';

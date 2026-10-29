@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional
 
 MAX_TURNS = 8
 MAX_TURN_CHARS = 300
+MAX_ASSISTANT_CHARS = 2500   # keep the last draft/answer so follow-ups ("shorter", "in Italian", "what is the issue") have it
+MAX_TOTAL_CHARS = 6000
 AWAITING = ('matter', 'confirm')
 
 _YES = {'yes', 'yes please', 'yep', 'yeah', 'ok', 'okay', 'sure', 'go ahead', 'please do', 'do it', 'si', 'sì', 'certo',
@@ -32,10 +34,23 @@ def clean_history(raw: Any) -> List[Dict[str, str]]:
         if not isinstance(item, dict):
             continue
         role = 'assistant' if str(item.get('role')) in ('assistant', 'bot') else 'user'
-        text = str(item.get('content') or item.get('text') or '').strip()[:MAX_TURN_CHARS]
+        text = str(item.get('content') or item.get('text') or '').strip()[:(MAX_ASSISTANT_CHARS if role == 'assistant' else MAX_TURN_CHARS)]
         if text:
             out.append({'role': role, 'content': text})
+    while out and sum(len(t['content']) for t in out) > MAX_TOTAL_CHARS:   # drop the oldest turns first
+        out.pop(0)
     return out
+
+
+def clean_focus(raw: Any) -> Optional[str]:
+    """The matter we are talking about (a name only); survives turns so follow-ups do not 'fall out'."""
+    text = re.sub(r'\s+', ' ', str(raw or '')).strip()[:80]
+    return text or None
+
+
+def focus_from_goal(goal: str) -> Optional[str]:
+    from . import intents
+    return clean_focus(intents.matter_hint(goal))
 
 
 def clean_pending(raw: Any) -> Optional[Dict[str, str]]:
@@ -68,7 +83,8 @@ def _norm(message: str) -> str:
     return re.sub(r'\s+', ' ', message.strip().lower().strip(' .!?,;:'))
 
 
-def resolve(message: str, history: List[Dict[str, str]], pending: Optional[Dict[str, str]]) -> Dict[str, Any]:
+def resolve(message: str, history: List[Dict[str, str]], pending: Optional[Dict[str, str]],
+            focus: Optional[str] = None) -> Dict[str, Any]:
     """Return {'goal': str} to run the brain, or {'reply': str} to answer directly (no brain, no tokens)."""
     m = _norm(message)
     if m in _PING:
@@ -83,7 +99,12 @@ def resolve(message: str, history: List[Dict[str, str]], pending: Optional[Dict[
         return {'goal': f"{pending['goal'].rstrip(' .')} for matter {message.strip()}"}
     if _BLOCK.search(m) and any(w in m for w in ('what', 'which', 'show', 'list', 'my', 'any')) and 'task' not in m:
         return {'goal': 'show my blocked tasks'}
-    return {'goal': message.strip()}
+    goal = message.strip()
+    if focus:                                  # "draft the update" with no matter named -> the matter we were just discussing
+        from . import intents
+        if (intents.is_draft(goal) or re.search(r'\b(documents?|docs)\b', m)) and not intents.matter_hint(goal):
+            goal = f"{goal.rstrip(' .')} for matter {focus}"
+    return {'goal': goal}
 
 
 def pending_from_reply(goal: str, reply: str) -> Optional[Dict[str, str]]:

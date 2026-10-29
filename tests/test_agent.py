@@ -777,3 +777,44 @@ def test_chat_followup_flow_end_to_end():
     assert not r2['reply'].startswith('For which matter')
     r3 = client.post('/api/agent/chat', json={'message': 'what is blocking me?'}, headers=h).get_json()
     assert 'blocked' in r3['reply'].lower() or 'task' in r3['reply'].lower()
+
+
+# ---- Elisa context fixes: focus matter, long assistant turns kept, no "[]" answers ----
+def test_focus_and_long_history_keep_followups_in_context():
+    from crm.agent import dialog
+    r = dialog.resolve('draft the update', [], None, focus='Rasing separazione')
+    assert r == {'goal': 'draft the update for matter Rasing separazione'}
+    assert dialog.resolve('draft the update for matter Bianchi', [], None, focus='Rasing separazione')['goal'].endswith('Bianchi')
+    long_draft = 'DRAFT line\n' * 300                      # a ~30+ line draft must survive (up to the cap)
+    h = dialog.clean_history([{'role': 'user', 'content': 'draft client update'}, {'role': 'bot', 'content': long_draft}])
+    assert len(h[1]['content']) == dialog.MAX_ASSISTANT_CHARS and h[1]['role'] == 'assistant'
+    many = dialog.clean_history([{'role': 'assistant', 'content': 'x' * 2500}] * 8)
+    assert sum(len(t['content']) for t in many) <= dialog.MAX_TOTAL_CHARS
+    assert dialog.focus_from_goal('draft client update for matter Rasing separazione') == 'Rasing separazione'
+
+
+def test_router_sends_conversation_and_focus_to_model(monkeypatch):
+    from crm.agent import router
+    seen = []
+    monkeypatch.setattr(router.llm, 'enabled', lambda: True)
+    monkeypatch.setattr(router.llm, 'complete', lambda s, u, max_tokens=0: seen.append((s, u)) or '{"final": "ok"}')
+    conv = [{'role': 'user', 'content': 'draft client update for matter Rasing separazione'},
+            {'role': 'assistant', 'content': 'DRAFT — Update on your matter Rasing separazione ... six activities in progress'}]
+    b = router.HybridBrain({'focus': 'Rasing separazione', 'conversation': conv, 'page': {'path': '/kanban'}})
+    assert b.next_step('what is the issue here', []) == {'final': 'ok'}
+    system, user = seen[0]
+    assert 'Rasing separazione' in user and 'six activities' in user and 'focus_matter' in user
+    assert 'previous answer or draft' in system
+
+
+def test_chat_never_answers_empty_list_and_keeps_focus():
+    state = build_state()
+    client, h = state['client'], state['headers']['super']
+    os.environ['AGENT_ENABLED'] = '1'
+    r = client.post('/api/agent/chat', json={'message': 'draft client update for matter Rasing separazione'}, headers=h).get_json()
+    assert r['focus'] == 'Rasing separazione' and r['reply'].startswith(('DRAFT', 'BOZZA'))
+    r2 = client.post('/api/agent/chat', json={'message': 'what is the issue', 'focus': r['focus'],
+                                               'history': [{'role': 'assistant', 'content': r['reply']}]}, headers=h).get_json()
+    assert r2['reply'].strip() not in ('', '[]') and r2['focus'] == 'Rasing separazione'
+    r3 = client.post('/api/agent/chat', json={'message': 'draft the update', 'focus': r['focus']}, headers=h).get_json()
+    assert r3['reply'].startswith(('DRAFT', 'BOZZA')) and 'Rasing' in r3['reply']          # focus filled the missing matter

@@ -253,6 +253,8 @@ class RuleBrain(Brain):
                     lawyer = match.get('ownerid') or match.get('assignedto')
                     return {'final': f"Matter '{match.get('title', target)}' is owned by user {lawyer}."}
                 return {'final': f"I could not find a matter matching '{target or goal}'."}
+            if not rows:
+                return {'final': "I did not understand that, and I found no matter with that name. I can list your open or blocked tasks, show the agenda, summarize a document, draft a client update ('draft client update for matter <name>') or create a task. What would you like?"}
             return {'final': summarize_data(rows)}
 
         if last_tool == 'get_gantt_tasks':
