@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, render_template, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_limiter.util import get_remote_address
+from sqlalchemy.exc import OperationalError
 
 from ..extensions import limiter, db
 from ..models.agent_audit import AgentAudit, AgentPendingAction, AgentRun
@@ -46,9 +47,8 @@ def _chat_brain(context=None):
 
 
 def _brain():
-    url = (request.headers.get('X-Lexflow-Agent-LLM-Url') or '').strip()
-    if url:
-        return HttpLLMBrain(url=url)
+    # The model URL is NEVER taken from the client (SSRF): a request header used to be honoured here. The model comes
+    # only from server env (LEXFLOW_AGENT_LLM_URL) via _chat_brain(); this legacy path is rules-only.
     return RuleBrain()
 
 
@@ -226,7 +226,12 @@ def chat():
     context = {'page': page, 'conversation': history, 'focus': focus,
                'user': {'role': getattr(user, 'role', None), 'workspace_id': getattr(user, 'workspace_id', None)}}
     runner = AgentRunner(user=user, token=request.headers.get('Authorization') or '', brain=_chat_brain(context))
-    outcome = runner.run_goal(goal)
+    try:
+        outcome = runner.run_goal(goal)
+    except OperationalError:                  # transient DB contention (SQLite demo): ask to retry instead of a 500
+        db.session.rollback()
+        return jsonify({'reply': 'I am busy for a second — please send that again.', 'status': 'retry', 'run_id': None,
+                        'pending_action': None, 'draft': False, 'pending': pending, 'focus': focus}), 503
     out = _chat_payload(outcome.payload)
     out['pending'] = dialog.pending_from_reply(goal, out.get('reply') or '')
     out['focus'] = focus
