@@ -20,7 +20,7 @@ _YES = {'yes', 'yes please', 'yep', 'yeah', 'ok', 'okay', 'sure', 'go ahead', 'p
 _NO = {'no', 'no thanks', 'nope', 'cancel', 'never mind', 'nevermind', 'no grazie', 'annulla', 'stop'}
 _PING = {'are you thinking', 'are you there', 'are you working', 'still there', 'hello', 'hi', 'hey', 'ciao', 'buongiorno',
          'buonasera', 'thinking', 'anyone there', 'you there'}
-_BLOCK = re.compile(r"\b(block(ed|ing)?|stuck|waiting)\b", re.I)
+_BLOCK = re.compile(r"\b(block(ed|ing)?|stuck|waiting|bloccat\w*|blocca\w*|bloccano|in attesa)\b", re.I)
 HELP_TEXT = ('I\'m here. I can: list your open or blocked tasks, show the agenda, summarize a document, draft a client '
              'update for a matter, create a task or schedule a hearing (I always ask you to confirm before writing). '
              'Try: "what is blocking me?" or "draft client update for matter <name>".')
@@ -97,7 +97,7 @@ def resolve(message: str, history: List[Dict[str, str]], pending: Optional[Dict[
         return {'reply': 'Which matter? Give me its name, e.g. "Rasing separazione".'}
     if pending and pending['awaiting'] == 'matter' and m and len(m.split()) <= 8:
         return {'goal': f"{pending['goal'].rstrip(' .')} for matter {message.strip()}"}
-    if _BLOCK.search(m) and any(w in m for w in ('what', 'which', 'show', 'list', 'my', 'any')) and 'task' not in m:
+    if _BLOCK.search(m) and any(w in m for w in ('what', 'which', 'show', 'list', 'my', 'any', 'cosa', 'quali', 'mostra', 'miei', 'ho ', 'c\'è')) and 'task' not in m:
         return {'goal': 'show my blocked tasks'}
     goal = message.strip()
     if focus:                                  # "draft the update" with no matter named -> the matter we were just discussing

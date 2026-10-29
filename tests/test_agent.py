@@ -829,3 +829,9 @@ def test_event_title_not_left_with_dangling_for_and_delete_is_refused():
     for goal in ('delete all my tasks', 'cancella tutti i task', 'remove the Rasing matter'):
         step = b.next_step(goal, [])
         assert 'final' in step and "can't delete" in step['final'] and b.recognizes(goal)
+
+
+def test_blocked_intent_in_italian():
+    from crm.agent import dialog
+    for m in ('cosa mi blocca?', 'quali task sono bloccati', 'what is blocking me here?'):
+        assert dialog.resolve(m, [], None)['goal'].startswith('show my blocked') or 'task' in m

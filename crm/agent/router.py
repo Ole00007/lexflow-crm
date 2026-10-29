@@ -92,4 +92,7 @@ class HybridBrain(Brain):
             except Exception:
                 self._mode = 'rules'      # degrade for the rest of this request
                 self.last_mode = 'rules(fallback)'
+                if not self.rules.recognizes(goal) and not history:
+                    return {'final': "I can't reach my language model right now, so I can only do the basics: your tasks, the agenda, "
+                                     "documents and client-update drafts. Please try again in a minute."}
         return self.rules.next_step(goal, history)
