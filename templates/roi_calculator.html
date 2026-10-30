@@ -6,8 +6,9 @@
 <title>Calcolatore ROI | ROI calculator — LexFlow</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/roi/roi_calculator.css') }}">
+{% if roi_tracker_enabled %}<link rel="stylesheet" href="{{ url_for('static', filename='css/roi/roi_progress.css') }}">{% endif %}
 </head>
-<body data-lang="it" class="roi-page">
+<body{% if embed %} data-embed="1"{% endif %} data-lang="it" class="roi-page">
 <header class="roi-top">
   <div class="roi-top-inner">
     <span class="roi-brand"><span class="roi-brand-mark">LF</span> LexFlow</span>
@@ -102,10 +103,70 @@
 
   <p class="roi-disclaimer" data-it="Stima, non una garanzia. I risultati dipendono dalle ipotesi inserite." data-en="Estimate, not a guarantee. Results depend on the assumptions you enter.">Stima, non una garanzia. I risultati dipendono dalle ipotesi inserite.</p>
 
+{% if roi_tracker_enabled and not embed %}
+  <section class="roi-track" aria-label="My progress">
+    <div class="roi-track-head">
+      <h2 data-it="I miei progressi" data-en="My progress">I miei progressi</h2>
+      <p class="roi-track-byline" data-it="Registra i risultati reali del tuo studio ogni mese e confrontali con la proiezione del calcolatore. Dati auto-dichiarati: non li verifichiamo in modo automatico. Sono visibili solo a te (e agli amministratori dello studio)." data-en="Record your firm's actual results each month and compare them with the calculator's projection. Self-reported: we do not auto-verify them. Only you (and your studio's admins) can see them.">Registra i risultati reali del tuo studio ogni mese e confrontali con la proiezione del calcolatore. Dati auto-dichiarati: non li verifichiamo in modo automatico. Sono visibili solo a te (e agli amministratori dello studio).</p>
+    </div>
+
+    <div class="roi-track-form">
+      <div class="roi-field">
+        <label for="tp_month" data-it="Mese" data-en="Month">Mese</label>
+        <input type="month" id="tp_month" value="">
+      </div>
+      <div class="roi-field">
+        <label for="tp_hours" data-it="Ore risparmiate (reali)" data-en="Hours saved (actual)">Ore risparmiate (reali)</label>
+        <input type="number" id="tp_hours" min="0" max="744" step="1" inputmode="numeric" value="0">
+      </div>
+      <div class="roi-field">
+        <label for="tp_matters" data-it="Pratiche gestite (reali)" data-en="Matters handled (actual)">Pratiche gestite (reali)</label>
+        <input type="number" id="tp_matters" min="0" step="1" inputmode="numeric" value="0">
+      </div>
+      <div class="roi-field roi-field-wide">
+        <label for="tp_note" data-it="Nota (facoltativa)" data-en="Note (optional)">Nota (facoltativa)</label>
+        <input type="text" id="tp_note" maxlength="200" placeholder="—">
+      </div>
+      <div class="roi-track-actions">
+        <button type="button" id="tp_save" class="roi-btn">✓ <span data-it="Salva" data-en="Save">Salva</span></button>
+        <button type="button" id="tp_export" class="roi-btn roi-btn-secondary">↓ <span data-it="Esporta CSV" data-en="Export CSV">Esporta CSV</span></button>
+      </div>
+      <p id="tp_status" class="roi-track-status" aria-live="polite"></p>
+    </div>
+
+    <div id="tp_empty" class="roi-track-empty">
+      <p data-it="Nessun dato ancora. Inserisci i risultati del mese sopra per iniziare a tracciare i tuoi progressi reali." data-en="Nothing yet. Enter a month's actual results above to start tracking your real progress.">Nessun dato ancora. Inserisci i risultati del mese sopra per iniziare a tracciare i tuoi progressi reali.</p>
+    </div>
+
+    <div class="roi-track-chart" id="tp_chartwrap">
+      <canvas id="tp_chart" width="0" height="0" role="img" aria-label="Projected vs actual progress chart"></canvas>
+      <p id="tp_chartcaption" class="roi-track-caption"></p>
+    </div>
+
+    <div class="roi-track-table-wrap">
+      <table class="roi-track-table" id="tp_table">
+        <thead>
+          <tr>
+            <th data-it="Mese" data-en="Month">Mese</th>
+            <th data-it="Ore reali" data-en="Actual hrs">Ore reali</th>
+            <th data-it="Pratiche" data-en="Matters">Pratiche</th>
+            <th data-it="Valore proiettato €" data-en="Projected €">Valore proiettato €</th>
+            <th data-it="Valore reale €" data-en="Actual €">Valore reale €</th>
+            <th data-it="Δ (ahead/behind)" data-en="Δ (ahead/behind)">Δ (ahead/behind)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="roi-track-hint" data-it="Valori in € da ore proiettate (calcolatore) e ore reali (auto-dichiarate), usando la tariffa oraria del calcolatore." data-en="€ values derived from projected hours (calculator) and actual hours (self-reported), using the calculator's hourly rate.">Valori in € da ore proiettate (calcolatore) e ore reali (auto-dichiarate), usando la tariffa oraria del calcolatore.</p>
+  </section>
+{% endif %}
+
   <p class="roi-back"><a href="/" data-it="← Torna all'app" data-en="← Back to the app">← Torna all'app</a></p>
 </main>
 
 <script src="{{ url_for('static', filename='js/roi/roi_calculator.js') }}"></script>
+{% if roi_tracker_enabled and not embed %}<script src="{{ url_for('static', filename='js/roi/roi_progress.js') }}"></script>{% endif %}
 <script>
 (function () {
   'use strict';
@@ -226,6 +287,27 @@
 
   applyDataAttrs();
   update();
+
+  // PART C — embed mode: post the page's content height to the parent so the
+  // iframe can auto-resize. Runs only when the page was requested with ?embed=1
+  // (body gets data-embed="1"). Re-posts on resize and when content settles.
+  if (document.body.getAttribute('data-embed') === '1') {
+    function postHeight() {
+      if (!window.parent || window.parent === window) return;
+      var h = Math.ceil(document.documentElement.scrollHeight);
+      window.parent.postMessage({ type: 'lf-roi-height', h: h }, '*');
+    }
+    window.addEventListener('resize', postHeight);
+    var t = null;
+    function debounced() { clearTimeout(t); t = setTimeout(postHeight, 120); }
+    if (window.MutationObserver) {
+      var mo = new MutationObserver(debounced);
+      mo.observe(document.body, { childList: true, subtree: true, attributes: true });
+    }
+    postHeight();
+    setTimeout(postHeight, 200);
+    setTimeout(postHeight, 600);
+  }
 })();
 </script>
 </body>

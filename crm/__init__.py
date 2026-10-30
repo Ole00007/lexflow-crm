@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from pathlib import Path
 import os
@@ -263,6 +263,7 @@ def create_app():
             "agent_enabled": os.environ.get('AGENT_ENABLED', 'false').strip().lower() in _on,
             "notify_enabled": os.environ.get('NOTIFY_BUTTONS_ENABLED', 'false').strip().lower() in _on,
             "roi_calculator_enabled": os.environ.get('ROI_CALCULATOR_ENABLED', 'false').strip().lower() in _on,
+            "roi_tracker_enabled": os.environ.get('ROI_TRACKER_ENABLED', 'false').strip().lower() in _on,
             "current_user": user,
             "main_site_url": main_site_url,
             "favicon_url": favicon_url,
@@ -294,6 +295,7 @@ def create_app():
     from .routes.task_team import task_team_bp
     from .routes.notify import notify_bp
     from .routes.agent import agent_bp
+    from .routes.roi import roi_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -316,6 +318,7 @@ def create_app():
     app.register_blueprint(task_team_bp)
     app.register_blueprint(notify_bp)
     app.register_blueprint(agent_bp)
+    app.register_blueprint(roi_bp)
 
     # Google Calendar OAuth
     from .routes.google_oauth_routes import google_oauth_bp
@@ -326,13 +329,46 @@ def create_app():
     app.register_blueprint(views_bp)
 
     # Security headers middleware
+    BASE_CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:")
+
     @app.after_request
     def add_security_headers(response):
         response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:"
+
+        # Default: the whole app refuses to be framed (stable baseline).
+        response.headers['X-Frame-Options'] = 'DENY'
+
+        # PART C — embed:m only the /roi-calculator page may be framed, and ONLY
+        # by the LexFlow marketing-site origins listed in ROI_EMBED_ORIGINS, and
+        # ONLY when the caller passed ?embed=1 while the calculator flag is on.
+        # We express the allowlist with CSP `frame-ancestors` (the modern way)
+        # and REMOVE X-Frame-Options for this one response so it cannot conflict.
+        # The rest of the app keeps its DENY protection (set above). The body-of-
+        # page CSP is preserved and frame-ancestors merely appended as a directive.
+        roi_flag_on = request.args.get('embed') == '1' and (
+            os.environ.get('ROI_CALCULATOR_ENABLED', 'false').strip().lower()
+            in ('1', 'true', 'yes', 'on')
+        )
+        if roi_flag_on and request.path in ('/roi-calculator', '/roi-calculator/'):
+            origins = [
+                o.strip()
+                for o in os.environ.get(
+                    'ROI_EMBED_ORIGINS', 'https://lexflow-site.pages.dev'
+                ).split(',')
+                if o.strip()
+            ]
+            if origins:
+                frame = "frame-ancestors " + " ".join(origins)
+                existing = response.headers.get('Content-Security-Policy') or BASE_CSP
+                response.headers['Content-Security-Policy'] = (
+                    existing.rstrip(';') + '; ' + frame
+                )
+                response.headers.pop('X-Frame-Options', None)
+
+        response.headers.setdefault('Content-Security-Policy', BASE_CSP)
         return response
 
     @app.errorhandler(400)

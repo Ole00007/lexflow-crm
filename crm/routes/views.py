@@ -411,10 +411,18 @@ def roi_calculator():
     """Public ROI calculator page (no auth, no data stored, no tracking, no
     cookies). OFF unless ROI_CALCULATOR_ENABLED is truthy -> 404, mirroring the
     feature-flag routes above. All math is pure client-side in the static JS
-    module; this route only renders the shell (so it is safe logged-out)."""
+    module; this route only renders the shell (so it is safe logged-out).
+
+    PART C — `?embed=1` turns the page into an iframe-embeddable widget for the
+    LexFlow marketing site: the page hides the standalone browser chrome,
+    opens a transparent background, and posts its content height to the parent
+    (lf-roi-height) so the embedding site can auto-resize. Framing is gated by
+    the CSP frame-ancestors allowlist (see crm/__init__.py add_security_headers).
+    """
     if os.environ.get('ROI_CALCULATOR_ENABLED', 'false').strip().lower() not in ('1', 'true', 'yes', 'on'):
         abort(404)
-    return render_template('roi_calculator.html')
+    embed = request.args.get('embed') == '1'
+    return render_template('roi_calculator.html', embed=embed)
 
 
 @views_bp.route('/settings')

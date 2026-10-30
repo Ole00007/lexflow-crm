@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- ============================================================================
+  LexFlow — ROI calculator embed snippet (PART C)
+  docs/roi-embed-snippet.html
+
+  PURPOSE
+    A ready-to-paste block for the LexFlow marketing site (Cloudflare Pages).
+    It embeds the CRM-served /roi-calculator page in an auto-resizing iframe.
+
+  PLACEMENT
+    Admy / backend-dev place this where the calculator should appear on the
+    site. The CRM page reloads fine because embedding is allowed ONLY for the
+    LexFlow site origins via the CSP frame-ancestors allowlist (server-side).
+
+  HOW IT WORKS
+    - iframe src ends with ?embed=1 so the CRM page hides its app chrome,
+      opens a transparent background, and starts posting its content height.
+    - The 6-line script below listens for {type:'lf-roi-height', h} messages,
+      verifies the origin against the allow-list, and sets the iframe height.
+      The iframe auto-resizes (no scrollbars inside the parent).
+
+  CONFIG (before use)
+    1. Replace https://YOUR-CRM-BASE.example with the real CRM base URL
+       (prod: the Railway host that serves /roi-calculator).
+    2. Ensure the CRM server has these env vars:
+         ROI_CALCULATOR_ENABLED=true
+         ROI_EMBED_ORIGINS=https://lexflow-site.pages.dev   (the SITE origin)
+  ============================================================================ -->
+<div class="lf-roi-embed" style="width:100%;margin:0 auto;max-width:960px">
+  <iframe
+    id="lfRoiFrame"
+    src="https://YOUR-CRM-BASE.example/roi-calculator?embed=1"
+    loading="lazy"
+    frameborder="0"
+    scrolling="no"
+    style="width:100%;height:520px;border:0;background:transparent;display:block"
+    title="LexFlow ROI calculator"
+    aria-label="LexFlow ROI calculator"></iframe>
+</div>
+<script>
+(function () {
+  var allow = ['https://lexflow-site.pages.dev']; /* MUST match ROI_EMBED_ORIGINS */
+  var f = document.getElementById('lfRoiFrame');
+  function inAllow(o) { return allow.indexOf(o) !== -1; }
+  window.addEventListener('message', function (ev) {
+    if (ev.source !== f.contentWindow) return;
+    if (!inAllow(ev.origin)) return;             /* ignore non-site senders */
+    var d = ev.data;
+    if (d && d.type === 'lf-roi-height' && typeof d.h === 'number') {
+      f.style.height = Math.max(240, d.h) + 'px';
+    }
+  });
+})();
+</script>
