@@ -151,3 +151,16 @@ body.roi-page {
 @media (prefers-reduced-motion: reduce) {
   * , *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ── PART C: embed mode (?embed=1) ─────────────────────────────── */
+/* The page inside an iframe on the LexFlow marketing site: hide the standalone
+   browser chrome, open a transparent background, tighten the hero. The parent
+   site owns the surrounding context (header/footer), so we only render content. */
+body[data-embed="1"] { background: transparent; }
+body[data-embed="1"] .roi-top { display: none; }
+body[data-embed="1"] .roi-back { display: none; }
+body[data-embed="1"] .roi-main { padding: 8px 0 4px; }
+body[data-embed="1"] .roi-hero { margin-bottom: 18px; }
+body[data-embed="1"] .roi-hero h1 { font-size: 1.5rem; }
+body[data-embed="1"] .roi-card { background: rgba(22,27,39,.82); }
+body[data-embed="1"] .roi-disclaimer { margin-top: 12px; }

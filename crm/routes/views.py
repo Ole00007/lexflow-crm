@@ -405,16 +405,52 @@ def graph_view():
     return render_template('graph.html')
 
 
+@views_bp.route('/favicon.ico')
+def favicon_ico():
+    """Serve the app favicon (LF monogram) at the conventional /favicon.ico
+    path so browsers stop 404ing on it. Reuses the existing LF mark under
+    static/ (no new brand asset). Served directly (200) with the SVG media type."""
+    from flask import current_app
+    return current_app.send_static_file('favicon.svg')
+
+
 # ── ROI "time-saver & efficiency" calculator (public; PART B) ──────
 @views_bp.route('/roi-calculator')
 def roi_calculator():
     """Public ROI calculator page (no auth, no data stored, no tracking, no
     cookies). OFF unless ROI_CALCULATOR_ENABLED is truthy -> 404, mirroring the
     feature-flag routes above. All math is pure client-side in the static JS
-    module; this route only renders the shell (so it is safe logged-out)."""
+    module; this route only renders the shell (so it is safe logged-out).
+
+    PART C — `?embed=1` turns the page into an iframe-embeddable widget for the
+    LexFlow marketing site: the page hides the standalone browser chrome,
+    opens a transparent background, and posts its content height to the parent
+    (lf-roi-height) so the embedding site can auto-resize. Framing is gated by
+    the CSP frame-ancestors allowlist (see crm/__init__.py add_security_headers).
+
+    PART D / in-app — a logged-in visitor (JWT header, or the client JS asks
+    for ?app=1 after finding a JWT in localStorage) gets the calculator inside
+    the normal app shell (base.html sidebar) instead of the standalone public
+    page, so the app menu, calculator highlight and Settings gear are present.
+    The public page (no JWT, no ?app=1) and the ?embed=1 widget keep NO menu
+    and NO back button.
+    """
     if os.environ.get('ROI_CALCULATOR_ENABLED', 'false').strip().lower() not in ('1', 'true', 'yes', 'on'):
         abort(404)
-    return render_template('roi_calculator.html')
+    embed = request.args.get('embed') == '1'
+    # in-app mode: the visitor is authenticated, or the page was re-requested
+    # as ?app=1 by the client after it found a JWT in localStorage (the server
+    # cannot see localStorage, so the client helps it). Never in embed mode.
+    in_app = False
+    if not embed:
+        try:
+            in_app = bool(get_jwt_identity())
+        except Exception:
+            in_app = False
+        in_app = in_app or request.args.get('app') == '1'
+    if in_app:
+        return render_template('roi_calculator_app.html', embed=False)
+    return render_template('roi_calculator.html', embed=embed)
 
 
 @views_bp.route('/settings')

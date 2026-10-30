@@ -145,6 +145,7 @@
                 {% if is_superadmin %}
                 <li style="margin-top:var(--space-3)"><a class="nav-link sa-link{{ ' active' if ep == 'views.superadmin_panel' }}" href="{{ url_for('views.superadmin_panel') }}">🛡 Super Admin</a></li>
                 {% endif %}
+                {% block sidebar_bottom %}{% endblock %}
             </ul>
             <div class="sidebar-card">
                 <h3>Trusted Legal Intelligence</h3>

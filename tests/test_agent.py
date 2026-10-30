@@ -284,7 +284,7 @@ def run_migration_check(verbose=False):
     failures = []
     from alembic.script import ScriptDirectory
     heads = ScriptDirectory(str(REPO / 'migrations')).get_heads()
-    check('single alembic head matches spike revision', heads == ['k2f3a4b5c6d7'], failures, verbose)
+    check('single alembic head matches spike revision', heads == ['l3f4a5b6c7d8'], failures, verbose)
 
     tmp = Path(tempfile.mkdtemp(prefix='agent_migrate_'))
     db_path = tmp / 'migrate.db'
