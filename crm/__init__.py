@@ -262,6 +262,7 @@ def create_app():
             "gantt_enabled": os.environ.get('GANTT_VIEW_ENABLED', 'false').strip().lower() in _on,
             "agent_enabled": os.environ.get('AGENT_ENABLED', 'false').strip().lower() in _on,
             "notify_enabled": os.environ.get('NOTIFY_BUTTONS_ENABLED', 'false').strip().lower() in _on,
+            "roi_calculator_enabled": os.environ.get('ROI_CALCULATOR_ENABLED', 'false').strip().lower() in _on,
             "current_user": user,
             "main_site_url": main_site_url,
             "favicon_url": favicon_url,
