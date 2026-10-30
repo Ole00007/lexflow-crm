@@ -20,9 +20,14 @@
   var rows = [];
   var scope = 'own';
 
-  // Read the current calculator inputs (the projection baseline).
+  // Read the current calculator inputs + the projection scenario (default
+  // CONSERVATIVE — the honest baseline). The projection line mirrors whichever
+  // scenario the user picked in the tracker form.
   function readCalculator() {
     function v(id, fb) { var el = $(id); return el ? Number(el.value) : fb; }
+    var scen = 'conservative';
+    var sel = $('tp_scen');
+    if (sel) { scen = sel.value === 'expected' ? 'expected' : 'conservative'; }
     return {
       lawyers: v('in_lawyers', RC.DEFAULTS.lawyers),
       annualCost: v('in_cost', RC.DEFAULTS.annualCost),
@@ -31,9 +36,25 @@
       hoursPerMatter: v('in_hmatter', RC.DEFAULTS.hoursPerMatter),
       billableHours: v('in_billable', RC.DEFAULTS.billableHours),
       averageHourRate: v('in_rate', RC.DEFAULTS.averageHourRate),
-      ramp: (v('in_ramp', RC.DEFAULTS.ramp * 100)) / 100
+      scenarioKey: scen
     };
   }
+
+  function currentProjection() {
+    var r = RC.computeRoi(readCalculator());
+    var scen = readCalculator().scenarioKey;
+    var pick = (scen === 'expected' && r.expected) ? r.expected : r;
+    return {
+      hourlyValue: r.hourlyValue,
+      valuePerMonth: pick.valuePerMonth,
+      scenarioKey: scen
+    };
+  }
+  /* Existing consumers asked computeRoi(...).valuePerMonth / .hourlyValue
+     directly; local helpers hoist from whichever scenario is selected. */
+  function projMonthly() { return currentProjection().valuePerMonth; }
+  function projHourly() { return currentProjection().hourlyValue; }
+
 
   function authHeaders() {
     var t = null;
@@ -108,14 +129,12 @@
   }
 
   function euroForHours(hours) {
-    var r = RC.computeRoi(readCalculator());
-    return hours * r.hourlyValue;
+    return hours * projHourly();
   }
 
   /* Build the cumulative series: projected cumulative vs actual cumulative. */
   function buildSeries() {
-    var r = RC.computeRoi(readCalculator());
-    var projMonthly = r.valuePerMonth;
+    var projM = projMonthly();
     var actualByMonth = {};
     rows.forEach(function (row) { actualByMonth[row.month] = euroForHours(row.hours_saved_actual); });
 
@@ -144,11 +163,11 @@
 
     var sorted = rows.slice().sort(function (a, b) { return a.month.localeCompare(b.month); });
     var cumAct = 0, cumProj = 0;
-    var projMonthly = RC.computeRoi(readCalculator()).valuePerMonth;
+    var projM = projMonthly();
 
     sorted.forEach(function (row) {
       var actEur = euroForHours(row.hours_saved_actual);
-      var projEur = projMonthly;
+      var projEur = projM;
       cumAct += actEur; cumProj += projEur;
       var delta = cumAct - cumProj;
       var tr = document.createElement('tr');
@@ -265,6 +284,8 @@
   if (saveBtn) saveBtn.addEventListener('click', save);
   var exportBtn = $('tp_export');
   if (exportBtn) exportBtn.addEventListener('click', exportCsv);
+  var scenSel = $('tp_scen');
+  if (scenSel) scenSel.addEventListener('change', load);
 
   // set default month to the current month so the form is ready to use
   var dm = $('tp_month');

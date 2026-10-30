@@ -81,8 +81,9 @@ def test_roi_js_module_math_sane():
     src = JS.read_text(encoding="utf-8")
     assert "computeRoi" in src
     assert "function computeRoi" in src or "computeRoi:" in src
-    # defaults present
-    assert "hoursPerMatter: 1.5" in src or '"hoursPerMatter": 1.5' in src
+    # defaults present — JOB 5: base default is 0.5h (conservative),
+    # NOT the old 1.5h that produced a +2757% headline.
+    assert "hoursPerMatter: 0.5" in src or '"hoursPerMatter": 0.5' in src
     assert "billableHours: 1500" in src
     # NEW (JOB 4): the optional average hourly rate (EUR/hour) override, and a
     # source flag distinguishing "from the entered rate" vs "computed".
