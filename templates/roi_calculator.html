@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcolatore ROI | ROI calculator — LexFlow</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/roi/roi_calculator.css') }}">
+</head>
+<body data-lang="it" class="roi-page">
+<header class="roi-top">
+  <div class="roi-top-inner">
+    <span class="roi-brand"><span class="roi-brand-mark">LF</span> LexFlow</span>
+    <nav class="roi-lang" aria-label="Lingua / Language">
+      <button type="button" class="roi-lang-btn active" data-lang="it" aria-pressed="true">IT</button>
+      <button type="button" class="roi-lang-btn" data-lang="en" aria-pressed="false">EN</button>
+    </nav>
+  </div>
+</header>
+
+<main class="roi-main">
+  <section class="roi-hero">
+    <p class="roi-eyebrow" data-it="Tempo recuperato, valore reale" data-en="Time saved, real value">Tempo recuperato, valore reale</p>
+    <h1 data-it="Quante ore recupera il tuo studio con LexFlow?" data-en="How many hours does your firm win back with LexFlow?">Quante ore recupera il tuo studio con LexFlow?</h1>
+    <p class="roi-intro" data-it="Stima in pochi secondi le ore di lavoro recuperate con LexFlow e il loro valore economico. Nessun dato viene salvato o tracciato." data-en="Estimate in seconds the working hours LexFlow gives back and their euro value. Nothing is stored or tracked.">Stima in pochi secondi le ore di lavoro recuperate con LexFlow e il loro valore economico. Nessun dato viene salvato o tracciato.</p>
+  </section>
+
+  <section class="roi-grid" aria-label="Calculator">
+    <!-- Inputs -->
+    <div class="roi-card roi-inputs">
+      <h2 data-it="Il tuo studio" data-en="Your firm">Il tuo studio</h2>
+      <div class="roi-field">
+        <label for="in_lawyers" data-it="Numero di avvocati" data-en="Number of lawyers">Numero di avvocati</label>
+        <input type="number" id="in_lawyers" min="1" max="500" step="1" inputmode="numeric" value="1">
+      </div>
+      <div class="roi-field">
+        <label for="in_cost" data-it="Costo annuo per avvocato (€, oneri inclusi)" data-en="Annual cost per lawyer (€, fully loaded)">Costo annuo per avvocato (€, oneri inclusi)</label>
+        <input type="number" id="in_cost" min="0" step="1000" inputmode="numeric" value="70000">
+      </div>
+      <div class="roi-field">
+        <label for="in_matters" data-it="Pratiche al mese per avvocato" data-en="Matters per month, per lawyer">Pratiche al mese per avvocato</label>
+        <input type="number" id="in_matters" min="0" step="1" inputmode="numeric" value="20">
+      </div>
+      <div class="roi-field">
+        <label for="in_price" data-it="Prezzo LexFlow (€ per avvocato al mese)" data-en="LexFlow price (€ per lawyer per month)">Prezzo LexFlow (€ per avvocato al mese)</label>
+        <input type="number" id="in_price" min="0" step="1" inputmode="numeric" value="49">
+      </div>
+      <p class="roi-note" data-it="I valori si aggiornano automaticamente mentre scrivi." data-en="Values update as you type.">I valori si aggiornano automaticamente mentre scrivi.</p>
+    </div>
+
+    <!-- Outputs -->
+    <div class="roi-card roi-results">
+      <h2 data-it="Risultato stimato" data-en="Estimated result">Risultato stimato</h2>
+
+      <p class="roi-summary" id="roiSummary" aria-live="polite">—</p>
+
+      <div class="roi-kpi-grid">
+        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Ore recuperate / mese" data-en="Hours regained / month">Ore recuperate / mese</span><strong id="k_hoursMonth">—</strong></div>
+        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Ore recuperate / anno" data-en="Hours regained / year">Ore recuperate / anno</span><strong id="k_hoursYear">—</strong></div>
+        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Valore ore / mese" data-en="Hour value / month">Valore ore / mese</span><strong id="k_valueMonth">—</strong></div>
+        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Valore ore / anno" data-en="Hour value / year">Valore ore / anno</span><strong id="k_valueYear">—</strong></div>
+        <div class="roi-kpi"><span class="roi-kpi-label" data-it="ROI a 3 anni" data-en="3-year ROI">ROI a 3 anni</span><strong id="k_roi">—</strong></div>
+        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Rientro (mese)" data-en="Payback (month)">Rientro (mese)</span><strong id="k_payback">—</strong></div>
+      </div>
+
+      <div class="roi-chart" role="img" aria-label="Chart of 3-year benefit vs cost">
+        <svg id="roiChart" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet" role="presentation"></svg>
+        <div class="roi-legend">
+          <span><i class="roi-dot roi-dot-1"></i><span data-it="Beneficio" data-en="Benefit">Beneficio</span></span>
+          <span><i class="roi-dot roi-dot-2"></i><span data-it="Costo LexFlow" data-en="LexFlow cost">Costo LexFlow</span></span>
+        </div>
+      </div>
+
+      <p class="roi-formula" id="roiFormula"></p>
+    </div>
+  </section>
+
+  <!-- Assumptions (editable, collapsed) -->
+  <section class="roi-assumptions">
+    <details id="roiAssumptions">
+      <summary data-it="Ipotesi e parametri (modificabili)" data-en="Assumptions &amp; parameters (editable)">Ipotesi e parametri (modificabili)</summary>
+      <div class="roi-assum-body">
+        <div class="roi-field">
+          <label for="in_hmatter">
+            <span data-it="Ore risparmiate per pratica" data-en="Hours saved per matter">Ore risparmiate per pratica</span>
+            <em data-it="(IPOTESI: da validare con un avvocato)" data-en="(ASSUMPTION: validate with a lawyer)">(IPOTESI: da validare con un avvocato)</em>
+          </label>
+          <input type="number" id="in_hmatter" min="0" step="0.5" inputmode="decimal" value="1.5">
+        </div>
+        <div class="roi-field">
+          <label for="in_billable" data-it="Ore fatturabili all'anno per avvocato" data-en="Billable hours per year, per lawyer">Ore fatturabili all'anno per avvocato</label>
+          <input type="number" id="in_billable" min="1" step="100" inputmode="numeric" value="1500">
+        </div>
+        <div class="roi-field">
+          <label for="in_ramp" data-it="Tasso di adozione" data-en="Adoption ramp">Tasso di adozione</label>
+          <input type="number" id="in_ramp" min="0" max="100" step="5" inputmode="numeric" value="100">
+          <span class="roi-field-suffix">%</span>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <p class="roi-disclaimer" data-it="Stima, non una garanzia. I risultati dipendono dalle ipotesi inserite." data-en="Estimate, not a guarantee. Results depend on the assumptions you enter.">Stima, non una garanzia. I risultati dipendono dalle ipotesi inserite.</p>
+
+  <p class="roi-back"><a href="/" data-it="← Torna all'app" data-en="← Back to the app">← Torna all'app</a></p>
+</main>
+
+<script src="{{ url_for('static', filename='js/roi/roi_calculator.js') }}"></script>
+<script>
+(function () {
+  'use strict';
+  var RC = window.ROICalculator;
+  if (!RC) return;
+
+  function $(id) { return document.getElementById(id); }
+  function readVal(id, fallback) { var v = $(id); return v ? Number(v.value) : fallback; }
+
+  function lang() { return document.body.getAttribute('data-lang') || 'it'; }
+
+  function applyDataAttrs() {
+    var l = lang();
+    document.querySelectorAll('[data-it]').forEach(function (el) {
+      var k = l === 'en' ? 'data-en' : 'data-it';
+      var txt = el.getAttribute(k);
+      if (txt != null && !el.matches('input,textarea')) el.innerHTML = txt;
+    });
+  }
+
+  function euros(n) { return RC.fmtEur(n); }
+  function ints(n) { return RC.fmtInt(n); }
+
+  function plural(laws) { var l = lang(); var s = l === 'en' ? (laws === 1 ? 'lawyer' : 'lawyers') : (laws === 1 ? 'avvocato' : 'avvocati'); return s; }
+
+  function setIt(el, it, en) { if (el) { el.setAttribute('data-it', it); el.setAttribute('data-en', en); el.innerHTML = lang() === 'en' ? en : it; } }
+
+  function renderSummary(r) {
+    var el = $('roiSummary'); if (!el) return;
+    var l = lang();
+    var hours = ints(r.hoursRegainedPerMonth);
+    var eur = euros(r.valuePerYear);
+    var p = plural(r.lawyers);
+    var it = hours + ' ore recuperate al mese per ' + r.lawyers + ' ' + p + '. Valore stimato ' + eur + ' l\u2019anno.';
+    var en = hours + ' hours regained per month across ' + r.lawyers + ' ' + p + ', worth around ' + eur + ' a year.';
+    el.textContent = l === 'en' ? en : it;
+  }
+
+  function renderKPIs(r) {
+    $('k_hoursMonth').textContent = ints(r.hoursRegainedPerMonth) + ' h';
+    $('k_hoursYear').textContent = ints(r.hoursRegainedPerYear) + ' h';
+    $('k_valueMonth').textContent = euros(r.valuePerMonth);
+    $('k_valueYear').textContent = euros(r.valuePerYear);
+    var roiEl = $('k_roi');
+    roiEl.textContent = (r.roiPct >= 0 ? '+' : '') + r.roiPct + '%';
+    roiEl.className = r.net3y >= 0 ? 'roi-kpi-pos' : 'roi-kpi-neg';
+    var pb = $('k_payback');
+    if (r.paybackMonths == null) {
+      setIt(pb, '—', '—'); pb.textContent = '—';
+    } else if (r.paybackMonths === 0) {
+      pb.textContent = lang() === 'en' ? '0 (immediate)' : '0 (immediato)';
+    } else {
+      pb.textContent = lang() === 'en'
+        ? r.paybackMonths + ' ' + (r.paybackMonths === 1 ? 'month' : 'months')
+        : r.paybackMonths + ' ' + (r.paybackMonths === 1 ? 'mese' : 'mesi');
+    }
+  }
+
+  function renderFormula(r) {
+    var el = $('roiFormula'); if (!el) return;
+    var l = lang();
+    var f = l === 'en'
+      ? 'Formula: hourly value = annual cost ÷ billable hours. Hours regained = matters/month × hours saved per matter × lawyers × adoption. 3-yr ROI = (3-yr benefit − 3-yr LexFlow cost) ÷ 3-yr cost.'
+      : 'Formula: valore orario = costo annuo ÷ ore fatturabili. Ore recuperate = pratiche/mese × ore per pratica × avvocati × adozione. ROI 3 anni = (beneficio 3 anni − costo LexFlow 3 anni) ÷ costo 3 anni.';
+    el.textContent = f;
+  }
+
+  function drawChart(r) {
+    var svg = $('roiChart'); if (!svg) return;
+    var W = 320, H = 180, pad = 8, x0 = 0, yBase = H - 12;
+    var max = Math.max(r.value3y, r.cost3y, 1);
+    var s = r.series || [];
+    var bw = (W - 60) / 3, gap = 14;
+    var html = '';
+    s.forEach(function (p, i) {
+      var bx = 40 + i * (bw + gap);
+      var bhBen = (p.benefit / max) * (H - 40);
+      var bhCost = (p.cost / max) * (H - 40);
+      var byBen = yBase - bhBen, byCost = yBase - bhCost;
+      html += '<text x="'+(bx+bw/2)+'" y="'+(H-1)+'" text-anchor="middle" class="roi-chart-year">'+(p.year)+'</text>';
+      html += '<rect x="'+bx+'" y="'+byBen+'" width="'+bw/2+'" height="'+bhBen+'" class="roi-bar-1"><title>Year '+p.year+' benefit '+euros(p.benefit)+'</title></rect>';
+      html += '<rect x="'+(bx+bw/2)+'" y="'+byCost+'" width="'+bw/2+'" height="'+bhCost+'" class="roi-bar-2"><title>Year '+p.year+' cost '+euros(p.cost)+'</title></rect>';
+    });
+    svg.innerHTML = html;
+  }
+
+  function update() {
+    var r = RC.computeRoi({
+      lawyers: readVal('in_lawyers', RC.DEFAULTS.lawyers),
+      annualCost: readVal('in_cost', RC.DEFAULTS.annualCost),
+      mattersPerMonth: readVal('in_matters', RC.DEFAULTS.mattersPerMonth),
+      price: readVal('in_price', RC.DEFAULTS.price),
+      hoursPerMatter: readVal('in_hmatter', RC.DEFAULTS.hoursPerMatter),
+      billableHours: readVal('in_billable', RC.DEFAULTS.billableHours),
+      ramp: readVal('in_ramp', RC.DEFAULTS.ramp * 100) / 100
+    });
+    renderSummary(r);
+    renderKPIs(r);
+    renderFormula(r);
+    drawChart(r);
+  }
+
+  // language wiring
+  document.querySelectorAll('.roi-lang-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var l = btn.getAttribute('data-lang');
+      document.body.setAttribute('data-lang', l);
+      document.querySelectorAll('.roi-lang-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-lang') === l); b.setAttribute('aria-pressed', b.getAttribute('data-lang') === l); });
+      document.documentElement.setAttribute('lang', l);
+      applyDataAttrs();
+      update();
+    });
+  });
+
+  ['in_lawyers','in_cost','in_matters','in_price','in_hmatter','in_billable','in_ramp'].forEach(function (id) {
+    var el = $(id); if (el) el.addEventListener('input', update);
+  });
+
+  applyDataAttrs();
+  update();
+})();
+</script>
+</body>
+</html>

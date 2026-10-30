@@ -405,6 +405,18 @@ def graph_view():
     return render_template('graph.html')
 
 
+# ── ROI "time-saver & efficiency" calculator (public; PART B) ──────
+@views_bp.route('/roi-calculator')
+def roi_calculator():
+    """Public ROI calculator page (no auth, no data stored, no tracking, no
+    cookies). OFF unless ROI_CALCULATOR_ENABLED is truthy -> 404, mirroring the
+    feature-flag routes above. All math is pure client-side in the static JS
+    module; this route only renders the shell (so it is safe logged-out)."""
+    if os.environ.get('ROI_CALCULATOR_ENABLED', 'false').strip().lower() not in ('1', 'true', 'yes', 'on'):
+        abort(404)
+    return render_template('roi_calculator.html')
+
+
 @views_bp.route('/settings')
 @jwt_required(optional=True)
 def settings_page():
