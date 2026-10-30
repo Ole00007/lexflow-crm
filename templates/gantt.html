@@ -33,6 +33,8 @@
   {# Layer 2 controls (Day / Week / Month switch, filters) land here in M3. #}
   <div class="gantt-toolbar" role="group" aria-label="Timeline controls">
     <span class="badge">Read-only</span>
+    <div class="lf-filter" id="ganttFilterMount"></div>
+    <span class="gantt-spacer"></span>
     {# TODO(M3): view-mode switch (Day/Week/Month) + status/priority filters #}
   </div>
 
@@ -41,6 +43,7 @@
   <div class="gantt-state" id="gantt-state-empty" hidden>
     No tasks with both a start date and a due date to display.
   </div>
+  <div class="gantt-state" id="gantt-state-filterempty" hidden>No tasks match — Clear filters</div>
   <div class="gantt-state gantt-state--error" id="gantt-state-error" hidden>
     Could not load the timeline. Please retry.
   </div>
@@ -62,6 +65,7 @@
 {% block scripts %}
 {# Order matters: vendored library (global `Gantt`) first, component second. #}
 <script src="{{ url_for('static', filename='vendor/frappe-gantt/1.2.2/frappe-gantt.umd.js') }}"></script>
+<script src="{{ url_for('static', filename='js/filters/task_filters.js') }}"></script>
 <script src="{{ url_for('static', filename='js/gantt/gantt_view.js') }}"></script>
 {% if notify_enabled %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notify/notify.css') }}">

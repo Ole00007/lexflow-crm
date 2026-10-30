@@ -48,7 +48,8 @@ def test_gantt_whitelist_exact_keys(client, superadmin_headers):
 
     core_keys = {'id', 'name', 'start', 'end', 'progress', 'dependencies', 'custom_class'}
     # Contract extended by the team-roles feature (WS-A): team[], vault (superadmin only), open_flags
-    expected_keys = core_keys | {'team', 'vault', 'open_flags'}
+    # ... and by the task-filters feature (LF): priority + assigned_to_me (bool)
+    expected_keys = core_keys | {'team', 'vault', 'open_flags', 'priority', 'assigned_to_me'}
     assert set(gantt_task.keys()) == expected_keys, (
         f"Whitelist violation: got {set(gantt_task.keys())}, expected {expected_keys}"
     )
@@ -56,7 +57,7 @@ def test_gantt_whitelist_exact_keys(client, superadmin_headers):
 
     # Verify no leaked fields
     for forbidden in ('description', 'notes', 'userid', 'workspace_id', 'caseid',
-                      'status', 'priority', 'createdat', 'updatedat', 'is_deleted'):
+                      'status', 'createdat', 'updatedat', 'is_deleted'):
         assert forbidden not in gantt_task, f"Leaked field: {forbidden}"
 
 
@@ -224,6 +225,55 @@ def test_gantt_dependencies_empty(client, superadmin_headers):
     tasks = resp.get_json()
     deps_task = next(t for t in tasks if t["name"] == "Deps Test")
     assert deps_task["dependencies"] == ""
+
+
+# ── Priority + assigned_to_me (task-filters feature) ───────────────────────
+
+def test_gantt_priority_and_assigned_to_me(client, superadmin_headers):
+    """The shared task-filter needs priority + a 'mine' flag on the gantt payload.
+    Check a task assigned to the caller surfaces priority URgent + assigned_to_me True."""
+    contact_id = _create_contact(client, superadmin_headers)
+    case_id = _create_case(client, superadmin_headers, contact_id)
+    me = client.get("/api/auth/me", headers=superadmin_headers).get_json()
+    my_id = me["id"]
+
+    resp = client.post("/api/tasks/", json={
+        "title": "Mine Urgent Gantt Task",
+        "caseid": case_id,
+        "status": "pending",
+        "priority": "Urgent",
+        "startdate": "2026-10-14",
+        "duedate": "2026-12-31",
+        "userid": my_id,
+    }, headers=superadmin_headers)
+    assert resp.status_code in (200, 201)
+
+    tasks = client.get("/api/gantt/tasks", headers=superadmin_headers).get_json()
+    t = next(x for x in tasks if x["name"] == "Mine Urgent Gantt Task")
+    assert t["priority"] == "Urgent"
+    assert t["assigned_to_me"] is True
+
+
+def test_gantt_assigned_to_me_false_when_unassigned(client, superadmin_headers):
+    """A task with no userid on a matter with no owner/assignee is NOT 'mine'."""
+    contact_id = _create_contact(client, superadmin_headers)
+    case_id = _create_case(client, superadmin_headers, contact_id)
+
+    resp = client.post("/api/tasks/", json={
+        "title": "Not Mine Gantt Task",
+        "caseid": case_id,
+        "status": "pending",
+        "priority": "Low",
+        "startdate": "2026-10-14",
+        "duedate": "2026-12-31",
+        # no userid; _create_case sets no ownerid/assignedto
+    }, headers=superadmin_headers)
+    assert resp.status_code in (200, 201)
+
+    tasks = client.get("/api/gantt/tasks", headers=superadmin_headers).get_json()
+    t = next(x for x in tasks if x["name"] == "Not Mine Gantt Task")
+    assert t["priority"] == "Low"
+    assert t["assigned_to_me"] is False
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────

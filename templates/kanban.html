@@ -660,6 +660,31 @@ header {
   #loggedInControls { flex-wrap: wrap; justify-content: flex-start !important; }
   .btn-add span.btn-label { display: none; }
 }
+
+/* ── Shared task filter ── */
+.lf-hidden{display:none!important}
+.lf-filter{position:relative;display:inline-flex}
+.lf-filter-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-md,10px);background:var(--surface);color:var(--text);font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.lf-filter-btn:hover{border-color:var(--accent);color:var(--accent-h)}
+.lf-filter-btn[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-glow)}
+.lf-filter-caret{opacity:.6;font-size:.7rem}
+.lf-filter-badge{display:none;min-width:16px;height:16px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:.68rem;font-weight:700;line-height:16px;text-align:center}
+.lf-filter-btn[data-active] .lf-filter-badge{display:inline-block}
+.lf-filter-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:500;min-width:280px;max-width:300px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg,16px);box-shadow:var(--shadow-lg,0 12px 40px rgba(0,0,0,.6));padding:12px;display:none}
+.lf-filter-panel.open{display:block}
+.lf-filter-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.lf-filter-head>span{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+.lf-filter-clear{background:none;border:none;color:var(--accent);font-size:.78rem;font-weight:600;cursor:pointer;padding:2px}
+.lf-filter-clear:hover{color:var(--accent-h);text-decoration:underline}
+.lf-group{margin-bottom:12px}.lf-group:last-child{margin-bottom:0}
+.lf-group-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint,#7E90A9);margin-bottom:6px}
+.lf-chips{display:flex;flex-wrap:wrap;gap:6px}
+.lf-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface-2);color:var(--text-muted);font-size:.8rem;cursor:pointer;user-select:none}
+.lf-chip:hover{color:var(--text);border-color:var(--text-muted)}
+.lf-chip[aria-pressed="true"]{background:var(--accent-glow);color:var(--accent-h);border-color:var(--accent)}
+@media (max-width:480px){
+.lf-filter-panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;min-width:0;border-radius:var(--radius-lg,16px) var(--radius-lg,16px) 0 0;border-bottom:none;box-shadow:0 -8px 30px rgba(0,0,0,.45);padding:14px}
+}
 </style>
 </head>
 <body>
@@ -706,6 +731,7 @@ header {
 
 <!-- ── Board ───────────────────────────────────────────────────── -->
 <div class="board-head">
+  <div class="lf-filter" id="kanbanFilterMount"></div>
   <span id="secureWsLabel" class="secure-ws-chip" style="display:none"></span>
 </div>
 <div class="board" id="board">
@@ -815,6 +841,7 @@ header {
   </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/filters/task_filters.js') }}"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════
    State & Helpers
@@ -964,6 +991,7 @@ function onLoginSuccess(data) {
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('loginBtn').textContent = 'Login';
 
+  createKanbanFilter();
   loadCases();
   toast('Welcome, ' + (u.email ? u.email.split('@')[0] : 'user') + '!', 'success');
 }
@@ -1036,6 +1064,7 @@ function loadCases() {
         allCases = allCases.concat(r.cases);
         renderColumn(r.status, r.cases);
       });
+      if (window.__kanbanFilter) window.__kanbanFilter.refresh();
     })
     .catch(function(e) { toast('Failed to load cases: ' + e.message, 'error'); });
 }
@@ -1111,6 +1140,48 @@ function cardHTML(c) {
       ctype + due + blockedBadge +
     '</div>' +
   '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Shared task filter (kanban = hide cards, keep column counts)
+   ═══════════════════════════════════════════════════════════════ */
+function kanbanFeatures(c, ctx) {
+  var st = String(c.status || '');
+  var done = TaskFilters.inFinished(st);
+  var blocked = st.toLowerCase().indexOf('block') >= 0;
+  var due = c.duedate ? c.duedate.slice(0, 10) : null;
+  var overdue = !!due && !done && due < ctx.today;
+  var dueSoon = !!due && !done && due >= ctx.today && due <= ctx.soon;
+  var priorityHigh = /high|urgent/i.test(String(c.priority || ''));
+  var isMine = ctx.myUserId != null &&
+    (String(c.assignedto) === String(ctx.myUserId) || String(c.ownerid) === String(ctx.myUserId));
+  return { done: done, blocked: blocked, priorityHigh: priorityHigh, overdue: overdue, dueSoon: dueSoon, isMine: isMine, blocksOthers: false };
+}
+function kanbanApply(visible) {
+  var vis = {};
+  (visible || []).forEach(function (c) { vis[String(c.id)] = 1; });
+  STATUSES.forEach(function (status) {
+    var list = document.getElementById('list-' + status);
+    if (!list) return;
+    var countEl = document.getElementById('count-' + status);
+    var shown = 0;
+    Array.prototype.forEach.call(list.querySelectorAll('.card'), function (card) {
+      var show = vis[String(card.getAttribute('data-id'))] != null;
+      card.classList.toggle('lf-hidden', !show);
+      if (show) shown++;
+    });
+    if (countEl) countEl.textContent = String(shown);
+  });
+}
+function createKanbanFilter() {
+  if (window.__kanbanFilter) return window.__kanbanFilter;
+  window.__kanbanFilter = TaskFilters.create({
+    mount: document.getElementById('kanbanFilterMount') || document.getElementById('board') || document.body,
+    getItems: function () { return allCases; },
+    features: kanbanFeatures,
+    onApply: kanbanApply
+  });
+  return window.__kanbanFilter;
 }
 
 /* ═══════════════════════════════════════════════════════════════

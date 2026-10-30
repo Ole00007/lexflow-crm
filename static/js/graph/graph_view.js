@@ -34,6 +34,7 @@
     hidden: {},            // type -> true
     todayMode: false, localMode: false,
     selected: null, hover: null, query: '',
+    filterVisible: null, filterActive: false,
     view: { x: 0, y: 0, k: 1 },
     alpha: 1, w: 0, h: 0, dpr: window.devicePixelRatio || 1,
     drag: null, pan: null, lastUpdate: null, didFit: false
@@ -47,6 +48,53 @@
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text != null) { e.textContent = text; } return e; }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function shortLabel(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  /* ── Shared task filter ──────────────────────────────────────────────
+     Dims non-matching case/task nodes (and their links) to near-invisible.
+     Matching is decided by the shared component; the node stays in the
+     physics simulation so the layout does NOT re-simulate / jump. */
+  var graphFilter = null;
+  function isFilterable(n) { return n.type === 'task' || n.type === 'case'; }
+  function graphFeatures(n, ctx) {
+    var d = n.data || {};
+    var done = window.TaskFilters && TaskFilters.inFinished(d.status);
+    var blocked = !!n.blocked;
+    var priorityHigh = /high|urgent/i.test(String(d.priority || ''));
+    var overdue = n.today === 'overdue';
+    var dueSoon = n.today === 'soon';
+    var isMine = false;
+    if (ctx.myUserId != null && !done) {
+      if (String(d.userid) === String(ctx.myUserId)) { isMine = true; }
+      else {
+        var nb = state.adj[n.id] || {};
+        for (var k in nb) {
+          var an = state.byId[k];
+          if (an && an.type === 'staff' && String((an.data || {}).user_id) === String(ctx.myUserId)) { isMine = true; break; }
+        }
+      }
+    }
+    return { done: done, blocked: blocked, priorityHigh: priorityHigh, overdue: overdue, dueSoon: dueSoon, isMine: isMine, blocksOthers: false };
+  }
+  function createGraphFilter() {
+    if (graphFilter || !window.TaskFilters) return;
+    var mount = document.getElementById('graphFilterMount');
+    if (!mount) return;
+    graphFilter = window.TaskFilters.create({
+      mount: mount,
+      getItems: function () { return state.nodes.filter(isFilterable); },
+      features: graphFeatures,
+      onApply: function (visible, m) {
+        var vis = {};
+        (visible || []).forEach(function (n) { vis[String(n.id)] = 1; });
+        state.filterVisible = vis;
+        state.filterActive = m ? m.activeCount > 0 : false;
+        if (state.nodes.length) {
+          if (state.filterActive && (!visible || !visible.length)) { showState('No tasks match — Clear filters'); }
+          else { showState(null); }
+        }
+      }
+    });
+  }
 
   /* ── data ──────────────────────────────────────────────────────────── */
   function classify(n) {
@@ -99,6 +147,7 @@
     if (state.selected && !byId[state.selected]) { state.selected = null; }
     if (added || !state.didFit) { state.alpha = Math.max(state.alpha, added ? 0.6 : 1); }
     buildTypeChips(); renderToday(); renderDetail();
+    if (graphFilter) { graphFilter.refresh(); }
   }
 
   /* ── vault notes (optional; never breaks the graph) ───────────────── */
@@ -178,6 +227,10 @@
   }
   function emphasis(n) {
     // 1 = full, 0.18 = dimmed
+    // shared task filter: dim non-matching case/task nodes (layout stays stable)
+    if (state.filterActive && isFilterable(n) && !(state.filterVisible && state.filterVisible[String(n.id)])) {
+      return 0.05;
+    }
     var q = state.query;
     if (q && String(n.label).toLowerCase().indexOf(q) === -1) { return 0.14; }
     if (state.todayMode) {
@@ -520,6 +573,7 @@
   /* ── boot ──────────────────────────────────────────────────────────── */
   resize();
   requestAnimationFrame(frame);
+  createGraphFilter();
   load();
   setInterval(function () { if (!document.hidden) { load(); } }, POLL_MS);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { load(); } });

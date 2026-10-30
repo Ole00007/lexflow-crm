@@ -29,6 +29,7 @@
 
   <div class="gp-bar" id="gp-filters" role="group" aria-label="Graph controls">
     <input type="search" id="gp-search" placeholder="Search nodes…" aria-label="Search nodes">
+    <div class="lf-filter" id="graphFilterMount"></div>
     <span class="chip mode" id="gp-mode-today" role="button" tabindex="0" aria-pressed="false">☀ Today</span>
     <span class="chip mode" id="gp-mode-local" role="button" tabindex="0" aria-pressed="false" title="Show only the selected node and its neighbours">◎ Local</span>
     <span id="gp-type-chips"></span>
@@ -51,5 +52,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/filters/task_filters.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/graph/graph_view.js') }}" defer></script>
 {% endblock %}

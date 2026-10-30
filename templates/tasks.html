@@ -43,6 +43,30 @@
 }
 @keyframes task-blocked-pulse{0%,100%{opacity:1}50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){.blocked-pill{animation:none}}
+
+/* ── Shared task filter (component mounted here) ── */
+.lf-filter{position:relative;display:inline-flex}
+.lf-filter-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-md,10px);background:var(--surface);color:var(--text);font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.lf-filter-btn:hover{border-color:var(--accent);color:var(--accent-h)}
+.lf-filter-btn[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-glow)}
+.lf-filter-caret{opacity:.6;font-size:.7rem}
+.lf-filter-badge{display:none;min-width:16px;height:16px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:.68rem;font-weight:700;line-height:16px;text-align:center}
+.lf-filter-btn[data-active] .lf-filter-badge{display:inline-block}
+.lf-filter-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:500;min-width:280px;max-width:300px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg,16px);box-shadow:var(--shadow-lg,0 12px 40px rgba(0,0,0,.6));padding:12px;display:none}
+.lf-filter-panel.open{display:block}
+.lf-filter-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.lf-filter-head>span{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+.lf-filter-clear{background:none;border:none;color:var(--accent);font-size:.78rem;font-weight:600;cursor:pointer;padding:2px}
+.lf-filter-clear:hover{color:var(--accent-h);text-decoration:underline}
+.lf-group{margin-bottom:12px}.lf-group:last-child{margin-bottom:0}
+.lf-group-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint,#7E90A9);margin-bottom:6px}
+.lf-chips{display:flex;flex-wrap:wrap;gap:6px}
+.lf-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface-2);color:var(--text-muted);font-size:.8rem;cursor:pointer;user-select:none}
+.lf-chip:hover{color:var(--text);border-color:var(--text-muted)}
+.lf-chip[aria-pressed="true"]{background:var(--accent-glow);color:var(--accent-h);border-color:var(--accent)}
+@media (max-width:480px){
+.lf-filter-panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;min-width:0;border-radius:var(--radius-lg,16px) var(--radius-lg,16px) 0 0;border-bottom:none;box-shadow:0 -8px 30px rgba(0,0,0,.45);padding:14px}
+}
 </style>
 
 <section class="card stack" aria-labelledby="page-title">
@@ -53,6 +77,7 @@
     </div>
     <div class="section" style="padding-top:0">
         <div class="task-toolbar">
+            <div class="lf-filter" id="taskFilterMount"></div>
             <button class="button" onclick="openModal()">+ New Task</button>
         </div>
         <div id="taskList" style="display:grid;gap:8px">
@@ -132,10 +157,63 @@
   </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/filters/task_filters.js') }}"></script>
 <script>
 const API = '';
 function token() { return localStorage.getItem('jwt') || ''; }
 function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+/* ── Shared task filter ─────────────────────────────────────────── */
+var allTasks = [];
+function taskCard(t) {
+  var isBlocked = String(t.status || '').toLowerCase().indexOf('block') >= 0;
+  var blockedCls = isBlocked ? ' task-card-blocked' : '';
+  var blockedPill = isBlocked
+    ? '<span class="blocked-pill">⛔ ' + esc(t.status) + '</span>'
+    : '<span class="badge">' + esc(t.status) + '</span>';
+  return '<div class="task-card' + blockedCls + '">' +
+    '<div><strong>' + esc(t.title) + '</strong><br>' +
+    '<span style="color:var(--text-muted);font-size:var(--text-sm)">Case #' + t.caseid +
+    (t.duedate ? ' · Due: ' + t.duedate.slice(0,10) : '') + '</span></div>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+      blockedPill +
+      '<button class="del" title="Delete task" onclick="delTask(' + t.id + ')">&times;</button>' +
+    '</div>' +
+  '</div>';
+}
+function renderTasks(visible, meta) {
+  var el = document.getElementById('taskList'); if (!el) return;
+  meta = meta || { activeCount: 0 };
+  if (!visible || !visible.length) {
+    if (!token()) { el.innerHTML = '<p style="color:var(--text-muted)">Login to view tasks.</p>'; return; }
+    if (allTasks.length === 0) { el.innerHTML = '<p style="color:var(--text-muted)">No tasks yet. Use "+ New Task" to create one.</p>'; return; }
+    el.innerHTML = meta.activeCount > 0
+      ? '<p style="color:var(--text-muted)">No tasks match — Clear filters</p>'
+      : '';
+    return;
+  }
+  el.innerHTML = visible.map(taskCard).join('');
+}
+function taskFeatures(t, ctx) {
+  var st = String(t.status || '');
+  var done = TaskFilters.inFinished(st);
+  var blocked = st.toLowerCase().indexOf('block') >= 0;
+  var due = t.duedate ? t.duedate.slice(0,10) : null;
+  var overdue = !!due && !done && due < ctx.today;
+  var dueSoon = !!due && !done && due >= ctx.today && due <= ctx.soon;
+  var priorityHigh = /high|urgent/i.test(String(t.priority || ''));
+  var isMine = ctx.myUserId != null && String(t.userid) === String(ctx.myUserId);
+  var blocksOthers = (ctx.items || []).some(function (o) {
+    return String(o.depends_on || '').split(',').indexOf(String(t.id)) >= 0;
+  });
+  return { done: done, blocked: blocked, priorityHigh: priorityHigh, overdue: overdue, dueSoon: dueSoon, isMine: isMine, blocksOthers: blocksOthers };
+}
+var taskFilter = TaskFilters.create({
+  mount: document.getElementById('taskFilterMount') || document.body,
+  getItems: function () { return allTasks; },
+  features: taskFeatures,
+  onApply: renderTasks
+});
 
 function load() {
   var t = token();
@@ -146,23 +224,8 @@ function load() {
   fetch(API + '/api/tasks/', {headers:{'Authorization':'Bearer '+t}})
   .then(r=>r.json())
   .then(tasks => {
-    if (!tasks.length) { document.getElementById('taskList').innerHTML = '<p style="color:var(--text-muted)">No tasks yet. Use "+ New Task" to create one.</p>'; return; }
-    document.getElementById('taskList').innerHTML = tasks.map(t => {
-      var isBlocked = String(t.status || '').toLowerCase().indexOf('block') >= 0;
-      var blockedCls = isBlocked ? ' task-card-blocked' : '';
-      var blockedPill = isBlocked
-        ? '<span class="blocked-pill">⛔ ' + esc(t.status) + '</span>'
-        : '<span class="badge">' + esc(t.status) + '</span>';
-      return '<div class="task-card' + blockedCls + '">' +
-        '<div><strong>' + esc(t.title) + '</strong><br>' +
-        '<span style="color:var(--text-muted);font-size:var(--text-sm)">Case #' + t.caseid +
-        (t.duedate ? ' · Due: ' + t.duedate.slice(0,10) : '') + '</span></div>' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          blockedPill +
-          '<button class="del" title="Delete task" onclick="delTask(' + t.id + ')">&times;</button>' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    allTasks = tasks || [];
+    if (taskFilter) taskFilter.refresh(); else renderTasks(allTasks, { activeCount: 0 });
   })
   .catch(function(){ document.getElementById('taskList').innerHTML = '<p style="color:var(--text-muted)">Failed to load tasks.</p>'; });
 }

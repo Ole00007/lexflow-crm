@@ -57,7 +57,7 @@ r = c.get('/api/gantt/tasks', headers={'Authorization': 'Bearer ' + tok})
 check('endpoint 200', r.status_code == 200)
 rows = {x['id']: x for x in r.get_json()}
 check('required keys present', all({'id','name','start','end','progress','dependencies','custom_class'} <= set(x) for x in rows.values()))
-check('only known keys (core + team/vault/open_flags)', all(set(x) <= {'id','name','start','end','progress','dependencies','custom_class','team','vault','open_flags'} for x in rows.values()))
+check('only known keys (core + team/vault/open_flags + priority/assigned_to_me)', all(set(x) <= {'id','name','start','end','progress','dependencies','custom_class','team','vault','open_flags','priority','assigned_to_me'} for x in rows.values()))
 check('A has no deps', rows[ids['a']]['dependencies'] == '')
 dep = rows[ids['b']]['dependencies'].split(',') if rows[ids['b']]['dependencies'] else []
 check('superadmin sees other workspace (by design) and B deps are deduped', dep == [str(ids['a']), str(ids['f'])])

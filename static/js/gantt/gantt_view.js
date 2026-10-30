@@ -27,7 +27,8 @@
     // Only these keys may appear on a task object. Anything else is a leak and
     // must fail the CT2 field-leakage cross-test.
     // Frappe Gantt consumes: id, name, start, end, progress, dependencies, custom_class
-    whitelist: ['id', 'name', 'start', 'end', 'progress', 'dependencies', 'custom_class'],
+    // + priority / assigned_to_me (shared task filter)
+    whitelist: ['id', 'name', 'start', 'end', 'progress', 'dependencies', 'custom_class', 'team', 'vault', 'open_flags', 'priority', 'assigned_to_me'],
 
     // Mount point + state containers (ids live in templates/gantt.html)
     mountId: 'gantt',
@@ -77,6 +78,56 @@
   function shortName(n) {            // "Elena Romanelli" -> "E.Romanelli"; "Elisa" -> "Elisa"
     var p = String(n || '').trim().split(/\s+/);
     return p.length > 1 ? p[0].charAt(0) + '.' + p[p.length - 1] : (p[0] || '?');
+  }
+
+  /* ── Shared task filter (hide bars + dependency arrows) ─────────────── */
+  var filter = null, currentVisible = null, currentActive = 0, ganttSource = [];
+
+  // Hide a bar-wrapper (and its label/team line) and any arrow whose from/to
+  // end is hidden. Runs after render AND after each view-mode re-render.
+  function applyFilterToDom() {
+    var mount = document.getElementById(GANTT_CONFIG.mountId);
+    if (!mount) return;
+    var visible = currentVisible;          // null = filter not applied yet -> show all
+    var vis = {};
+    if (visible) visible.forEach(function (t) { vis[String(t.id)] = 1; });
+    Array.prototype.forEach.call(mount.querySelectorAll('.bar-wrapper[data-id]'), function (w) {
+      var h = visible != null && vis[String(w.getAttribute('data-id'))] == null;
+      w.classList.toggle('lf-hidden', h);
+    });
+    Array.prototype.forEach.call(mount.querySelectorAll('path[data-from][data-to]'), function (p) {
+      var h = visible != null && (vis[p.getAttribute('data-from')] == null || vis[p.getAttribute('data-to')] == null);
+      p.classList.toggle('lf-hidden', h);
+    });
+    var empty = document.getElementById('gantt-state-filterempty');
+    if (empty) { empty.hidden = !(currentActive > 0 && visible && visible.length === 0); }
+  }
+
+  function ganttFeatures(t, ctx) {
+    var cls = String(t.custom_class || '');
+    var done = (t.progress || 0) >= 100 || cls.indexOf('gantt-status-done') >= 0;
+    var blocked = cls.indexOf('gantt-status-blocked') >= 0;
+    var overdue = cls.indexOf('gantt-status-overdue') >= 0;
+    var due = t.end ? String(t.end).slice(0, 10) : null;
+    var dueSoon = !!due && !done && !overdue && due >= ctx.today && due <= ctx.soon;
+    var priorityHigh = /high|urgent/i.test(String(t.priority || ''));
+    var isMine = !!t.assigned_to_me;
+    var blocksOthers = (ctx.items || []).some(function (o) {
+      return String(o.dependencies || '').split(',').indexOf(String(t.id)) >= 0;
+    });
+    return { done: done, blocked: blocked, priorityHigh: priorityHigh, overdue: overdue, dueSoon: dueSoon, isMine: isMine, blocksOthers: blocksOthers };
+  }
+
+  function createGanttFilter() {
+    if (filter || !window.TaskFilters) return;
+    var mountEl = document.getElementById('ganttFilterMount');
+    if (!mountEl) return;
+    filter = window.TaskFilters.create({
+      mount: mountEl,
+      getItems: function () { return ganttSource; },
+      features: ganttFeatures,
+      onApply: function (visible, m) { currentVisible = visible; currentActive = m ? m.activeCount : 0; applyFilterToDom(); }
+    });
   }
 
   // Fixed-height scroller = the month/week header (sticky) stays glued above the bars
@@ -210,7 +261,6 @@
     var meta = {};
     var droppedMissing = 0;
     var droppedEndBeforeStart = 0;
-
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
 
@@ -243,6 +293,8 @@
       });
     }
 
+    ganttSource = Object.keys(meta).map(function (k) { return meta[k]; });
+
     if (droppedMissing || droppedEndBeforeStart) {
       console.info('LexFlowGantt: dropped ' + droppedMissing +
         ' missing-date, ' + droppedEndBeforeStart + ' end-before-start');
@@ -264,6 +316,7 @@
         var old = document.querySelectorAll('#' + GANTT_CONFIG.mountId + ' .gantt-team');
         Array.prototype.forEach.call(old, function (n) { n.parentNode.removeChild(n); });
         drawTeamLines(meta);
+        applyFilterToDom();
       }
       var opts = Object.assign({}, GANTT_OPTIONS, {
         container_height: chartHeight(valid.length),   // fixed viewport: month/week header stays glued above the bars
@@ -278,6 +331,7 @@
         var el = document.getElementById('gantt-state-' + s);
         if (el) el.hidden = true;
       });
+      if (filter) { filter.refresh(); } else { applyFilterToDom(); }
     } catch (e) {
       console.error('LexFlowGantt: render failed', e);
       setState('error');
@@ -295,6 +349,7 @@
     registerAction: function (a) { if (a && a.label && typeof a.onClick === 'function') actionRegistry.push(a); },
     setState: setState,
     init: function () {
+      createGanttFilter();
       setState('loading');
       return loadTasks().then(function (tasks) {
         if (tasks && tasks.length) { render(tasks); }

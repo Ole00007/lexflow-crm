@@ -5,6 +5,7 @@ Frappe Gantt chart. Workspace-scoped, JWT-protected, and filtered
 per the approved P3 authorization rule.
 
 Response (per task): id, name, start, end, progress, dependencies, custom_class,
+priority, assigned_to_me (bool: task/matter owned or assigned to the caller),
 plus team[] (role-coloured members from the firm Team), vault (superadmin only:
 obsidian_url + docs_api for agents) and open_flags (count of open lawyer flags).
 """
@@ -34,6 +35,21 @@ _STATUS_MAP = {
     'blocked':     (0,   'gantt-status-blocked'),
 }
 _UNKNOWN_STATUS = (0, 'gantt-status-unknown')
+
+
+def _is_mine(task, uid):
+    """Is this task 'mine' for the current user? Same P3 rule used for the
+    read-filter in get_gantt_tasks: the task itself is assigned to me, or it
+    belongs to a matter I own / am assigned to."""
+    if task.userid == uid:
+        return True
+    try:
+        case = task.case
+        if case is not None and (case.ownerid == uid or case.assignedto == uid):
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def _label(task):
@@ -128,6 +144,8 @@ def get_gantt_tasks():
             'progress': progress,
             'dependencies': ','.join(deps),
             'custom_class': custom_class,
+            'priority': task.priority,
+            'assigned_to_me': _is_mine(task, uid),
             'team': extras[task.id]['team'],
             'vault': extras[task.id]['vault'],
             'open_flags': extras[task.id]['open_flags'],
