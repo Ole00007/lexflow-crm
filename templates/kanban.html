@@ -1149,13 +1149,18 @@ function kanbanFeatures(c, ctx) {
   var st = String(c.status || '');
   var done = TaskFilters.inFinished(st);
   var blocked = st.toLowerCase().indexOf('block') >= 0;
+  var code = (/^\s*\[?(T-\d+)\]?/.exec(String(c.title || '')) || [])[1];     /* roadmap card -> agent-bus facts (blocked-by, awaiting Ole) */
+  var bus = (code && _busCache && _busCache[code]) || null;
+  if (bus && (bus.blocked || bus.awaiting_ole)) { blocked = true; }
+  var blocksOthers = !!(code && _busCache && Object.keys(_busCache).some(function (k) {
+    var b = _busCache[k]; return b && (b.blocked_by || []).indexOf(code) >= 0 && !b.done; }));
   var due = c.duedate ? c.duedate.slice(0, 10) : null;
   var overdue = !!due && !done && due < ctx.today;
   var dueSoon = !!due && !done && due >= ctx.today && due <= ctx.soon;
   var priorityHigh = /high|urgent/i.test(String(c.priority || ''));
   var isMine = ctx.myUserId != null &&
     (String(c.assignedto) === String(ctx.myUserId) || String(c.ownerid) === String(ctx.myUserId));
-  return { done: done, blocked: blocked, priorityHigh: priorityHigh, overdue: overdue, dueSoon: dueSoon, isMine: isMine, blocksOthers: false };
+  return { done: done, blocked: blocked, priorityHigh: priorityHigh, overdue: overdue, dueSoon: dueSoon, isMine: isMine, blocksOthers: blocksOthers };
 }
 function kanbanApply(visible) {
   var vis = {};
@@ -1221,7 +1226,7 @@ function decorateBus() {
   if (_busCache) { apply(_busCache); return; }
   fetch('/api/roadmap/bus', { headers: { Authorization: 'Bearer ' + t } })
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (j) { if (j) { _busCache = j; apply(j); } })
+    .then(function (j) { if (j) { _busCache = j; apply(j); if (window.__kanbanFilter) { window.__kanbanFilter.refresh(); } } })
     .catch(function () {});
 }
 

@@ -62,7 +62,9 @@
     if (s.show === 'open' && !!f.done) return false;
     if (s.show === 'blocked' && !f.blocked) return false;
     if (s.show === 'done' && !f.done) return false;
-    if (s.priority && !(f.priorityHigh || f.overdue || f.blocked || f.blocksOthers)) return false;
+    /* "Most critical" = something is actually wrong or at stake: blocked, overdue, or high priority AND (blocks others OR due within 7 days).
+       High priority alone is NOT enough (in real data most tasks are marked high, which would make the filter useless). */
+    if (s.priority && !(f.blocked || f.overdue || (f.priorityHigh && (f.blocksOthers || f.dueSoon)))) return false;
     if (s.due === 'overdue' && !f.overdue) return false;
     if (s.due === 'next7' && !f.dueSoon) return false;
     if (s.assignee === 'mine' && !f.isMine) return false;
