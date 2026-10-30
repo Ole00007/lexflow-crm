@@ -35,10 +35,14 @@
   'use strict';
 
   var KEY = 'lf_task_filter';
-  var DEFAULT = { show: 'all', priority: false, due: null, assignee: 'all' };
+  var DEFAULT = { show: 'all', priority: false, due: null, assignee: 'all',
+                  type: '', from: '', to: '' };
   var FINISHED = { done: 1, closed: 1, completed: 1, archived: 1, resolved: 1 };
 
-  function clone(o) { return { show: o.show, priority: !!o.priority, due: o.due, assignee: o.assignee }; }
+  function clone(o) {
+    return { show: o.show, priority: !!o.priority, due: o.due, assignee: o.assignee,
+             type: o.type || '', from: o.from || '', to: o.to || '' };
+  }
 
   function normalize(o) {
     if (!o || typeof o !== 'object') return clone(DEFAULT);
@@ -47,17 +51,22 @@
     if (o.priority) s.priority = true;
     if (o.due === 'overdue' || o.due === 'next7') s.due = o.due;
     if (o.assignee === 'mine') s.assignee = 'mine';
+    /* calendar-only fields (task views never set them -> stay default/inert) */
+    if (typeof o.type === 'string' && o.type !== '') s.type = o.type;
+    if (typeof o.from === 'string' && o.from !== '') s.from = o.from;
+    if (typeof o.to === 'string' && o.to !== '') s.to = o.to;
     return s;
   }
 
-  function load() {
-    try { return normalize(JSON.parse(localStorage.getItem(KEY))); }
+  function load(key) {
+    try { return normalize(JSON.parse(localStorage.getItem(key || KEY))); }
     catch (e) { return clone(DEFAULT); }
   }
-  function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
+  function save(s, key) { try { localStorage.setItem(key || KEY, JSON.stringify(s)); } catch (e) {} }
 
   function activeCount(s) {
-    return (s.show !== 'all' ? 1 : 0) + (s.priority ? 1 : 0) + (s.due ? 1 : 0) + (s.assignee === 'mine' ? 1 : 0);
+    return (s.show !== 'all' ? 1 : 0) + (s.priority ? 1 : 0) + (s.due ? 1 : 0) + (s.assignee === 'mine' ? 1 : 0)
+      + (s.type !== '' ? 1 : 0) + (s.from !== '' ? 1 : 0) + (s.to !== '' ? 1 : 0);
   }
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -75,6 +84,14 @@
     if (s.due === 'overdue' && !f.overdue) return false;
     if (s.due === 'next7' && !f.dueSoon) return false;
     if (s.assignee === 'mine' && !f.isMine) return false;
+    /* calendar extensions (inert for task views: state.type/from/to stay '') */
+    if (s.type !== '' && f.type !== s.type) return false;
+    if (s.from !== '' || s.to !== '') {
+      var k = f.date || '';
+      if (!k) return false;
+      if (s.from !== '' && k < s.from) return false;
+      if (s.to !== '' && k > s.to) return false;
+    }
     return true;
   }
 
@@ -98,8 +115,16 @@
         typeof options.features !== 'function' || typeof options.onApply !== 'function') return null;
 
     var mount = options.mount || document.body;
-    var state = load();
+    var storageKey = options.key || KEY;          /* calendar uses its own key */
+    var state = load(storageKey);
     if (options.hideDue) state.due = null;   // A1: Due group is not offered — never carry a Due filter that cannot work
+    /* calendar-only additions (all optional — the four task views pass none of these) */
+    var showKeys = options.showChips || ['all', 'open', 'blocked', 'done'];
+    var chipLabels = options.chipLabels || {};
+    var typeChipsFn = (typeof options.typeChips === 'function') ? options.typeChips : null;
+    var dateRange = !!options.dateRange;
+    var hideAssignee = !!options.hideAssignee;
+    var panelTitle = options.title || 'Filter tasks';
     var myUserId = null, meLoaded = false;
     var open = false;
 
@@ -133,9 +158,53 @@
       });
     }
 
+    /* Count, for every type chip, how many items it would show once chosen
+       (removing the *type* filter but keeping every other active filter), so a
+       chip that would yield 0 renders a visible disabled hint "(0)". */
+    function countByType() {
+      if (!typeChipsFn || !typeGroup) return {};
+      var items = options.getItems() || [];
+      var now = new Date();
+      var today = dstr(now);
+      var soon = dstr(new Date(now.getTime() + 7 * 86400000));
+      var choices = typeChipsFn(items);
+      var byKey = {};
+      items.forEach(function (it) {
+        var f = options.features(it, { items: items, myUserId: myUserId, today: today, soon: soon, now: now }) || {};
+        choices.forEach(function (ch) {
+          if (byKey[ch.key] === undefined) byKey[ch.key] = 0;
+          var tmp = clone(state); tmp.type = ch.key;
+          if (matches(tmp, f, today, soon)) byKey[ch.key]++;
+        });
+      });
+      return byKey;
+    }
+
+    /* Rebuild the dynamic type-chip group (labels + live "(N)" counts). */
+    function renderTypeChips() {
+      if (!typeChipsFn || !typeGroup) return;
+      while (typeGroup.firstChild) typeGroup.removeChild(typeGroup.firstChild);
+      var items = options.getItems() || [];
+      var choices = typeChipsFn(items);
+      var counts = countByType();
+      choices.forEach(function (ch) {
+        var n = counts[ch.key] === undefined ? 0 : counts[ch.key];
+        var c = el('button', 'lf-chip' + (n === 0 && state.type !== ch.key ? ' lf-chip--empty' : ''), ch.label);
+        c.type = 'button';
+        c.setAttribute('aria-pressed', state.type === ch.key ? 'true' : 'false');
+        if (n === 0 && state.type !== ch.key) c.setAttribute('disabled', '');
+        var ct = el('span', 'lf-chip-count', '(' + n + ')');
+        ct.setAttribute('aria-hidden', 'true');
+        c.appendChild(ct);
+        c.addEventListener('click', function () { state.type = (state.type === ch.key) ? '' : ch.key; sync(); });
+        typeGroup.appendChild(c);
+      });
+    }
+
     function apply() {
-      save(state);
+      save(state, storageKey);
       updateBadge();
+      renderTypeChips();   /* calendar: keep live per-type counts next to each chip */
       var visible = compute();
       var total = (options.getItems() || []).length;
       var meta = { state: clone(state), activeCount: activeCount(state), total: total, shown: visible.length };
@@ -170,6 +239,9 @@
       priChip.setAttribute('aria-pressed', state.priority ? 'true' : 'false');
       Object.keys(dueChips).forEach(function (k) { dueChips[k].setAttribute('aria-pressed', state.due === k ? 'true' : 'false'); });
       Object.keys(asgChips).forEach(function (k) { asgChips[k].setAttribute('aria-pressed', state.assignee === k ? 'true' : 'false'); });
+      /* calendar-only controls */
+      if (dateFrom && String(dateFrom.value) !== String(state.from)) dateFrom.value = state.from || '';
+      if (dateTo && String(dateTo.value) !== String(state.to)) dateTo.value = state.to || '';
       apply();
     }
 
@@ -191,10 +263,10 @@
 
     var panel = el('div', 'lf-filter-panel');
     panel.setAttribute('role', 'group');
-    panel.setAttribute('aria-label', 'Filter tasks');
+    panel.setAttribute('aria-label', panelTitle);
 
     var head = el('div', 'lf-filter-head');
-    head.appendChild(el('span', null, 'Filter tasks'));
+    head.appendChild(el('span', null, panelTitle));
     var clearBtn = el('button', 'lf-filter-clear', 'Clear');
     clearBtn.type = 'button';
     head.appendChild(clearBtn);
@@ -215,18 +287,30 @@
       return c;
     }
 
+    /* dynamic Event-type chips group (calendar only) — built from the REAL
+       types present in the loaded items each apply, with live "(N)" counts */
+    var typeGroup = null;
+    if (typeChipsFn) {
+      var typeG = group((options.typeLabel) || 'Event type');
+      typeGroup = typeG.chips;
+      panel.appendChild(typeG.wrap);
+    }
+
     var showG = group('Show');
     var showChips = {};
-    ['all', 'open', 'blocked', 'done'].forEach(function (k) {
-      var c = chip({ all: 'All', open: 'Open', blocked: 'Blocked', done: 'Done' }[k], state.show === k);
+    var SHOW_LABELS = { all: 'All', open: 'Open', blocked: 'Blocked', done: 'Done' };
+    showKeys.forEach(function (k) {
+      var c = chip(chipLabels[k] || SHOW_LABELS[k], state.show === k);
       c.addEventListener('click', function () { state.show = k; sync(); });
       showChips[k] = c; showG.chips.appendChild(c);
     });
+    panel.appendChild(showG.wrap);
 
     var priG = group('Priority');
     var priChip = chip('Most critical', !!state.priority);
     priChip.addEventListener('click', function () { state.priority = !state.priority; sync(); });
     priG.chips.appendChild(priChip);
+    panel.appendChild(priG.wrap);
 
     var dueG = group('Due');
     var dueChips = {};
@@ -237,19 +321,46 @@
         dueChips[k] = c; dueG.chips.appendChild(c);
       });
       dueG.wrap.classList.add('lf-group-due');
-    } else {
-      dueG.wrap.style.display = 'none';
+      panel.appendChild(dueG.wrap);
     }
 
-    var asgG = group('Assignee');
-    var asgChips = {};
-    ['all', 'mine'].forEach(function (k) {
-      var c = chip({ all: 'All', mine: 'Mine' }[k], state.assignee === k);
-      c.addEventListener('click', function () { state.assignee = k; sync(); });
-      asgChips[k] = c; asgG.chips.appendChild(c);
-    });
+    /* calendar date range (From / To) — applies instantly on change */
+    var dateFrom = null, dateTo = null;
+    if (dateRange) {
+      var dateG = group('Date range');
+      function dateInput(cls, val) {
+        var inp = el('input', cls);
+        inp.type = 'date';
+        inp.setAttribute('aria-label', cls.indexOf('lf-date-to') >= 0 ? 'To date' : 'From date');
+        inp.value = val || '';
+        return inp;
+      }
+      var dates = el('div', 'lf-dates');
+      dateFrom = dateInput('lf-date-input lf-date-from', state.from || '');
+      dateTo = dateInput('lf-date-input lf-date-to', state.to || '');
+      dateFrom.addEventListener('change', function () { state.from = dateFrom.value || ''; sync(); });
+      dateTo.addEventListener('change', function () { state.to = dateTo.value || ''; sync(); });
+      dates.appendChild(dateFrom);
+      dates.appendChild(el('span', 'lf-date-sep', '—'));
+      dates.appendChild(dateTo);
+      var clearDates = el('button', 'lf-filter-clear lf-date-clear', 'Clear');
+      clearDates.type = 'button';
+      clearDates.addEventListener('click', function () { state.from = ''; state.to = ''; sync(); });
+      dates.appendChild(clearDates);
+      dateG.chips.appendChild(dates);
+      panel.appendChild(dateG.wrap);
+    }
 
-    [showG.wrap, priG.wrap, dueG.wrap, asgG.wrap].forEach(function (g) { panel.appendChild(g); });
+    if (!hideAssignee) {
+      var asgG = group('Assignee');
+      var asgChips = {};
+      ['all', 'mine'].forEach(function (k) {
+        var c = chip({ all: 'All', mine: 'Mine' }[k], state.assignee === k);
+        c.addEventListener('click', function () { state.assignee = k; sync(); });
+        asgChips[k] = c; asgG.chips.appendChild(c);
+      });
+      panel.appendChild(asgG.wrap);
+    }
 
     /* A4 — always-visible active-filter banner (slim pill next to the toolbar) */
     var banner = el('div', 'lf-banner');
@@ -258,7 +369,7 @@
     banner.style.display = 'none';
 
     /* ── Interaction ─────────────────────────────────────────────────── */
-    function doClear() { state = clone(DEFAULT); save(state); sync(); }
+    function doClear() { state = clone(DEFAULT); save(state, storageKey); sync(); }
     function toggle() { open = !open; panel.classList.toggle('open', open); updateBadge(); }
     function close() { open = false; panel.classList.remove('open'); updateBadge(); }
 
@@ -298,6 +409,8 @@
     DEFAULT: clone(DEFAULT),
     KEY: KEY,
     inFinished: inFinished,
+    /* pure predicate — exposed for headless JS-level tests (no server/browser needed) */
+    matchesState: matches,
     /* A4 — wipe the persisted filter (call on login & logout so the next
        session never inherits a stale filter a user mistook for lost data). */
     resetStorage: function () { try { localStorage.removeItem(KEY); } catch (e) {} }

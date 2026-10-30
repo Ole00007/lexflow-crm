@@ -55,25 +55,36 @@ def test_calendar_server_filters_by_type_and_range(client, superadmin_headers):
 
 
 def test_calendar_client_wiring_matches_grid_and_list():
-    """The client-side predicate + banner must be present and applied in both
-    the grid (month/week/day) and the list, so no view ignores the filters."""
+    """The shared \"Filter ▾\" dropdown (window.TaskFilters) must be wired up so a
+    single client-side predicate drives BOTH the grid (month/week/day) AND the
+    list, every choice applies instantly, and the banner is the component's."""
     assert CAL.exists(), f"missing {CAL}"
     src = CAL.read_text(encoding="utf-8")
 
-    # Shared client-side predicate exists
-    assert "function calMatches(e)" in src
-    assert "function calType()" in src
-    assert "params.push('event_type='+ft)" in src  # grid narrows server fetch by type
-    assert "GridState.events = all.filter(calMatches)" in src  # grid applies client filter
+    # Shared component is loaded and mounted; the OLD controls are gone
+    assert "js/filters/task_filters.js" in src
+    assert 'id="calFilterMount"' in src
+    # calendar keeps its own persisted key (state survives reloads like other views)
+    assert "key: 'lf_calendar_filter'" in src
+    assert "window.TaskFilters.create" in src
 
-    # Both the list and the grid apply the SAME predicate
-    assert "calMatchesAll(all)" in src                      # list path
-    assert "GridState.events = all.filter(calMatches)" in src
+    # The bare apply-button + select + date inputs that did nothing are removed
+    assert 'id="filterType"' not in src
+    assert 'id="filterFrom"' not in src
+    assert 'id="filterTo"' not in src
+    assert "calFilterBanner" not in src
 
-    # A4 always-visible banner is mounted and cleared from the same controls
-    assert 'id="calFilterBanner"' in src
-    assert "function updateCalBanner" in src
-    assert "function clearCalFilters" in src
+    # Panel groups the calendar needs, all applying instantly (no apply button)
+    assert "typeChips: calTypeChips" in src           # real types present in events
+    assert "dateRange: true" in src                    # From / To
+    assert "showChips: ['all', 'open']" in src         # All + "Open only"
+    assert "'Open only'" in src
+    assert 'onApply: calRender' in src                 # re-renders grid + list instantly
 
-    # The Filter button still re-runs both list + grid (existing onclick kept)
-    assert 'loadEvents(); gridRefresh()' in src
+    # Both the list path and the grid path push loaded events into the SAME
+    # filter model, so a type choice changes the rendered count in every view.
+    assert "mergeItems(all || []); calFilterRefresh()" in src   # list path
+    assert "mergeItems(events || []); calFilterRefresh()" in src  # grid (loadGrid) path
+    assert "function calRender(visible, meta)" in src
+    assert "GridState.events = visible || []" in src   # grid renders filtered subset
+    assert "el.innerHTML = visible.map(eventCardHTML).join('')" in src   # list renders filtered subset
