@@ -538,6 +538,10 @@ html[data-theme="dark"] {
 .lf-filter-clear{background:none;border:none;color:var(--accent);font-size:.78rem;font-weight:600;cursor:pointer;padding:2px}
 .lf-filter-clear:hover{color:var(--accent-h);text-decoration:underline}
 .lf-group{margin-bottom:12px}.lf-group:last-child{margin-bottom:0}
+.lf-banner{display:none;align-items:center;gap:6px;font-size:.74rem;color:var(--accent-h,var(--accent));background:var(--accent-glow,color-mix(in srgb,var(--accent) 12%,transparent));border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.lf-banner b{font-weight:700}
+.lf-banner-clear{background:none;border:none;color:var(--accent-h,var(--accent));font-weight:700;font-size:.74rem;cursor:pointer;padding:2px 2px 2px 6px;border-left:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.lf-banner-clear:hover{text-decoration:underline}
 .lf-group-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint,#7E90A9);margin-bottom:6px}
 .lf-chips{display:flex;flex-wrap:wrap;gap:6px}
 .lf-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface-2);color:var(--text-muted);font-size:.8rem;cursor:pointer;user-select:none}

@@ -260,6 +260,13 @@ header {
 }
 
 /* ── Board ─────────────────────────────────────────────────────── */
+.board-bay {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .board {
   display: flex;
   gap: 14px;
@@ -267,6 +274,55 @@ header {
   flex: 1;
   overflow-x: auto;
   align-items: flex-start;
+}
+
+/* A2(i) — ALWAYS-VISIBLE horizontal scrollbar on the board (like the Gantt one).
+   macOS overlay scrollbars stay hidden until scrolled; forcing a styled thumb
+   keeps the far columns ("To Verify", …) visibly reachable. */
+.board { scrollbar-width: thin; scrollbar-color: var(--text-faint, #7E90A9) transparent; }
+.board::-webkit-scrollbar { height: 12px; }
+.board::-webkit-scrollbar-track { background: var(--surface, #151B2B); }
+.board::-webkit-scrollbar-thumb { background: var(--text-faint, #7E90A9); border-radius: 6px; border: 2px solid var(--surface, #151B2B); }
+.board::-webkit-scrollbar-thumb:hover { background: var(--accent-h); }
+
+/* A2(ii) — click-and-drag background pan (Graph-style grab cursor) */
+.board { cursor: grab; touch-action: pan-x pan-y; }
+.board.board-panning { cursor: grabbing; }
+.board .column { cursor: default; }
+
+/* A2(iii) — subtle right-edge fade as a scroll hint (hidden when at the far end) */
+.board-fade {
+  position: absolute; top: 8px; right: 0; bottom: 8px;
+  width: 28px; pointer-events: none;
+  background: linear-gradient(to left, var(--surface, #151B2B), transparent);
+  opacity: .85;
+  transition: opacity .2s ease;
+  z-index: 4;
+}
+.board-bay.at-end .board-fade { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .board-fade { transition: none; } }
+
+/* A1(ii) — board-level "No matters match — Clear filters" */
+.board-empty {
+  position: absolute; inset: 0;
+  align-items: center; justify-content: center; gap: 10px;
+  z-index: 6; padding: 20px; text-align: center;
+  background: color-mix(in srgb, var(--bg, #0E1117) 55%, transparent);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius-md);
+  font-size: .88rem; color: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) { .board-empty { backdrop-filter: none; } }
+
+/* A1(ii) — column-level "No matches" when a filter hides every card in a column */
+.no-match {
+  color: var(--text-faint);
+  font-size: .78rem;
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  margin: 2px 0;
 }
 
 .column {
@@ -685,6 +741,11 @@ header {
 @media (max-width:480px){
 .lf-filter-panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;min-width:0;border-radius:var(--radius-lg,16px) var(--radius-lg,16px) 0 0;border-bottom:none;box-shadow:0 -8px 30px rgba(0,0,0,.45);padding:14px}
 }
+/* A4 — always-visible active-filter banner (slim pill next to the toolbar) */
+.lf-banner{display:none;align-items:center;gap:6px;font-size:.74rem;color:var(--accent-h,var(--accent));background:var(--accent-glow,color-mix(in srgb,var(--accent) 12%,transparent));border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.lf-banner b{font-weight:700}
+.lf-banner-clear{background:none;border:none;color:var(--accent-h,var(--accent));font-weight:700;font-size:.74rem;cursor:pointer;padding:2px 2px 2px 6px;border-left:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.lf-banner-clear:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -734,7 +795,8 @@ header {
   <div class="lf-filter" id="kanbanFilterMount"></div>
   <span id="secureWsLabel" class="secure-ws-chip" style="display:none"></span>
 </div>
-<div class="board" id="board">
+<div class="board-bay" id="boardBay">
+  <div class="board" id="board">
   <div class="column" data-status="Intake">
     <div class="col-header">
       <h3>Intake</h3>
@@ -791,6 +853,9 @@ header {
     </div>
     <div class="card-list" id="list-Closed"></div>
   </div>
+  </div>
+  <div class="board-fade" id="boardFade" aria-hidden="true"></div>
+  <div class="board-empty" id="boardEmpty" role="status" style="display:none"></div>
 </div>
 
 <!-- ── Add Case Modal ──────────────────────────────────────────── -->
@@ -991,13 +1056,16 @@ function onLoginSuccess(data) {
   document.getElementById('loginBtn').disabled = false;
   document.getElementById('loginBtn').textContent = 'Login';
 
-  createKanbanFilter();
-  loadCases();
+  // A4 — reset any persisted filter on login (fresh session)
+  if (window.TaskFilters) window.TaskFilters.resetStorage();
+  loadCases().then(initKanbanFilter);
   toast('Welcome, ' + (u.email ? u.email.split('@')[0] : 'user') + '!', 'success');
 }
 
 function handleLogout() {
   localStorage.removeItem('jwt');
+  // A4 — reset any persisted filter on logout so the next login starts clean
+  if (window.TaskFilters) window.TaskFilters.resetStorage();
   allCases = [];
   document.getElementById('loggedInControls').style.display = 'none';
   document.getElementById('loginForm').style.display = 'flex';
@@ -1043,7 +1111,7 @@ function loadCases() {
   if (!t) {
     document.getElementById('loggedInControls').style.display = 'none';
     document.getElementById('loginForm').style.display = 'flex';
-    return;
+    return Promise.resolve([]);
   }
 
   showSkeletons();
@@ -1057,7 +1125,7 @@ function loadCases() {
     });
   });
 
-  Promise.all(promises)
+  return Promise.all(promises)
     .then(function(results) {
       allCases = [];
       results.forEach(function(r) {
@@ -1065,8 +1133,9 @@ function loadCases() {
         renderColumn(r.status, r.cases);
       });
       if (window.__kanbanFilter) window.__kanbanFilter.refresh();
+      return allCases;
     })
-    .catch(function(e) { toast('Failed to load cases: ' + e.message, 'error'); });
+    .catch(function(e) { toast('Failed to load cases: ' + e.message, 'error'); return allCases; });
 }
 
 /* Populate the New Task contact picker from /api/contacts (same pattern as
@@ -1144,7 +1213,50 @@ function cardHTML(c) {
 
 /* ═══════════════════════════════════════════════════════════════
    Shared task filter (kanban = hide cards, keep column counts)
+   A1: derive a matter's due from its earliest open linked task
+   (via /api/tasks, keyed by caseid) when the matter itself has no
+   duedate; if NOTHING has any due info, the Due group is hidden
+   (createKanbanFilter passes hideDue:true) so the board never goes
+   blank from a filter that cannot work.
    ═══════════════════════════════════════════════════════════════ */
+var _taskDueByCase = {};   /* caseid -> effective matter due (YYYY-MM-DD) */
+var _dueAvailable = false; /* any matter has a computable due? */
+function effectiveDue(c) {
+  if (c && c.duedate) return String(c.duedate).slice(0, 10);
+  if (!c) return null;
+  return _taskDueByCase[String(c.id)] || null;
+}
+/* Load /api/tasks once and compute, per matter, the EARLIEST due among its
+   open (not finished) tasks. Called before createKanbanFilter so the Due
+   group's availability is known up-front. */
+function loadTaskDues(done) {
+  done = done || function () {};
+  var t = token(); if (!t) { done(false); return; }
+  fetch(API + '/api/tasks/', { headers: { 'Authorization': 'Bearer ' + t } })
+    .then(function (r) { return r.ok ? r.json() : []; })
+    .then(function (tasks) {
+      var map = {}; var avail = false;
+      (tasks || []).forEach(function (tk) {
+        if (TaskFilters.inFinished(tk.status)) return;              /* open only */
+        if (!tk.duedate) return;
+        var d = String(tk.duedate).slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}/.test(d)) return;
+        var k = String(tk.caseid || '');
+        if (!k) return;
+        if (!map[k] || d < map[k]) map[k] = d;                     /* earliest */
+        avail = true;
+      });
+      _taskDueByCase = map;
+      /* A matter counts as "can" even if only its own duedate set */
+      (allCases || []).forEach(function (c) {
+        if (c.duedate) { avail = true; }
+      });
+      _dueAvailable = avail;
+      done(avail);
+    })
+    .catch(function () { _dueAvailable = allCases.some(function (c) { return !!c.duedate; }); done(_dueAvailable); });
+}
+
 function kanbanFeatures(c, ctx) {
   var st = String(c.status || '');
   var done = TaskFilters.inFinished(st);
@@ -1154,7 +1266,7 @@ function kanbanFeatures(c, ctx) {
   if (bus && (bus.blocked || bus.awaiting_ole)) { blocked = true; }
   var blocksOthers = !!(code && _busCache && Object.keys(_busCache).some(function (k) {
     var b = _busCache[k]; return b && (b.blocked_by || []).indexOf(code) >= 0 && !b.done; }));
-  var due = c.duedate ? c.duedate.slice(0, 10) : null;
+  var due = effectiveDue(c);
   var overdue = !!due && !done && due < ctx.today;
   var dueSoon = !!due && !done && due >= ctx.today && due <= ctx.soon;
   var priorityHigh = /high|urgent/i.test(String(c.priority || ''));
@@ -1162,21 +1274,56 @@ function kanbanFeatures(c, ctx) {
     (String(c.assignedto) === String(ctx.myUserId) || String(c.ownerid) === String(ctx.myUserId));
   return { done: done, blocked: blocked, priorityHigh: priorityHigh, overdue: overdue, dueSoon: dueSoon, isMine: isMine, blocksOthers: blocksOthers };
 }
-function kanbanApply(visible) {
+function kanbanApply(visible, meta) {
+  var active = meta && meta.activeCount > 0;
   var vis = {};
   (visible || []).forEach(function (c) { vis[String(c.id)] = 1; });
+  var anyHidden = false, anyShown = 0;
   STATUSES.forEach(function (status) {
     var list = document.getElementById('list-' + status);
     if (!list) return;
     var countEl = document.getElementById('count-' + status);
+    var cards = Array.prototype.slice.call(list.querySelectorAll('.card'));
+    var total = cards.length;
     var shown = 0;
-    Array.prototype.forEach.call(list.querySelectorAll('.card'), function (card) {
-      var show = vis[String(card.getAttribute('data-id'))] != null;
+    cards.forEach(function (card) {
+      var show = !active || vis[String(card.getAttribute('data-id'))] != null;
       card.classList.toggle('lf-hidden', !show);
-      if (show) shown++;
+      if (show) { shown++; anyShown++; }
     });
-    if (countEl) countEl.textContent = String(shown);
+    if (total > 0 && shown < total) anyHidden = true;
+    /* A1(ii): column count = visible (already) AND "N of M" when filtered */
+    if (countEl) countEl.textContent = active && total ? (shown + ' of ' + total) : String(total);
+    /* A1(ii): when the filter has hidden every card in a column, show
+       "No matches" instead of the stale lanes + blocked header. */
+    var noMatch = list.querySelector('.no-match');
+    var showNoMatch = active && total > 0 && shown === 0;
+    if (showNoMatch && !noMatch) {
+      noMatch = document.createElement('div');
+      noMatch.className = 'no-match';
+      noMatch.textContent = 'No matches';
+      list.appendChild(noMatch);
+    }
+    if (noMatch) noMatch.style.display = showNoMatch ? 'block' : 'none';
+    var laneHead = list.querySelector(':scope > .lane-head');
+    if (laneHead && showNoMatch) laneHead.style.display = 'none';
+    else if (laneHead) laneHead.style.display = '';
   });
+  /* A1(ii): board-level empty state when the filter matches nothing. */
+  var be = document.getElementById('boardEmpty');
+  if (be) {
+    var showBoardEmpty = active && anyShown === 0 && allCases.length > 0;
+    if (showBoardEmpty) {
+      be.style.display = 'flex';
+      be.innerHTML = 'No matters match '
+        + (meta && meta.total ? '— showing 0 of ' + meta.total + '' : '')
+        + ' <button type="button" id="clearFiltersBtn" class="btn btn-ghost" style="font-size:.78rem;padding:4px 10px">Clear filters</button>';
+      var cb = document.getElementById('clearFiltersBtn');
+      if (cb && !cb._wired) { cb._wired = true; cb.addEventListener('click', function () { if (window.__kanbanFilter) window.__kanbanFilter.reset(); }); }
+    } else {
+      be.style.display = 'none';
+    }
+  }
 }
 function createKanbanFilter() {
   if (window.__kanbanFilter) return window.__kanbanFilter;
@@ -1184,9 +1331,17 @@ function createKanbanFilter() {
     mount: document.getElementById('kanbanFilterMount') || document.getElementById('board') || document.body,
     getItems: function () { return allCases; },
     features: kanbanFeatures,
+    /* A1: hide Due when no matter has a computable due (own or from tasks) */
+    hideDue: !_dueAvailable,
     onApply: kanbanApply
   });
   return window.__kanbanFilter;
+}
+function initKanbanFilter() {
+  loadTaskDues(function () {
+    createKanbanFilter();
+    if (window.__kanbanFilter) window.__kanbanFilter.refresh();
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1422,6 +1577,57 @@ document.addEventListener('keydown', function(e) {
     }
   }
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   A2 — horizontal reach on the board
+   (i)  always-visible scrollbar          → CSS (see .board::-webkit-scrollbar)
+   (ii) click-and-drag background panning → pointer events below (grab cursor,
+        only from the empty background / between columns — never when a card
+        is being dragged; cards keep their own HTML5 dragstart)
+   (iii) subtle right-edge fade (scroll hint) → .board-bay.at-end toggles off
+   Must still fit 390px (touch scroll) — the board keeps overflow-x:auto so
+   touch swipes pan it natively.
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+  var bay = document.getElementById('boardBay');
+  var board = document.getElementById('board');
+  var fade = document.getElementById('boardFade');
+  if (!bay || !board) return;
+
+  function updateFade() {
+    if (fade && Math.abs(board.scrollWidth - board.clientWidth - board.scrollLeft) < 2) {
+      bay.classList.add('at-end');
+    } else if (fade) {
+      bay.classList.remove('at-end');
+    }
+  }
+  board.addEventListener('scroll', updateFade, { passive: true });
+  window.addEventListener('resize', updateFade);
+
+  /* Pointer-based background pan (Graph-style). */
+  var pan = null;
+  function isCardOrControl(t) { return t.closest && (t.closest('.card') || t.closest('.col-header') || t.closest('.lf-filter')); }
+  board.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0) return;
+    if (isCardOrControl(e.target)) return;              // cards use their own HTML5 drag
+    pan = { x: e.clientX, left: board.scrollLeft, y: e.clientY, top: board.scrollTop };
+    board.classList.add('board-panning');
+    try { board.setPointerCapture(e.pointerId); } catch (err) {}
+    e.preventDefault();
+  });
+  board.addEventListener('pointermove', function (e) {
+    if (!pan) return;
+    board.scrollLeft = pan.left - (e.clientX - pan.x);
+    board.scrollTop  = pan.top  - (e.clientY - pan.y);
+    updateFade();
+  });
+  function endPan() { if (pan) { pan = null; board.classList.remove('board-panning'); } }
+  board.addEventListener('pointerup', endPan);
+  board.addEventListener('pointercancel', endPan);
+  board.addEventListener('pointerleave', endPan);
+  // Guard against the pointer capture keeping pointerleave from firing
+  document.addEventListener('pointerup', function () { board.classList.remove('board-panning'); });
+})();
 
 /* ═══════════════════════════════════════════════════════════════
    Init

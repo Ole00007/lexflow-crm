@@ -9,9 +9,12 @@
  *     tasks -> kanban -> gantt -> graph)
  *   - the compact "Filter ▾" button + dropdown panel (click-outside / Esc
  *     closes, aria-expanded, count badge, a Clear link)
- *   - the filter MATCHING logic (each view only supplies per-item features)
+  *   - the filter MATCHING logic (each view only supplies per-item features)
  *   - responsive + accessibility behaviour (390 px bottom-sheet, keyboard,
  *     dark-theme contrast via the page's own design tokens)
+ *   - an always-visible "Filters on — N — Showing X of Y — Clear" banner that
+ *     appears next to the toolbar whenever any filter is active (A4), so a
+ *     persisted filter is never an invisible state
  *
  * Each view calls TaskFilters.create({ ... }) with:
  *   mount       Element  — toolbar/root the Filter button is appended into
@@ -20,7 +23,11 @@
  *                              isMine, blocksOthers }
  *     ctx = { items, myUserId, today, soon, now }  (today/soon = YYYY-MM-DD)
  *   onApply(visible, meta) — view renders/hides from the matching subset
- *     meta = { state, activeCount }
+ *     meta = { state, activeCount, total, shown }
+ *   hideDue     bool       — NEW: hide the "Due" group entirely (A1). Views
+ *                            whose items have no due info (e.g. kanban matters
+ *                            without dates) pass true so "Due" is not offered
+ *                            when it cannot work.
  *
  * The component itself never touches DOM specific to a view.
  * ========================================================================== */
@@ -78,12 +85,21 @@
     return e;
   }
 
+  /* A4 — always-visible active-filter banner ("Filters on — N — Showing X of Y — Clear").
+     Rendered as a slim pill next to the toolbar; hidden when no filter is active. */
+  function bannerHTML(state, total, shown) {
+    var n = activeCount(state);
+    if (!n) return '';
+    return 'Filters on — <b>' + n + '</b> — Showing <b>' + shown + '</b> of <b>' + total + '</b>';
+  }
+
   function create(options) {
     if (!options || typeof options.getItems !== 'function' ||
         typeof options.features !== 'function' || typeof options.onApply !== 'function') return null;
 
     var mount = options.mount || document.body;
     var state = load();
+    if (options.hideDue) state.due = null;   // A1: Due group is not offered — never carry a Due filter that cannot work
     var myUserId = null, meLoaded = false;
     var open = false;
 
@@ -121,7 +137,21 @@
       save(state);
       updateBadge();
       var visible = compute();
-      options.onApply(visible, { state: clone(state), activeCount: activeCount(state) });
+      var total = (options.getItems() || []).length;
+      var meta = { state: clone(state), activeCount: activeCount(state), total: total, shown: visible.length };
+      options.onApply(visible, meta);
+      updateBanner(meta);
+    }
+
+    function updateBanner(meta) {
+      if (!banner) return;
+      if (meta.activeCount > 0) {
+        banner.style.display = 'inline-flex';
+        banner.innerHTML = bannerHTML(meta.state, typeof meta.total === 'number' ? meta.total : 0, typeof meta.shown === 'number' ? meta.shown : 0)
+          + ' <button type="button" class="lf-banner-clear" aria-label="Clear filters">Clear</button>';
+      } else {
+        banner.style.display = 'none';
+      }
     }
 
     /* Re-run against the server's latest items (each view calls this after a
@@ -145,6 +175,7 @@
 
     /* ── Build the UI ─────────────────────────────────────────────────── */
     var root = el('div', 'lf-filter');
+    var hideDue = !!(options.hideDue);
 
     var btn = el('button', 'lf-filter-btn');
     btn.type = 'button';
@@ -199,11 +230,16 @@
 
     var dueG = group('Due');
     var dueChips = {};
-    ['overdue', 'next7'].forEach(function (k) {
-      var c = chip({ overdue: 'Overdue', next7: 'Next 7 days' }[k], state.due === k);
-      c.addEventListener('click', function () { state.due = (state.due === k) ? null : k; sync(); });
-      dueChips[k] = c; dueG.chips.appendChild(c);
-    });
+    if (!hideDue) {
+      ['overdue', 'next7'].forEach(function (k) {
+        var c = chip({ overdue: 'Overdue', next7: 'Next 7 days' }[k], state.due === k);
+        c.addEventListener('click', function () { state.due = (state.due === k) ? null : k; sync(); });
+        dueChips[k] = c; dueG.chips.appendChild(c);
+      });
+      dueG.wrap.classList.add('lf-group-due');
+    } else {
+      dueG.wrap.style.display = 'none';
+    }
 
     var asgG = group('Assignee');
     var asgChips = {};
@@ -215,12 +251,22 @@
 
     [showG.wrap, priG.wrap, dueG.wrap, asgG.wrap].forEach(function (g) { panel.appendChild(g); });
 
+    /* A4 — always-visible active-filter banner (slim pill next to the toolbar) */
+    var banner = el('div', 'lf-banner');
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
+    banner.style.display = 'none';
+
     /* ── Interaction ─────────────────────────────────────────────────── */
+    function doClear() { state = clone(DEFAULT); save(state); sync(); }
     function toggle() { open = !open; panel.classList.toggle('open', open); updateBadge(); }
     function close() { open = false; panel.classList.remove('open'); updateBadge(); }
 
     btn.addEventListener('click', function (ev) { ev.stopPropagation(); toggle(); });
-    clearBtn.addEventListener('click', function () { state = clone(DEFAULT); save(state); sync(); });
+    clearBtn.addEventListener('click', function () { doClear(); });
+    banner.addEventListener('click', function (ev) {
+      if (ev.target && ev.target.classList && ev.target.classList.contains('lf-banner-clear')) doClear();
+    });
     document.addEventListener('click', function (e) { if (open && !root.contains(e.target)) close(); });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && open) { e.stopPropagation(); close(); btn.focus(); }
@@ -229,6 +275,7 @@
     btn.setAttribute('aria-controls', panel.id);
     root.appendChild(btn);
     root.appendChild(panel);
+    root.appendChild(banner);
     mount.appendChild(root);
 
     updateBadge();
@@ -239,7 +286,9 @@
       refresh: refresh,
       apply: apply,
       close: close,
-      activeCount: function () { return activeCount(state); }
+      activeCount: function () { return activeCount(state); },
+      /* A4 — programmatic clear (used by the banner Clear and by logout/login reset) */
+      reset: doClear
     };
   }
 
@@ -248,6 +297,9 @@
     FINISHED: FINISHED,
     DEFAULT: clone(DEFAULT),
     KEY: KEY,
-    inFinished: inFinished
+    inFinished: inFinished,
+    /* A4 — wipe the persisted filter (call on login & logout so the next
+       session never inherits a stale filter a user mistook for lost data). */
+    resetStorage: function () { try { localStorage.removeItem(KEY); } catch (e) {} }
   };
 })();

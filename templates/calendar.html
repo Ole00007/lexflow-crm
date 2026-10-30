@@ -3,6 +3,11 @@
 {% block content %}
 <style>
   /* ===== Google-style calendar grid (scoped; uses base.html CSS vars) ===== */
+  /* A4 — always-visible active-filter banner (slim pill next to the toolbar) */
+  .lf-banner{display:none;align-items:center;gap:6px;font-size:.74rem;color:var(--accent-h,var(--accent));background:var(--accent-glow,color-mix(in srgb,var(--accent) 12%,transparent));border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .lf-banner b{font-weight:700}
+  .lf-banner-clear{background:none;border:none;color:var(--accent-h,var(--accent));font-weight:700;font-size:.74rem;cursor:pointer;padding:2px 2px 2px 6px;border-left:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+  .lf-banner-clear:hover{text-decoration:underline}
   .cal-wrap{margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden}
   .cal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-2)}
   .cal-nav{display:flex;gap:6px;align-items:center}
@@ -104,7 +109,7 @@
         <p class="intro">Court hearings, filing deadlines, and legal calendar events.</p>
     </div>
     <div class="section">
-        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
             <select id="filterType" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
                 <option value="">All types</option>
                 <option value="hearing">Hearing</option>
@@ -118,6 +123,8 @@
             <input type="date" id="filterTo" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
             <button class="button" onclick="loadEvents(); gridRefresh()">Filter</button>
             <button class="button button-secondary" onclick="openModal()">+ New event</button>
+            <!-- A4: always-visible active-filter banner (slim pill) -->
+            <span id="calFilterBanner" class="lf-banner" style="display:none" role="status" aria-live="polite"></span>
         </div>
 
         <!-- ===== Google-style calendar grid (additive; both views share the same /api/calendar) ===== -->
@@ -196,18 +203,18 @@ function loginNoticeHTML() {
 
 function loadEvents() {
   var t = token();
-  if (!t) { document.getElementById('eventList').innerHTML = loginNoticeHTML(); return; }
+  if (!t) { document.getElementById('eventList').innerHTML = loginNoticeHTML(); updateCalBanner(0, 0); return; }
   var params = [];
-  var ft = document.getElementById('filterType').value;
   var ff = document.getElementById('filterFrom').value;
   var ft2 = document.getElementById('filterTo').value;
-  if (ft) params.push('event_type=' + ft);
   if (ff) params.push('date_from=' + ff + 'T00:00:00');
   if (ft2) params.push('date_to=' + ft2 + 'T23:59:00');
   var qs = params.length ? '?' + params.join('&') : '';
   fetch(API + '/api/calendar' + qs, {headers: {'Authorization': 'Bearer ' + t}})
     .then(r => r.json())
-    .then(events => {
+    .then(all => {
+      var events = calMatchesAll(all);
+      updateCalBanner(events.length, (all || []).length);
       if (!events.length) { document.getElementById('eventList').innerHTML = '<p style="color:var(--text-muted)">No events found.</p>'; return; }
       document.getElementById('eventList').innerHTML = events.map(e => {
         var start = e.start_datetime ? e.start_datetime.slice(0,16).replace('T', ' ') : '?';
@@ -297,17 +304,62 @@ function gridRefresh(){ loadGrid(); }
 
 function loadGrid(){
   var t = token();
-  if (!t){ GridState.events=[]; renderGrid(); return; }
-  var ft = document.getElementById('filterType').value;
+  if (!t){ GridState.events=[]; renderGrid(); updateCalBanner(0,0); return; }
   var r = _calDayRange();
   var params = [];
-  if (ft) params.push('event_type='+ft);
   params.push('date_from='+r.from);
   params.push('date_to='+r.to);
+  var ft = calType();
+  if (ft) params.push('event_type='+ft);   // narrow server fetch; client filter below is the authority
   fetch(API + '/api/calendar?' + params.join('&'), {headers: {'Authorization': 'Bearer ' + t}})
     .then(rr => rr.json())
-    .then(events => { GridState.events = events || []; renderGrid(); })
-    .catch(() => { GridState.events = []; renderGrid(); });
+    .then(events => {
+      var all = events || [];
+      GridState.events = all.filter(calMatches);   // grid scoped to visible range + type + user date range
+      updateCalBanner(GridState.events.length, all.length);
+      renderGrid();
+    })
+    .catch(() => { GridState.events = []; updateCalBanner(0,0); renderGrid(); });
+}
+
+/* A3 — single client-side filter predicate shared by the list and all grids.
+   The server already supports event_type / date_from / date_to, but the bug was
+   that month/week/day grids IGNORED the from/to controls (they only sent the
+   visible-range dates), and deadline-merged events bypass the server type filter.
+   Filtering client-side with one predicate makes every view honour the SAME
+   controls (type + date range) regardless. */
+function calType(){ return document.getElementById('filterType').value || ''; }
+function calMatches(e){
+  if (!e) return false;
+  var ft = calType();
+  if (ft && (e.event_type || '') !== ft) return false;
+  var ff = document.getElementById('filterFrom').value;
+  var ft2 = document.getElementById('filterTo').value;
+  if (ff || ft2) {
+    var k = e.start_datetime ? String(e.start_datetime).slice(0,10) : '';
+    if (!k) return false;
+    if (ff && k < ff) return false;
+    if (ft2 && k > ft2) return false;
+  }
+  return true;
+}
+function calMatchesAll(list){ return (list || []).filter(calMatches); }
+
+/* A4 — calendar version of the "Filters on — N — Showing X of Y — Clear" banner. */
+function updateCalBanner(shown, total){
+  var banner = document.getElementById('calFilterBanner');
+  if (!banner) return;
+  var n = (calType() ? 1 : 0) + (document.getElementById('filterFrom').value ? 1 : 0) + (document.getElementById('filterTo').value ? 1 : 0);
+  if (!n) { banner.style.display = 'none'; return; }
+  banner.style.display = 'inline-flex';
+  banner.innerHTML = 'Filters on — <b>' + n + '</b> — Showing <b>' + shown + '</b> of <b>' + total + '</b>'
+    + ' <button type="button" class="lf-banner-clear" aria-label="Clear filters" onclick="clearCalFilters()">Clear</button>';
+}
+function clearCalFilters(){
+  document.getElementById('filterType').value = '';
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value = '';
+  loadEvents(); gridRefresh();
 }
 
 function renderGrid(){

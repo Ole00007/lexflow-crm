@@ -166,6 +166,8 @@
         if (e) e.preventDefault();
         localStorage.removeItem('jwt');
         localStorage.removeItem('lexflow-user');
+        // A4 — reset any persisted filter on logout so the next login starts clean.
+        try { localStorage.removeItem('lf_task_filter'); } catch (e2) {}
         window.location.href = '/';
     }
     </script>

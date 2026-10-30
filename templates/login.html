@@ -72,6 +72,9 @@ function doLogin(e) {
     if (res.ok) {
       localStorage.setItem('jwt', res.data.access_token);
       localStorage.setItem('lexflow-user', JSON.stringify(res.data.user || {}));
+      // A4 — reset any persisted filter on login (a stale filter must never
+      // carry over silently into the next session).
+      try { localStorage.removeItem('lf_task_filter'); } catch (e) {}
       window.location.href = '/kanban';
     } else {
       err.textContent = res.data.error || 'Credenziali non valide. Riprova.';
