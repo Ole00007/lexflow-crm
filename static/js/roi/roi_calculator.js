@@ -32,6 +32,7 @@
     price: 49,                  // LexFlow EUR / lawyer / month
     hoursPerMatter: 1.5,        // ASSUMPTION — validate with a lawyer
     billableHours: 1500,        // billable hours / lawyer / year
+    averageHourRate: 0,         // EUR/hour (optional override; 0/empty => fallback)
     ramp: 1.0                   // adoption ramp 0..1 (100%)
   };
 
@@ -56,8 +57,17 @@
     var hpm = clampNum(inputs.hoursPerMatter, DEFAULTS.hoursPerMatter, 0, 100);
     var bh = clampNum(inputs.billableHours, DEFAULTS.billableHours, 1, 5000);
     var ramp = clampNum(inputs.ramp, DEFAULTS.ramp, 0, 1);
+    var ahr = clampNum(inputs.averageHourRate, DEFAULTS.averageHourRate, 0, 100000);
 
+    // The lawyer's average billing rate (EUR/hour). If the user filled it in, it
+    // IS the hour value used for the euro value of regained hours; otherwise we
+    // fall back to annual cost / billable hours (the historical behaviour).
+    var hourlyRateSource = 'computed';
     var hourlyValue = bh > 0 ? annualCost / bh : 0;
+    if (ahr > 0) {
+      hourlyValue = ahr;
+      hourlyRateSource = 'input';
+    }
 
     var hoursPerMonthPerLawyer = mpm * hpm;
     var hoursRegainedPerMonth = hoursPerMonthPerLawyer * laws * ramp;
@@ -93,6 +103,7 @@
       ramp: round(ramp * 100),               // percent
 
       hourlyValue: round(hourlyValue),
+      hourlyRateSource: hourlyRateSource,     // 'input' | 'computed'
       hoursPerMonthPerLawyer: round(hoursPerMonthPerLawyer),
       hoursRegainedPerMonth: round(hoursRegainedPerMonth),
       hoursRegainedPerYear: round(hoursRegainedPerYear),

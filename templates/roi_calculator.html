@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calcolatore ROI | ROI calculator — LexFlow</title>
 <meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/roi/roi_calculator.css') }}">
 {% if roi_tracker_enabled %}<link rel="stylesheet" href="{{ url_for('static', filename='css/roi/roi_progress.css') }}">{% endif %}
 </head>
@@ -37,6 +38,10 @@
       <div class="roi-field">
         <label for="in_cost" data-it="Costo annuo per avvocato (€, oneri inclusi)" data-en="Annual cost per lawyer (€, fully loaded)">Costo annuo per avvocato (€, oneri inclusi)</label>
         <input type="number" id="in_cost" min="0" step="1000" inputmode="numeric" value="70000">
+      </div>
+      <div class="roi-field">
+        <label for="in_rate" data-it="Prezzo medio orario dell'avvocato (€/ora)" data-en="Average hourly rate of the lawyer (EUR/hour)">Prezzo medio orario dell'avvocato (€/ora)</label>
+        <input type="number" id="in_rate" min="0" step="1" inputmode="numeric" value="" placeholder="">
       </div>
       <div class="roi-field">
         <label for="in_matters" data-it="Pratiche al mese per avvocato" data-en="Matters per month, per lawyer">Pratiche al mese per avvocato</label>
@@ -73,6 +78,7 @@
       </div>
 
       <p class="roi-formula" id="roiFormula"></p>
+      <p class="roi-rate-used" id="roiRateUsed" aria-live="polite"></p>
     </div>
   </section>
 
@@ -162,7 +168,6 @@
   </section>
 {% endif %}
 
-  <p class="roi-back"><a href="/" data-it="← Torna all'app" data-en="← Back to the app">← Torna all'app</a></p>
 </main>
 
 <script src="{{ url_for('static', filename='js/roi/roi_calculator.js') }}"></script>
@@ -229,9 +234,35 @@
     var el = $('roiFormula'); if (!el) return;
     var l = lang();
     var f = l === 'en'
-      ? 'Formula: hourly value = annual cost ÷ billable hours. Hours regained = matters/month × hours saved per matter × lawyers × adoption. 3-yr ROI = (3-yr benefit − 3-yr LexFlow cost) ÷ 3-yr cost.'
-      : 'Formula: valore orario = costo annuo ÷ ore fatturabili. Ore recuperate = pratiche/mese × ore per pratica × avvocati × adozione. ROI 3 anni = (beneficio 3 anni − costo LexFlow 3 anni) ÷ costo 3 anni.';
+      ? 'Formula: hourly value = entered hourly rate (or annual cost ÷ billable hours if left empty). Hours regained = matters/month × hours saved per matter × lawyers × adoption. 3-yr ROI = (3-yr benefit − 3-yr LexFlow cost) ÷ 3-yr cost.'
+      : 'Formula: valore orario = tariffa oraria inserita (o costo annuo ÷ ore fatturabili se vuota). Ore recuperate = pratiche/mese × ore per pratica × avvocati × adozione. ROI 3 anni = (beneficio 3 anni − costo LexFlow 3 anni) ÷ costo 3 anni.';
     el.textContent = f;
+  }
+
+  function renderRateUsed(r) {
+    var el = $('roiRateUsed'); if (!el) return;
+    var l = lang();
+    var used = r.hourlyValue;
+    if (r.hourlyRateSource === 'input') {
+      el.textContent = l === 'en'
+        ? 'Hourly rate used: ' + used + ' EUR/h — from the rate you entered.'
+        : 'Valore orario usato: ' + used + ' EUR/h — da tariffa inserita.';
+    } else {
+      el.textContent = l === 'en'
+        ? 'Hourly rate used: ' + used + ' EUR/h — computed from annual cost ÷ billable hours.'
+        : 'Valore orario usato: ' + used + ' EUR/h — calcolato dal costo annuo ÷ ore fatturabili.';
+    }
+  }
+
+  function renderPlaceholderRate() {
+    var el = $('in_rate'); if (!el) return;
+    var l = lang();
+    var cost = Number($('in_cost').value);     // fallback numerator
+    var bill = Number($('in_billable').value); // fallback denominator
+    var fb = (bill > 0) ? Math.round(cost / bill) : 0;
+    el.placeholder = l === 'en'
+      ? 'e.g. ' + fb + ' (empty = annual cost / billable hours)'
+      : 'es. ' + fb + ' (vuoto = costo annuo / ore fatturabili)';
   }
 
   function drawChart(r) {
@@ -261,11 +292,14 @@
       price: readVal('in_price', RC.DEFAULTS.price),
       hoursPerMatter: readVal('in_hmatter', RC.DEFAULTS.hoursPerMatter),
       billableHours: readVal('in_billable', RC.DEFAULTS.billableHours),
+      averageHourRate: readVal('in_rate', RC.DEFAULTS.averageHourRate),
       ramp: readVal('in_ramp', RC.DEFAULTS.ramp * 100) / 100
     });
     renderSummary(r);
     renderKPIs(r);
     renderFormula(r);
+    renderRateUsed(r);
+    renderPlaceholderRate();
     drawChart(r);
   }
 
@@ -281,12 +315,24 @@
     });
   });
 
-  ['in_lawyers','in_cost','in_matters','in_price','in_hmatter','in_billable','in_ramp'].forEach(function (id) {
+  ['in_lawyers','in_cost','in_rate','in_matters','in_price','in_hmatter','in_billable','in_ramp'].forEach(function (id) {
     var el = $(id); if (el) el.addEventListener('input', update);
   });
 
   applyDataAttrs();
   update();
+
+  // In-app upgrade: the server cannot see the localStorage JWT on a page GET,
+  // so a logged-in visitor to the standalone URL is re-requested with ?app=1
+  // and served the full app shell (base.html sidebar). Never in embed mode.
+  if (document.body.getAttribute('data-embed') !== '1') {
+    try {
+      if (localStorage.getItem('jwt') && location.search.indexOf('app=1') === -1) {
+        location.replace(location.pathname + '?app=1');
+        return;
+      }
+    } catch (e) { /* localStorage unavailable — stay on the public page */ }
+  }
 
   // PART C — embed mode: post the page's content height to the parent so the
   // iframe can auto-resize. Runs only when the page was requested with ?embed=1

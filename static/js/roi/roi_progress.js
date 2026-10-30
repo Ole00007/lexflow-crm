@@ -30,6 +30,7 @@
       price: v('in_price', RC.DEFAULTS.price),
       hoursPerMatter: v('in_hmatter', RC.DEFAULTS.hoursPerMatter),
       billableHours: v('in_billable', RC.DEFAULTS.billableHours),
+      averageHourRate: v('in_rate', RC.DEFAULTS.averageHourRate),
       ramp: (v('in_ramp', RC.DEFAULTS.ramp * 100)) / 100
     };
   }
