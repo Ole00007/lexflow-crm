@@ -1,0 +1,71 @@
+/* ============================================================================
+ * LexFlow — ROI "My progress" tracker styles (PART D).
+ * static/css/roi/roi_progress.css
+ * Loaded only when ROI_TRACKER_ENABLED and NOT in embed mode. Extends the
+ * calculator theme (dark/gold). Self-reported progress: honest, clear, high
+ * contrast (>= 4.5:1), keyboard accessible, 390px-friendly.
+ * ========================================================================== */
+.roi-track {
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.roi-track-head h2 { margin: 0 0 6px; font-size: 1.15rem; font-weight: 800; color: var(--text); }
+.roi-track-byline { margin: 0 0 16px; font-size: .82rem; color: var(--text-muted); max-width: 56ch; }
+
+.roi-track-form {
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+}
+.roi-field-wide { grid-column: 1 / -1; }
+.roi-track-actions { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; }
+
+.roi-btn {
+  cursor: pointer; border: 1px solid var(--accent); background: var(--accent);
+  color: #1a1205; font-weight: 700; font-size: .9rem; border-radius: 9px;
+  padding: 10px 16px;
+}
+.roi-btn:hover { background: var(--accent-h); }
+.roi-btn:focus-visible { outline: 2px solid var(--accent-h); outline-offset: 2px; }
+.roi-btn-secondary { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.roi-btn-secondary:hover { background: var(--border); color: var(--text); }
+
+.roi-track-status { grid-column: 1 / -1; margin: 0; font-size: .82rem; color: var(--text-muted); }
+.roi-track-status.ok { color: var(--success); }
+.roi-track-status.err { color: var(--danger); }
+
+.roi-track-empty {
+  padding: 22px 16px; text-align: center;
+  background: var(--surface-2); border: 1px dashed var(--border); border-radius: var(--radius);
+  font-size: .9rem; color: var(--text-muted); margin-bottom: 18px;
+}
+.roi-track-empty[hidden] { display: none; }
+
+.roi-track-chart {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 18px;
+}
+.roi-track-chart canvas { width: 100%; height: auto; display: block; }
+.roi-track-caption { margin: 8px 0 0; font-size: .76rem; color: var(--text-muted); }
+
+.roi-track-table-wrap { overflow-x: auto; margin-bottom: 10px; }
+.roi-track-table { width: 100%; border-collapse: collapse; font-size: .84rem; min-width: 520px; }
+.roi-track-table th, .roi-track-table td {
+  text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+.roi-track-table th { color: var(--text-muted); font-weight: 600; }
+.roi-track-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.roi-track-delta.pos { color: var(--success); }
+.roi-track-delta.neg { color: var(--danger); }
+.roi-track-hint { font-size: .74rem; color: var(--text-muted); }
+
+@media (max-width: 640px) {
+  .roi-track-form { grid-template-columns: 1fr 1fr; }
+  .roi-track-form .roi-field:first-child { grid-column: 1 / -1; }
+}
