@@ -80,6 +80,27 @@
   .cal-more{display:block;margin:1px 0;padding:1px 6px;border:none;background:none;font-size:var(--text-xs);font-weight:600;color:var(--text-muted);cursor:pointer}
   .cal-more:hover{color:var(--accent-h)}
 
+  /* --- year: 12 mini-month grids (3x4 desktop) --- */
+  .cal-year{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px}
+  .cal-ymon{border:1px solid var(--border);border-radius:var(--radius-md,10px);overflow:hidden;background:var(--surface)}
+  .cal-ymhead{display:block;width:100%;padding:6px 10px;border:none;background:var(--surface-2);color:var(--text);font-family:var(--font-display);font-size:var(--text-sm,0.9rem);font-weight:600;text-align:left;cursor:pointer}
+  .cal-ymhead:hover{color:var(--accent-h);background:var(--accent-glow)}
+  .cal-ygrid{display:grid;grid-template-columns:repeat(7,1fr)}
+  .cal-ydow{padding:4px 0;text-align:center;font-size:var(--text-xs,0.72rem);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--surface-2)}
+  .cal-ycell{position:relative;min-height:30px;border:none;background:none;padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+  .cal-ycell:hover{background:var(--accent-glow)}
+  .cal-ycell.cal-out{visibility:hidden;cursor:default}
+  .cal-ynum{width:20px;height:20px;line-height:20px;margin-top:3px;text-align:center;border-radius:50%;font-size:var(--text-xs,0.72rem);font-weight:600;color:var(--text-muted)}
+  .cal-ycell.cal-today .cal-ynum{background:var(--accent);color:var(--bg);font-weight:700}
+  .cal-ydot{width:6px;height:6px;margin-top:2px;border-radius:50%;background:var(--chip,#7C8BA1)}
+  .cal-ybadge{min-width:16px;height:16px;line-height:16px;margin-top:1px;padding:0 4px;border-radius:999px;background:var(--chip,#7C8BA1);color:#fff;font-size:.62rem;font-weight:700;text-align:center}
+  @media (max-width:900px){
+    .cal-year{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:599px){
+    .cal-year{grid-template-columns:1fr}
+  }
+
   /* --- week header / axis / day columns --- */
   .cal-weekhead{grid-template-columns:56px repeat(7,1fr);border-bottom:1px solid var(--border);background:var(--surface-2)}
   .cal-dayhead{padding:6px 4px;text-align:center;border-left:1px solid var(--border)}
@@ -165,6 +186,7 @@
                     <button class="cal-viewbtn" data-view="day" onclick="gridSetView('day')">Day</button>
                     <button class="cal-viewbtn" data-view="week" onclick="gridSetView('week')">Week</button>
                     <button class="cal-viewbtn active" data-view="month" onclick="gridSetView('month')">Month</button>
+                    <button class="cal-viewbtn" data-view="year" onclick="gridSetView('year')">Year</button>
                 </div>
             </div>
             <div id="calGridBody"><div class="cal-body-empty">Loading calendar…</div></div>
@@ -299,6 +321,7 @@ function _calParse(iso){ if(!iso) return null; var d = new Date(iso); return isN
 function _calStartOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 function _calAddDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function _calAddMonths(d,n){ return new Date(d.getFullYear(), d.getMonth()+n, 1); }
+function _calAddYears(d,n){ return new Date(d.getFullYear()+n, d.getMonth(), d.getDate()); }
 function _calMonday(d){ var x=_calStartOfDay(d); return _calAddDays(x, -((x.getDay()+6)%7)); }  /* week starts Monday */
 function _calMonthStart(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
 function _calEventEnd(e){ var en=_calParse(e.end_datetime); if(en) return en; var st=_calParse(e.start_datetime); var d=new Date(st); d.setHours(d.getHours()+1); return d; }
@@ -312,6 +335,10 @@ function _calDayRange(){ /* date range sent to the shared API, matching the visi
   if (GridState.view==='week'){
     var mon = _calMonday(GridState.anchor);
     return {from: _calDayKey(mon)+'T00:00:00', to: _calDayKey(_calAddDays(mon,6))+'T23:59:59'};
+  }
+  if (GridState.view==='year'){
+    var y = GridState.anchor.getFullYear();
+    return {from: y+'-01-01T00:00:00', to: y+'-12-31T23:59:59'};
   }
   var k = _calDayKey(GridState.anchor);
   return {from: k+'T00:00:00', to: k+'T23:59:59'};
@@ -414,11 +441,12 @@ function renderGrid(){
   if (!token()){ body.innerHTML = '<div class="cal-body-empty">Login to view calendar events.</div>'; return; }
   if (GridState.view==='month') renderMonth();
   else if (GridState.view==='week') renderWeek();
+  else if (GridState.view==='year') renderYear();
   else renderDay();
   document.querySelectorAll('.cal-viewbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.view===GridState.view); });
   closePopover();
   clearInterval(GridState._timer);
-  if (GridState.view!=='month') GridState._timer = setInterval(updateNowLine, 60000);
+  if (GridState.view==='week'||GridState.view==='day') GridState._timer = setInterval(updateNowLine, 60000);
 }
 
 /* ---------- shared chip ---------- */
@@ -457,6 +485,66 @@ function renderMonth(){
         + '<div class="cal-mnum">'+d.getDate()+'</div>'+shown+more+'</div>';
     }
   }
+  html += '</div>';
+  document.getElementById('calGridBody').innerHTML = html;
+}
+
+/* ---------- year: 12 mini-month grids ---------- */
+/* Year colour-map ― dot/badge colour comes from the item's *kind*, using the
+   same palette the month chips use (deadline rows are amber, task-due rows
+   green, hearings blue, everything else grey). */
+var YEAR_KIND_COLORS = { hearing:'#3B7DD8', deadline:'#F59E0B', task_due:'#10B981', other:'#7C8BA1' };
+function yearKind(e){
+  if (e.kind === 'deadline') return 'deadline';
+  if (e.kind === 'task_due') return 'task_due';
+  if (e.event_type === 'hearing') return 'hearing';
+  return 'other';
+}
+function yearColor(e){ return YEAR_KIND_COLORS[yearKind(e)] || '#7C8BA1'; }
+var YEAR_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function yearMiniHTML(year, mon, byDay){
+  var first = new Date(year, mon, 1);
+  var lead = (first.getDay()+6)%7;                 /* Monday-first leading blanks */
+  var daysIn = new Date(year, mon+1, 0).getDate();
+  var todayKey = _calDayKey(new Date());
+  var cells = '';
+  for (var i=0;i<lead;i++) cells += '<div class="cal-ycell cal-out"></div>';
+  for (var d=1; d<=daysIn; d++){
+    var key = _calDayKey(new Date(year, mon, d));
+    var evs = (byDay[key]||[]);
+    var isToday = key===todayKey;
+    var aria = key;
+    var extra = '';
+    if (evs.length){
+      var titles = evs.slice(0,3).map(function(e){ return e.title; }).join(' · ');
+      var color = yearColor(evs[0]);
+      extra = (evs.length>=2)
+        ? '<span class="cal-ybadge" style="--chip:'+color+'">'+evs.length+'</span>'
+        : '<span class="cal-ydot" style="--chip:'+color+'"></span>';
+      aria = key + ' — ' + titles;
+    }
+    cells += '<button type="button" class="cal-ycell'+(isToday?' cal-today':'')+'" data-day="'+key+'" aria-label="'+esc(aria)+'"'
+      + (evs.length ? ' title="'+esc(evs.slice(0,3).map(function(e){ return e.title; }).join('\n'))+'"' : '')
+      + ' onclick="yearCellClick(event,this)"><span class="cal-ynum">'+d+'</span>'+extra+'</button>';
+  }
+  var fill = (7-((lead+daysIn)%7))%7;
+  for (var j=0;j<fill;j++) cells += '<div class="cal-ycell cal-out"></div>';
+  var monthKey = year+'-'+_pad(mon+1);
+  var head = '<button type="button" class="cal-ymhead" data-month="'+monthKey+'" onclick="yearMonthClick(this)">'
+    + YEAR_MONTHS[mon]+' '+year+'</button>';
+  var dow = ['M','T','W','T','F','S','S'].map(function(x){ return '<div class="cal-ydow">'+x+'</div>'; }).join('');
+  return '<div class="cal-ymon">'+head+'<div class="cal-ygrid">'+dow+cells+'</div></div>';
+}
+function renderYear(){
+  var year = GridState.anchor.getFullYear();
+  document.getElementById('calTitle').textContent = String(year);
+  var byDay = {};
+  GridState.events.forEach(function(e){
+    var k = _calDayKey(_calParse(e.start_datetime));
+    if (k) (byDay[k]=byDay[k]||[]).push(e);
+  });
+  var html = '<div class="cal-year">';
+  for (var m=0; m<12; m++) html += yearMiniHTML(year, m, byDay);
   html += '</div>';
   document.getElementById('calGridBody').innerHTML = html;
 }
@@ -574,12 +662,14 @@ function gridSetView(v){
 function gridPrev(){
   if (GridState.view==='month') GridState.anchor = _calAddMonths(GridState.anchor,-1);
   else if (GridState.view==='week') GridState.anchor = _calAddDays(GridState.anchor,-7);
+  else if (GridState.view==='year') GridState.anchor = _calAddYears(GridState.anchor,-1);
   else GridState.anchor = _calAddDays(GridState.anchor,-1);
   loadGrid();
 }
 function gridNext(){
   if (GridState.view==='month') GridState.anchor = _calAddMonths(GridState.anchor,1);
   else if (GridState.view==='week') GridState.anchor = _calAddDays(GridState.anchor,7);
+  else if (GridState.view==='year') GridState.anchor = _calAddYears(GridState.anchor,1);
   else GridState.anchor = _calAddDays(GridState.anchor,1);
   loadGrid();
 }
@@ -589,6 +679,23 @@ function gridToday(){ GridState.anchor = new Date(); loadGrid(); }
 function quickCreate(dayKey, hour, min){
   openModal();
   document.getElementById('evStart').value = dayKey+'T'+_pad(hour)+':'+_pad(min);
+}
+/* Clicking a year day → jump straight to the Day view for that date;
+   clicking a mini-month header → jump to the Month view for that month. */
+function yearCellClick(ev, el){
+  ev.stopPropagation();
+  var dayKey = el.getAttribute('data-day');
+  if (!dayKey) return;
+  var parts = dayKey.split('-');
+  GridState.anchor = new Date(+parts[0], +parts[1]-1, +parts[2]);
+  gridSetView('day');
+}
+function yearMonthClick(el){
+  var monthKey = el.getAttribute('data-month');       /* YYYY-MM */
+  if (!monthKey) return;
+  var parts = monthKey.split('-');
+  GridState.anchor = new Date(+parts[0], +parts[1]-1, 1);
+  gridSetView('month');
 }
 function calCellClick(ev, el){
   if (ev.target.closest('.cal-chip') || ev.target.closest('.cal-more')) return;
