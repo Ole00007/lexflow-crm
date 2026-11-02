@@ -284,7 +284,7 @@ def run_migration_check(verbose=False):
     failures = []
     from alembic.script import ScriptDirectory
     heads = ScriptDirectory(str(REPO / 'migrations')).get_heads()
-    check('single alembic head is latest revision (T-009 scheduled_actions)', heads == ['m4b5c6d7e8f9'], failures, verbose)
+    check('single alembic head is the hardening merge revision', heads == ['n5c6d7e8f9a0'], failures, verbose)
 
     tmp = Path(tempfile.mkdtemp(prefix='agent_migrate_'))
     db_path = tmp / 'migrate.db'

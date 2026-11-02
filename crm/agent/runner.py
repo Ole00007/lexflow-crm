@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..extensions import db
@@ -25,6 +27,20 @@ from .tools import AgentTools
 
 class AgentRuntimeError(RuntimeError):
     pass
+
+
+def approval_ttl() -> timedelta:
+    """How long a proposed write stays approvable (env LEXFLOW_AGENT_APPROVAL_TTL_MIN, default 15)."""
+    try:
+        return timedelta(minutes=max(1, int(os.environ.get('LEXFLOW_AGENT_APPROVAL_TTL_MIN', '15'))))
+    except ValueError:
+        return timedelta(minutes=15)
+
+
+def payload_hash(run_id: str, user_id: int, workspace_id: int, tool: str, args_json: str) -> str:
+    """Binds an approval to the exact content that was shown to the user."""
+    raw = '\x1f'.join([str(run_id), str(user_id), str(workspace_id), str(tool), args_json])
+    return hashlib.sha256(raw.encode('utf-8')).hexdigest()
 
 
 @dataclass
@@ -104,13 +120,16 @@ class AgentRunner:
                     raise AgentRuntimeError('tool call limit exceeded')
 
                 if tool_requires_approval(tool):
+                    args_json = serialize_args(args)
                     pending = AgentPendingAction(
                         workspace_id=run.workspace_id,
                         user_id=run.user_id,
                         run_id=run.run_id,
                         tool=tool,
-                        args_json=serialize_args(args),
+                        args_json=args_json,
                         status='pending',
+                        payload_hash=payload_hash(run.run_id, run.user_id, run.workspace_id, tool, args_json),
+                        expires_at=datetime.utcnow() + approval_ttl(),
                     )
                     db.session.add(pending)
                     self._audit(run=run, kind='approval', step_no=step_no + 1, status='pending', tool=tool, args=args,
@@ -166,8 +185,33 @@ class AgentRunner:
             raise AgentRuntimeError('run not found')
         if actor_user.role != 'superadmin' and actor_user.id != run.user_id:
             raise AgentRuntimeError('approval requires the run owner or a superadmin')
+        if actor_user.role != 'superadmin' and getattr(actor_user, 'workspace_id', None) != action.workspace_id:
+            raise AgentRuntimeError('approval requires the run owner or a superadmin')
         if action.status != 'pending':
             raise AgentRuntimeError('action already resolved')
+        if approve:
+            # Bound to the exact content the user was shown: a changed row is refused, never executed.
+            if action.payload_hash and action.payload_hash != payload_hash(
+                    action.run_id, action.user_id, action.workspace_id, action.tool, action.args_json):
+                action.status = 'failed'
+                action.result_summary = 'payload changed after proposal - refused'
+                run.status = 'error'
+                db.session.commit()
+                raise AgentRuntimeError('proposal was modified after it was shown - refused')
+            if action.expires_at and datetime.utcnow() > action.expires_at:
+                action.status = 'expired'
+                action.decided_by = actor_user.id
+                action.decided_at = datetime.utcnow()
+                run.status = 'expired'
+                db.session.commit()
+                raise AgentRuntimeError('proposal expired - ask Elisa again')
+            # Atomic claim: two concurrent confirms cannot both execute (single-use).
+            claimed = AgentPendingAction.query.filter_by(id=action.id, status='pending').update(
+                {'status': 'approving'}, synchronize_session=False)
+            db.session.commit()
+            if claimed != 1:
+                raise AgentRuntimeError('action already resolved')
+            db.session.refresh(action)
 
         step_no = AgentAudit.query.filter_by(run_id=run.run_id).count() + 1
         if not approve:

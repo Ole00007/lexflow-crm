@@ -128,7 +128,7 @@ def approve_action(action_id):
         outcome = runner.resolve_action(action_id, approve=True, actor_user=user)
     except AgentRuntimeError as exc:
         text = str(exc)
-        status = 404 if 'not found' in text else 409 if 'already resolved' in text else 403
+        status = 404 if 'not found' in text else 409 if 'already resolved' in text else 410 if 'expired' in text else 403
         return jsonify({'error': text}), status
     return jsonify(outcome.payload), outcome.status_code
 
@@ -146,7 +146,7 @@ def reject_action(action_id):
         outcome = runner.resolve_action(action_id, approve=False, actor_user=user)
     except AgentRuntimeError as exc:
         text = str(exc)
-        status = 404 if 'not found' in text else 409 if 'already resolved' in text else 403
+        status = 404 if 'not found' in text else 409 if 'already resolved' in text else 410 if 'expired' in text else 403
         return jsonify({'error': text}), status
     return jsonify(outcome.payload), outcome.status_code
 
@@ -249,7 +249,7 @@ def _resolve(action_id, approve):
         outcome = runner.resolve_action(action_id, approve=approve, actor_user=user)
     except AgentRuntimeError as exc:
         text = str(exc)
-        status = 404 if 'not found' in text else 409 if 'already resolved' in text else 403
+        status = 404 if 'not found' in text else 409 if 'already resolved' in text else 410 if 'expired' in text else 403
         return jsonify({'error': text}), status
     if outcome.status_code >= 400:
         return jsonify({'reply': 'That did not work: ' + str((outcome.payload or {}).get('error', 'error')), 'status': 'error'}), outcome.status_code

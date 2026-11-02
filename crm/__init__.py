@@ -387,6 +387,18 @@ def create_app():
             except Exception as e:
                 log.warning(f"ensure contacts fields skipped: {e}")
 
+            # Ensure agent_pending_actions.payload_hash / expires_at exist (additive, nullable).
+            try:
+                pa_cols = [c['name'] for c in inspector.get_columns('agent_pending_actions')]
+                with db.engine.connect() as conn:
+                    if 'payload_hash' not in pa_cols:
+                        conn.execute(text("ALTER TABLE agent_pending_actions ADD COLUMN payload_hash VARCHAR(64)"))
+                    if 'expires_at' not in pa_cols:
+                        conn.execute(text("ALTER TABLE agent_pending_actions ADD COLUMN expires_at TIMESTAMP"))
+                    conn.commit()
+            except Exception as e:
+                log.warning(f"ensure agent_pending_actions fields skipped: {e}")
+
             # Ensure the new workspaces.parent_workspace_id column exists
             # (prod DBs predate this column; db.create_all() only creates missing
             # tables, not columns — so we add it explicitly if missing).
