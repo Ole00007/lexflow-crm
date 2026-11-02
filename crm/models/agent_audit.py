@@ -87,6 +87,8 @@ class AgentPendingAction(db.Model):
     decided_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     decided_at = db.Column(db.DateTime, nullable=True)
     result_summary = db.Column(db.String(500), nullable=True)
+    payload_hash = db.Column(db.String(64), nullable=True)   # sha256 over run/user/workspace/tool/args at proposal time
+    expires_at = db.Column(db.DateTime, nullable=True)       # proposal is void after this moment
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
     def args(self):
@@ -107,5 +109,6 @@ class AgentPendingAction(db.Model):
             'decided_by': self.decided_by,
             'decided_at': self.decided_at.isoformat() if self.decided_at else None,
             'result_summary': self.result_summary,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
