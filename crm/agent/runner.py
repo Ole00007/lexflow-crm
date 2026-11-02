@@ -189,6 +189,10 @@ class AgentRunner:
             raise AgentRuntimeError('approval requires the run owner or a superadmin')
         if action.status != 'pending':
             raise AgentRuntimeError('action already resolved')
+        if approve and actor_user.id != run.user_id:
+            # A write runs with the approver's own login, so only the person who was shown it may confirm.
+            # A superadmin may still reject (cancel) someone else's proposal.
+            raise AgentRuntimeError('only the user who asked may approve this action')
         if approve:
             # Bound to the exact content the user was shown: a changed row is refused, never executed.
             if action.payload_hash and action.payload_hash != payload_hash(

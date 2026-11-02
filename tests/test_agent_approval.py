@@ -110,3 +110,28 @@ def test_pending_list_does_not_leak_across_tenants():
     _propose(st, 'super')
     r = st['client'].get('/api/agent/runs', headers=st['headers']['foreign'])
     assert r.status_code in (403, 404), r.status_code
+
+
+def test_superadmin_may_reject_but_not_approve_someone_elses_action():
+    import uuid
+    from crm.agent.runner import payload_hash, approval_ttl
+    from crm.agent.guard import serialize_args
+    from crm.models.agent_audit import AgentRun
+    from crm.models.user import User
+    st = build_state()
+    os.environ['AGENT_ENABLED'] = '1'
+    with st['app'].app_context():
+        owner = User.query.filter_by(email='olesya00007@google.com').first()
+        rid = str(uuid.uuid4())
+        args_json = serialize_args({'title': 'Hardening probe two', 'duedate': '2026-11-03'})
+        db.session.add(AgentRun(workspace_id=owner.workspace_id, user_id=owner.id, run_id=rid,
+                                goal='probe', status='pending_approval'))
+        a = AgentPendingAction(workspace_id=owner.workspace_id, user_id=owner.id, run_id=rid, tool='create_task',
+                               args_json=args_json, status='pending',
+                               payload_hash=payload_hash(rid, owner.id, owner.workspace_id, 'create_task', args_json),
+                               expires_at=datetime.utcnow() + approval_ttl())
+        db.session.add(a); db.session.commit(); aid = a.id
+    r = st['client'].post(f'/api/agent/chat/actions/{aid}/approve', headers=st['headers']['super'])
+    assert r.status_code == 403, r.get_json()
+    assert _count(st, 'Hardening probe two') == 0
+    assert st['client'].post(f'/api/agent/chat/actions/{aid}/reject', headers=st['headers']['super']).status_code == 200
