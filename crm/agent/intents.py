@@ -190,7 +190,14 @@ def doc_query_summarize(goal: str) -> str:
     return _clean_doc_query(m.group('q')) if m else ''
 
 
+_MATTER_WORD = re.compile(r"\b(?:matter|case|pratica|fascicolo)\b", re.I)
+_DOC_WORD = re.compile(r"\b(?:document|documento|doc|file|allegato|attachment)\b", re.I)
+
+
 def is_summarize(goal: str) -> bool:
+    # 'summarise the X matter' is a matter overview (model/list tools), not a document lookup.
+    if _MATTER_WORD.search(goal or '') and not _DOC_WORD.search(goal or ''):
+        return False
     return bool(_SUMM_RE.search(goal or '')) and bool(doc_query_summarize(goal))
 
 
