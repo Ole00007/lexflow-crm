@@ -8,6 +8,42 @@
   .lf-banner b{font-weight:700}
   .lf-banner-clear{background:none;border:none;color:var(--accent-h,var(--accent));font-weight:700;font-size:.74rem;cursor:pointer;padding:2px 2px 2px 6px;border-left:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
   .lf-banner-clear:hover{text-decoration:underline}
+
+  /* ── Shared task filter (component mounted here; identical CSS to the four
+        task views so the calendar dropdown looks and behaves the same) ── */
+  .lf-filter{position:relative;display:inline-flex}
+  .lf-filter-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-md,10px);background:var(--surface);color:var(--text);font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  .lf-filter-btn:hover{border-color:var(--accent);color:var(--accent-h)}
+  .lf-filter-btn[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-glow)}
+  .lf-filter-caret{opacity:.6;font-size:.7rem}
+  .lf-filter-badge{display:none;min-width:16px;height:16px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:.68rem;font-weight:700;line-height:16px;text-align:center}
+  .lf-filter-btn[data-active] .lf-filter-badge{display:inline-block}
+  .lf-filter-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:500;min-width:300px;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg,16px);box-shadow:var(--shadow-lg,0 12px 40px rgba(0,0,0,.6));padding:12px;display:none}
+  .lf-filter-panel.open{display:block}
+  .lf-filter-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .lf-filter-head>span{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+  .lf-filter-clear{background:none;border:none;color:var(--accent);font-size:.78rem;font-weight:600;cursor:pointer;padding:2px}
+  .lf-filter-clear:hover{color:var(--accent-h);text-decoration:underline}
+  .lf-group{margin-bottom:12px}.lf-group:last-child{margin-bottom:0}
+  .lf-group-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint,#7E90A9);margin-bottom:6px}
+  .lf-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .lf-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface-2);color:var(--text-muted);font-size:.8rem;cursor:pointer;user-select:none}
+  .lf-chip:hover{color:var(--text);border-color:var(--text-muted)}
+  .lf-chip[aria-pressed="true"]{background:var(--accent-glow);color:var(--accent-h);border-color:var(--accent)}
+  .lf-chip-count{font-size:.72rem;opacity:.75}
+  .lf-chip--empty{opacity:.45;cursor:not-allowed}
+  .lf-chip:disabled{opacity:.45;cursor:not-allowed}
+  /* date range inside the dropdown */
+  .lf-dates{display:flex;align-items:center;gap:6px;width:100%;flex-wrap:wrap}
+  .lf-date-input{flex:1;min-width:118px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm,8px);background:var(--surface);color:var(--text);font-family:inherit;font-size:.82rem}
+  .lf-date-input:focus{border-color:var(--accent);outline:none}
+  .lf-date-sep{color:var(--text-faint)}
+  .lf-date-clear{font-size:.72rem}
+  @media (max-width:480px){
+    .lf-filter-panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;min-width:0;border-radius:var(--radius-lg,16px) var(--radius-lg,16px) 0 0;border-bottom:none;box-shadow:0 -8px 30px rgba(0,0,0,.45);padding:14px}
+    .lf-dates{flex-wrap:nowrap}
+  }
+
   .cal-wrap{margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden}
   .cal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-2)}
   .cal-nav{display:flex;gap:6px;align-items:center}
@@ -110,21 +146,10 @@
     </div>
     <div class="section">
         <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-            <select id="filterType" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
-                <option value="">All types</option>
-                <option value="hearing">Hearing</option>
-                <option value="court_date">Court date</option>
-                <option value="filing_deadline">Filing deadline</option>
-                <option value="deposition">Deposition</option>
-                <option value="meeting">Meeting</option>
-                <option value="reminder">Reminder</option>
-            </select>
-            <input type="date" id="filterFrom" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
-            <input type="date" id="filterTo" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
-            <button class="button" onclick="loadEvents(); gridRefresh()">Filter</button>
-            <button class="button button-secondary" onclick="openModal()">+ New event</button>
-            <!-- A4: always-visible active-filter banner (slim pill) -->
-            <span id="calFilterBanner" class="lf-banner" style="display:none" role="status" aria-live="polite"></span>
+            <!-- Shared "Filter ▾" dropdown (window.TaskFilters) — every choice
+                 applies instantly, the banner is rendered by the component -->
+            <div class="lf-filter" id="calFilterMount"></div>
+            <button class="button" onclick="openModal()">+ New event</button>
         </div>
 
         <!-- ===== Google-style calendar grid (additive; both views share the same /api/calendar) ===== -->
@@ -184,6 +209,7 @@
   </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/filters/task_filters.js') }}"></script>
 <script>
 const API = '';
 function token() { return localStorage.getItem('jwt') || ''; }
@@ -201,35 +227,26 @@ function loginNoticeHTML() {
     + '</div></div>';
 }
 
+var calFilterItems = [];      /* authoritative unfiltered set the dropdown filters over */
+var calFilter = null;         /* window.TaskFilters instance (created in init) */
+
+function mergeItems(list) {
+  var seen = {};
+  calFilterItems.forEach(function (e) { seen[String(e.id)] = e; });
+  (list || []).forEach(function (e) { if (e) seen[String(e.id)] = e; });
+  calFilterItems = Object.keys(seen).map(function (k) { return seen[k]; });
+}
+function calFilterRefresh() {
+  if (calFilter) { calFilter.refresh(); return; }
+  calRender(calFilterItems, { activeCount: 0, total: calFilterItems.length, shown: calFilterItems.length });
+}
+
 function loadEvents() {
   var t = token();
-  if (!t) { document.getElementById('eventList').innerHTML = loginNoticeHTML(); updateCalBanner(0, 0); return; }
-  var params = [];
-  var ff = document.getElementById('filterFrom').value;
-  var ft2 = document.getElementById('filterTo').value;
-  if (ff) params.push('date_from=' + ff + 'T00:00:00');
-  if (ft2) params.push('date_to=' + ft2 + 'T23:59:00');
-  var qs = params.length ? '?' + params.join('&') : '';
-  fetch(API + '/api/calendar' + qs, {headers: {'Authorization': 'Bearer ' + t}})
+  if (!t) { document.getElementById('eventList').innerHTML = loginNoticeHTML(); GridState.events = []; renderGrid(); return; }
+  fetch(API + '/api/calendar', {headers: {'Authorization': 'Bearer ' + t}})
     .then(r => r.json())
-    .then(all => {
-      var events = calMatchesAll(all);
-      updateCalBanner(events.length, (all || []).length);
-      if (!events.length) { document.getElementById('eventList').innerHTML = '<p style="color:var(--text-muted)">No events found.</p>'; return; }
-      document.getElementById('eventList').innerHTML = events.map(e => {
-        var start = e.start_datetime ? e.start_datetime.slice(0,16).replace('T', ' ') : '?';
-        var court = e.court_name ? ' at ' + esc(e.court_name) : '';
-        var judge = e.judge_name ? ' — Judge: ' + esc(e.judge_name) : '';
-        var badge = 'badge-' + (e.status === 'confirmed' ? 'green' : e.status === 'completed' ? 'blue' : 'orange');
-        return '<div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)">' +
-          '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
-          '<div><strong>' + esc(e.title) + '</strong><br>' +
-          '<span style="color:var(--text-muted);font-size:var(--text-sm)">' + start + court + judge + '</span></div>' +
-          '<div style="text-align:right"><span class="badge ' + badge + '">' + esc(e.status) + '</span><br>' +
-          '<span style="color:var(--text-faint);font-size:var(--text-xs)">' + esc(e.event_type) + '</span></div></div>' +
-          (e.notes ? '<p style="margin:8px 0 0;color:var(--text-muted);font-size:var(--text-sm)">' + esc(e.notes) + '</p>' : '') + '</div>';
-      }).join('');
-    })
+    .then(all => { mergeItems(all || []); calFilterRefresh(); })
     .catch(e => { document.getElementById('eventList').innerHTML = '<p style="color:var(--text-muted)">Failed to load: ' + e.message + '</p>'; });
 }
 
@@ -304,62 +321,91 @@ function gridRefresh(){ loadGrid(); }
 
 function loadGrid(){
   var t = token();
-  if (!t){ GridState.events=[]; renderGrid(); updateCalBanner(0,0); return; }
+  if (!t){ GridState.events=[]; renderGrid(); return; }
   var r = _calDayRange();
   var params = [];
   params.push('date_from='+r.from);
   params.push('date_to='+r.to);
-  var ft = calType();
-  if (ft) params.push('event_type='+ft);   // narrow server fetch; client filter below is the authority
   fetch(API + '/api/calendar?' + params.join('&'), {headers: {'Authorization': 'Bearer ' + t}})
     .then(rr => rr.json())
-    .then(events => {
-      var all = events || [];
-      GridState.events = all.filter(calMatches);   // grid scoped to visible range + type + user date range
-      updateCalBanner(GridState.events.length, all.length);
-      renderGrid();
-    })
-    .catch(() => { GridState.events = []; updateCalBanner(0,0); renderGrid(); });
+    .then(events => { mergeItems(events || []); calFilterRefresh(); })
+    .catch(() => { GridState.events = []; renderGrid(); });
 }
 
-/* A3 — single client-side filter predicate shared by the list and all grids.
-   The server already supports event_type / date_from / date_to, but the bug was
-   that month/week/day grids IGNORED the from/to controls (they only sent the
-   visible-range dates), and deadline-merged events bypass the server type filter.
-   Filtering client-side with one predicate makes every view honour the SAME
-   controls (type + date range) regardless. */
-function calType(){ return document.getElementById('filterType').value || ''; }
-function calMatches(e){
-  if (!e) return false;
-  var ft = calType();
-  if (ft && (e.event_type || '') !== ft) return false;
-  var ff = document.getElementById('filterFrom').value;
-  var ft2 = document.getElementById('filterTo').value;
-  if (ff || ft2) {
-    var k = e.start_datetime ? String(e.start_datetime).slice(0,10) : '';
-    if (!k) return false;
-    if (ff && k < ff) return false;
-    if (ft2 && k > ft2) return false;
+/* ── Shared "Filter ▾" dropdown (window.TaskFilters) for the calendar ──
+   One client-side predicate drives BOTH the month/week/day grids and the
+   event list, so every choice applies instantly to every view with no reload.
+   Type chips are built from the REAL types present in the loaded events. */
+function calTypeKey(e){
+  var t = String(e.event_type || '');
+  if (t.indexOf('deadline_') === 0) return 'deadline';    /* any deadline_* → one "Deadline" chip */
+  if (t === 'task_due') return 'task_due';                /* → "Due task" */
+  return t;
+}
+var CAL_TYPE_LABELS = { hearing:'Hearing', court_date:'Court date', filing_deadline:'Filing deadline',
+  deposition:'Deposition', meeting:'Meeting', reminder:'Reminder', deadline:'Deadline', task_due:'Due task' };
+function calTypeChips(items){
+  var seen = {}, keys = [];
+  (items || []).forEach(function(e){
+    var k = calTypeKey(e);
+    if (k && !seen[k]) { seen[k] = 1; keys.push(k); }
+  });
+  keys.sort();
+  var out = [{ key: '', label: 'All' }];
+  keys.forEach(function(k){
+    out.push({ key: k, label: CAL_TYPE_LABELS[k] || (k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ')) });
+  });
+  return out;
+}
+function calFeatures(e, ctx){
+  var st = String(e.status || '');
+  var date = e.start_datetime ? String(e.start_datetime).slice(0,10) : '';
+  var doneStatus = TaskFilters.inFinished(st);
+  var s = _calParse(e.start_datetime);
+  var past = !!s && s < _calParse(ctx.today + 'T00:00:00');
+  /* "Most critical" only counts an event linked to a task/matter: a merged
+     task due date / deadline row (kind) or a case/task/deadline id. An event
+     with NO such link is excluded while that chip is on. */
+  var linked = !!(e.kind === 'task_due' || e.kind === 'deadline' || e.task_id || e.deadline_id || e.caseid);
+  return {
+    type: calTypeKey(e), date: date,
+    done: doneStatus || past,                    // "Open only": hide done (completed) or past
+    blocked: linked && /block/i.test(st),
+    priorityHigh: linked && /high|urgent/i.test(String(e.priority || '')),
+    overdue: linked && !doneStatus && !!date && date < ctx.today,
+    dueSoon: !doneStatus && !!date && date >= ctx.today && date <= ctx.soon,
+    isMine: false, blocksOthers: false
+  };
+}
+function eventCardHTML(e){
+  var start = e.start_datetime ? e.start_datetime.slice(0,16).replace('T', ' ') : '?';
+  var court = e.court_name ? ' at ' + esc(e.court_name) : '';
+  var judge = e.judge_name ? ' — Judge: ' + esc(e.judge_name) : '';
+  var badge = 'badge-' + (e.status === 'confirmed' ? 'green' : e.status === 'completed' ? 'blue' : 'orange');
+  return '<div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)">' +
+    '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
+    '<div><strong>' + esc(e.title) + '</strong><br>' +
+    '<span style="color:var(--text-muted);font-size:var(--text-sm)">' + start + court + judge + '</span></div>' +
+    '<div style="text-align:right"><span class="badge ' + badge + '">' + esc(e.status) + '</span><br>' +
+    '<span style="color:var(--text-faint);font-size:var(--text-xs)">' + esc(e.event_type) + '</span></div></div>' +
+    (e.notes ? '<p style="margin:8px 0 0;color:var(--text-muted);font-size:var(--text-sm)">' + esc(e.notes) + '</p>' : '') + '</div>';
+}
+/* onApply: re-render the grid (current month/week/day) AND the event list from
+   the filtered subset the component computed. */
+function calRender(visible, meta){
+  GridState.events = visible || [];
+  renderGrid();
+  var el = document.getElementById('eventList');
+  if (!el) return;
+  if (!token()) { el.innerHTML = loginNoticeHTML(); return; }
+  if (!calFilterItems.length) { el.innerHTML = '<p style="color:var(--text-muted)">No events found.</p>'; return; }
+  if (!visible || !visible.length) {
+    el.innerHTML = (meta && meta.activeCount > 0)
+      ? '<p style="color:var(--text-muted)">No events match your filters — Clear filters.</p>'
+      : '<p style="color:var(--text-muted)">No events found.</p>';
+    return;
   }
-  return true;
-}
-function calMatchesAll(list){ return (list || []).filter(calMatches); }
-
-/* A4 — calendar version of the "Filters on — N — Showing X of Y — Clear" banner. */
-function updateCalBanner(shown, total){
-  var banner = document.getElementById('calFilterBanner');
-  if (!banner) return;
-  var n = (calType() ? 1 : 0) + (document.getElementById('filterFrom').value ? 1 : 0) + (document.getElementById('filterTo').value ? 1 : 0);
-  if (!n) { banner.style.display = 'none'; return; }
-  banner.style.display = 'inline-flex';
-  banner.innerHTML = 'Filters on — <b>' + n + '</b> — Showing <b>' + shown + '</b> of <b>' + total + '</b>'
-    + ' <button type="button" class="lf-banner-clear" aria-label="Clear filters" onclick="clearCalFilters()">Clear</button>';
-}
-function clearCalFilters(){
-  document.getElementById('filterType').value = '';
-  document.getElementById('filterFrom').value = '';
-  document.getElementById('filterTo').value = '';
-  loadEvents(); gridRefresh();
+  el.innerHTML = visible.map(eventCardHTML).join('');
 }
 
 function renderGrid(){
@@ -681,6 +727,23 @@ function calDrop(ev, cell){
     .catch(err => toast('Error moving event: ' + err.message, 'error'));
 }
 
-(function init() { loadEvents(); loadGrid(); })();
+(function init() {
+  calFilter = window.TaskFilters.create({
+    key: 'lf_calendar_filter',                  /* calendar keeps its own persisted state */
+    mount: document.getElementById('calFilterMount') || document.body,
+    title: 'Filter events',
+    getItems: function () { return calFilterItems; },
+    features: calFeatures,
+    typeChips: calTypeChips,                    /* real types present in the loaded events */
+    typeLabel: 'Event type',
+    dateRange: true,                            /* From / To (applies instantly) */
+    hideDue: true,
+    hideAssignee: true,
+    showChips: ['all', 'open'],                 /* All + "Open only" */
+    chipLabels: { all: 'All', open: 'Open only' },
+    onApply: calRender
+  });
+  loadEvents(); loadGrid();
+})();
 </script>
 {% endblock %}
