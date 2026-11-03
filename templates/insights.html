@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Insights — LexFlow{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/insights/insights.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="insights-page" aria-labelledby="insights-heading">
+  <div class="insights-header">
+    <div>
+      <p class="eyebrow">Usage &amp; progress</p>
+      <h1 id="insights-heading">Insights</h1>
+      <p class="intro">
+        How your matters and team are moving. Aggregates only — no client
+        names, task titles or contact details are shown.
+      </p>
+    </div>
+    <div class="insights-toolbar" role="group" aria-label="Time range">
+      <button class="range-btn is-active" data-range="30" type="button">30 days</button>
+      <button class="range-btn" data-range="90" type="button">90 days</button>
+      <button class="range-btn" data-range="365" type="button">365 days</button>
+    </div>
+  </div>
+
+  <div class="insights-state" id="insights-state-loading">Loading insights…</div>
+  <div class="insights-state insights-state--error" id="insights-state-error" hidden>
+    Could not load insights. Please retry.
+  </div>
+  <div class="insights-state" id="insights-state-denied" hidden>
+    Please sign in to view insights.
+  </div>
+
+  <div id="insights-dashboard" hidden>
+    <div class="kpi-grid" id="kpi-grid" aria-label="Key metrics"></div>
+
+    <div class="diagram-grid">
+      <article class="diagram diagram--wide" aria-labelledby="d-activity-title">
+        <header class="diagram-head">
+          <h2 id="d-activity-title">Activity over time</h2>
+          <span class="diagram-sub">Matters opened · tasks completed · tasks created</span>
+        </header>
+        <div class="diagram-body">
+          <div class="chart-empty" id="activity-empty" hidden>No activity in this range yet.</div>
+          <svg id="activity-chart" class="insight-svg" role="img" aria-label="Activity over time chart"></svg>
+        </div>
+      </article>
+
+      <article class="diagram" aria-labelledby="d-status-title">
+        <header class="diagram-head">
+          <h2 id="d-status-title">Matters by status</h2>
+          <span class="diagram-sub">Open matters per status</span>
+        </header>
+        <div class="diagram-body">
+          <div class="chart-empty" id="status-empty" hidden>No matters yet.</div>
+          <div id="status-bars" class="hbar-list"></div>
+        </div>
+      </article>
+
+      <article class="diagram" aria-labelledby="d-health-title">
+        <header class="diagram-head">
+          <h2 id="d-health-title">Deadline health</h2>
+          <span class="diagram-sub">Open tasks by due date</span>
+        </header>
+        <div class="diagram-body">
+          <div class="chart-empty" id="health-empty" hidden>No open tasks.</div>
+          <div id="health-ring" class="ring-wrap"></div>
+          <ul class="health-legend" id="health-legend"></ul>
+        </div>
+      </article>
+
+      <article class="diagram" aria-labelledby="d-workload-title">
+        <header class="diagram-head">
+          <h2 id="d-workload-title">Team workload</h2>
+          <span class="diagram-sub">Open tasks by role</span>
+        </header>
+        <div class="diagram-body">
+          <div class="chart-empty" id="workload-empty" hidden>No open tasks assigned.</div>
+          <div id="workload-bars" class="hbar-list"></div>
+          <div class="member-list" id="member-list" aria-label="Open tasks per team member"></div>
+        </div>
+      </article>
+
+      <article class="diagram" aria-labelledby="d-flags-title">
+        <header class="diagram-head">
+          <h2 id="d-flags-title">Lawyer flags</h2>
+          <span class="diagram-sub">Hand-off points needing the lawyer</span>
+        </header>
+        <div class="diagram-body">
+          <div class="chart-empty" id="flags-empty" hidden>No flags in this range.</div>
+          <div class="flag-stats" id="flag-stats"></div>
+        </div>
+      </article>
+    </div>
+
+    <div class="insights-table-wrap">
+      <button class="table-toggle" id="table-toggle" type="button" aria-expanded="false">View as table</button>
+      <div id="insights-table" hidden></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/insights/insights.js') }}"></script>
+{% endblock %}

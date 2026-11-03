@@ -1,0 +1,137 @@
+/* ============================================================================
+   LexFlow CRM — Insights (WS-D) — Harvey-style usage/progress analytics.
+   Isolated styles scoped under `.insights-page`. Uses the CSS custom
+   properties from templates/base.html (--surface, --border, --text, --accent,
+   --radius-*, --text-*, ...). Dark theme by default (data-theme on <html>).
+   ============================================================================ */
+
+.insights-page { display: flex; flex-direction: column; gap: var(--space-6); }
+
+.insights-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--space-4); flex-wrap: wrap;
+}
+
+.insights-toolbar {
+  display: flex; gap: var(--space-2); padding: var(--space-1);
+  border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface-2);
+}
+.range-btn {
+  border: none; background: transparent; color: var(--text-muted);
+  font-family: var(--font-body); font-size: var(--text-sm); font-weight: 600;
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-full);
+  cursor: pointer; transition: all var(--transition);
+}
+.range-btn:hover { color: var(--text); }
+.range-btn.is-active { background: var(--accent); color: var(--bg); }
+
+.insights-state { padding: var(--space-8) var(--space-6); text-align: center; color: var(--text-muted); font-size: var(--text-sm); }
+.insights-state[hidden] { display: none; }
+.insights-state--error { color: var(--warning); }
+
+/* ── KPI cards ─────────────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);
+  display: flex; flex-direction: column; gap: var(--space-1);
+}
+.kpi-card .kpi-label { font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+.kpi-card .kpi-value { font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 400; color: var(--text); line-height: 1; }
+.kpi-card .kpi-delta { font-size: var(--text-xs); font-weight: 600; }
+.kpi-delta.up { color: var(--success); }
+.kpi-delta.down { color: var(--warning); }
+.kpi-delta.flat { color: var(--text-faint); }
+
+/* ── Diagram grid ───────────────────────────────────────────────────────── */
+.diagram-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-4);
+}
+.diagram {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);
+  display: flex; flex-direction: column; gap: var(--space-4);
+}
+.diagram--wide { grid-column: 1 / -1; }
+.diagram-head h2 { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 400; margin: 0; }
+.diagram-sub { font-size: var(--text-xs); color: var(--text-muted); }
+.diagram-body { display: flex; flex-direction: column; gap: var(--space-4); min-height: 120px; }
+
+.chart-empty { color: var(--text-faint); font-size: var(--text-sm); padding: var(--space-6) 0; text-align: center; }
+.chart-empty[hidden] { display: none; }
+
+.insight-svg { width: 100%; height: auto; display: block; }
+.insight-svg .axis-line { stroke: var(--border); stroke-width: 1; }
+.insight-svg .grid-line { stroke: var(--border); stroke-width: 0.5; stroke-dasharray: 3 4; }
+.insight-svg .axis-label { fill: var(--text-muted); font-size: 11px; font-family: var(--font-body); }
+.insight-svg .area-fill { fill: url(#activityGrad); }
+.insight-svg .line { fill: none; stroke-width: 2; stroke-linecap: round; }
+.insight-svg .dot { stroke: var(--surface); stroke-width: 1.5; }
+.insight-svg .legend-text { fill: var(--text-muted); font-size: 11px; font-family: var(--font-body); }
+
+/* tooltip */
+.tip {
+  position: absolute; pointer-events: none; z-index: 20;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs); color: var(--text); box-shadow: var(--shadow-md);
+  white-space: nowrap;
+}
+.tip[hidden] { display: none; }
+
+/* ── Horizontal bars ────────────────────────────────────────────────────── */
+.hbar-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.hbar-row { display: flex; align-items: center; gap: var(--space-3); }
+.hbar-label { width: 110px; flex-shrink: 0; font-size: var(--text-xs); color: var(--text-muted); text-align: right; }
+.hbar-track { flex: 1; height: 14px; background: var(--surface-2); border-radius: var(--radius-sm); overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: var(--radius-sm); transition: width var(--transition); }
+.hbar-count { width: 40px; flex-shrink: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text); }
+
+/* ── Deadline health ring ───────────────────────────────────────────────── */
+.ring-wrap { display: flex; justify-content: center; }
+.ring-svg { width: 180px; height: 180px; }
+.ring-svg .ring-track { fill: none; stroke: var(--surface-2); stroke-width: 18; }
+.ring-svg .ring-seg { fill: none; stroke-width: 18; }
+.ring-svg .ring-center { font-family: var(--font-display); font-size: 30px; fill: var(--text); }
+.ring-svg .ring-center-sub { font-size: 11px; fill: var(--text-muted); font-family: var(--font-body); }
+.health-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.health-legend li { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+.health-legend .swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.health-legend .hcount { margin-left: auto; font-weight: 700; color: var(--text); }
+
+/* ── Member list ────────────────────────────────────────────────────────── */
+.member-list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.member-chip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-full); padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs); font-weight: 600; color: var(--text);
+}
+.member-chip .mcount { color: var(--text-muted); }
+
+/* ── Flag stats ─────────────────────────────────────────────────────────── */
+.flag-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); }
+.flag-stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); }
+.flag-stat .fs-label { font-size: var(--text-xs); color: var(--text-muted); }
+.flag-stat .fs-value { font-family: var(--font-display); font-size: var(--text-2xl); color: var(--text); }
+
+/* ── Table toggle ───────────────────────────────────────────────────────── */
+.insights-table-wrap { display: flex; flex-direction: column; gap: var(--space-3); }
+.table-toggle {
+  align-self: flex-start; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); border-radius: var(--radius-full); padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm); font-weight: 600; cursor: pointer; font-family: var(--font-body);
+}
+.table-toggle:hover { border-color: var(--accent); color: var(--accent-h); }
+.insights-table-wrap table { font-size: var(--text-xs); }
+.insights-table-wrap th, .insights-table-wrap td { padding: var(--space-2) var(--space-3); }
+
+@media (max-width: 640px) {
+  .insights-header { flex-direction: column; align-items: flex-start; }
+  .hbar-label { width: 84px; }
+}
