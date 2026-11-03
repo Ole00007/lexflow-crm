@@ -6,10 +6,8 @@ Reads the roadmap JSON and creates:
   - Tasks with startdate + duedate (derived from roadmap column + dependencies)
 
 This is NOT fake data — every task title, status, and dependency comes from
-the real roadmap. Dates are derived from the roadmap column:
-  - done/deployed → past dates (completed)
-  - local_verified/awaiting_confirmation → current in-progress dates
-  - backlog/blocked → future dates (upcoming)
+the real roadmap. Dates are NEVER invented: start_date/due_date are copied from the
+roadmap node; a node without them gets NULL dates and is excluded from /api/gantt.
 
 Usage:
   python seed_gantt_data.py
@@ -75,8 +73,20 @@ def column_to_status(column):
     return mapping.get(column, "pending")
 
 
+def explicit_dates(rt):
+    """Return (start, due) taken ONLY from the roadmap node; a missing field is None.
+
+    The roadmap JSON is the data authority: a node without start_date/due_date is
+    unscheduled, and the Gantt API excludes rows with a NULL date (no fake bar).
+    """
+    start = date.fromisoformat(rt["start_date"]) if rt.get("start_date") else None
+    due = date.fromisoformat(rt["due_date"]) if rt.get("due_date") else None
+    return start, due
+
+
 def derive_dates(column, index):
-    """Derive startdate and duedate from roadmap column."""
+    """LEGACY demo-only date generator (invents dates). No longer used by the seeder;
+    kept for backward compatibility with external callers."""
     today = date.today()
     
     if column in ("done", "deployed"):
@@ -95,12 +105,13 @@ def derive_dates(column, index):
     return start, end
 
 
-def main():
+def main(roadmap_tasks=None):
     app = create_app()
     
     with app.app_context():
         # Load roadmap
-        roadmap_tasks = load_roadmap()
+        if roadmap_tasks is None:
+            roadmap_tasks = load_roadmap()
         print(f"Loaded {len(roadmap_tasks)} roadmap tasks")
         
         # Get the default workspace and superadmin user
@@ -177,12 +188,8 @@ def main():
             else:
                 case.title, case.status, case.priority = case_title, case_status, priority
             
-            # Dates: explicit roadmap fields win; otherwise derive (only if the row has none yet)
-            d_start, d_end = derive_dates(column, i)
-            if rt.get("start_date"):
-                d_start = date.fromisoformat(rt["start_date"])
-            if rt.get("due_date"):
-                d_end = date.fromisoformat(rt["due_date"])
+            # Dates come ONLY from the roadmap node; missing => NULL (unscheduled, never invented)
+            d_start, d_end = explicit_dates(rt)
             
             task = Task.query.filter_by(caseid=case.id, is_deleted=False).first()
             if task is None:
@@ -201,14 +208,13 @@ def main():
                 tasks_created += 1
             else:
                 task.title, task.status, task.priority = f"[{task_id}] {title}", status, priority
-                if rt.get("start_date") or task.startdate is None:
-                    task.startdate = d_start
-                if rt.get("due_date") or task.duedate is None:
-                    task.duedate = d_end
+                # Roadmap is the authority: also clears dates fabricated by earlier seeds
+                task.startdate = d_start
+                task.duedate = d_end
             db.session.flush()
             roadmap_row_by_tid[task_id] = task
             start, end = task.startdate, task.duedate
-            print(f"  {task_id}: {title[:60]}... | {column} → {status} | {start} → {end}")
+            print(f"  {task_id}: {title[:60]}... | {column} → {status} | {start or 'unscheduled'} → {end or 'unscheduled'}")
         
         # Second pass: roadmap depends_on -> Task.depends_on (comma-separated DB ids)
         for rt in roadmap_tasks:
