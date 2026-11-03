@@ -16,6 +16,8 @@ depends_on = None
 
 
 def upgrade():
+    if sa.inspect(op.get_bind()).has_table('notify_consents'):
+        return  # runtime create_all() already made it on pre-existing DBs
     op.create_table(
         'notify_consents',
         sa.Column('id', sa.Integer(), primary_key=True),

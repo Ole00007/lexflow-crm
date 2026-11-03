@@ -32,7 +32,7 @@ def upgrade():
     # 2. Seed default workspace
     op.execute(
         "INSERT INTO workspaces (id, name, slug, description, is_active) "
-        "VALUES (1, 'LexFlow Default', 'lexflow', 'Default workspace for legacy data', 1)"
+        "VALUES (1, 'LexFlow Default', 'lexflow', 'Default workspace for legacy data', TRUE)"
     )
 
     # 3. Add workspace_id to each table using batch mode
