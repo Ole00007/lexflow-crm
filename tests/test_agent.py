@@ -835,3 +835,19 @@ def test_blocked_intent_in_italian():
     from crm.agent import dialog
     for m in ('cosa mi blocca?', 'quali task sono bloccati', 'what is blocking me here?'):
         assert dialog.resolve(m, [], None)['goal'].startswith('show my blocked') or 'task' in m
+
+
+def test_router_accepts_plain_prose_answer_and_long_final(monkeypatch):
+    """'translate it' style requests: the model answers in prose (not JSON) and must not be reported as 'cannot reach model'."""
+    from crm.agent import router
+    monkeypatch.setattr(router.llm, 'enabled', lambda: True)
+    long_text = 'Bozza: ' + 'testo ' * 700       # ~4.2k chars, above the old 1500 cap
+    monkeypatch.setattr(router.llm, 'complete', lambda s, u, max_tokens=0: long_text)
+    b = router.HybridBrain({'conversation': [], 'page': {'path': '/kanban'}})
+    out = b.next_step('translate it to italian', [])
+    assert out['final'].startswith('Bozza:') and len(out['final']) > 3000, out
+    assert b.last_mode == 'model'
+    # a truncated JSON blob is still a failure, and degrades to the offline message
+    monkeypatch.setattr(router.llm, 'complete', lambda s, u, max_tokens=0: '{"final": "cut off')
+    b2 = router.HybridBrain({'conversation': [], 'page': {'path': '/kanban'}})
+    assert "can't reach my language model" in b2.next_step('translate it to italian', [])['final']

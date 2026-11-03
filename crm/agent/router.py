@@ -17,6 +17,7 @@ from . import llm
 from .brain import Brain, RuleBrain
 from .guard import TOOL_SPECS, summarize_data
 
+MAX_FINAL_CHARS = 6000       # a translated draft must not be cut off
 MAX_RESULT_CHARS = 2500      # tool results are clipped before they go to the model (cost + injection surface)
 
 _SYSTEM = (
@@ -65,11 +66,17 @@ class LLMRouterBrain(Brain):
             'tool_results': results,
         }, ensure_ascii=False)
         user = '<data>' + user + '</data>'
-        out = _extract_json(llm.complete(_SYSTEM, user, max_tokens=400))
+        raw = llm.complete(_SYSTEM, user, max_tokens=2500)
+        out = _extract_json(raw)
         if out and isinstance(out.get('tool'), str) and out['tool'] in TOOL_SPECS:
             return {'tool': out['tool'], 'args': out.get('args') if isinstance(out.get('args'), dict) else {}}
         if out and isinstance(out.get('final'), str) and out['final'].strip():
-            return {'final': out['final'].strip()[:1500]}
+            return {'final': out['final'].strip()[:MAX_FINAL_CHARS]}
+        # The model answered in plain prose (typical for 'translate it', 'shorten', 'what is the issue'): that IS the
+        # answer. Treating it as a failure made Elisa claim she could not reach the model although it had replied.
+        text = (raw or '').strip()
+        if text and not text.lstrip().startswith('{'):
+            return {'final': text[:MAX_FINAL_CHARS]}
         raise llm.LLMError('unparsable model answer')
 
 
@@ -89,7 +96,9 @@ class HybridBrain(Brain):
             try:
                 self.last_mode = 'model'
                 return self.router.next_step(goal, history)
-            except Exception:
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning('agent model step failed: %s: %s', type(exc).__name__, str(exc)[:200])
                 self._mode = 'rules'      # degrade for the rest of this request
                 self.last_mode = 'rules(fallback)'
                 if not self.rules.recognizes(goal) and not history:
