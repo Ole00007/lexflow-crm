@@ -10,17 +10,28 @@
     <a class="button button-secondary" href="{{ url_for('views.admin_list') }}">Go to Matters</a>
 </div>
 
-{% if is_superadmin %}
-<div class="card" style="max-width:760px">
+<div class="card" style="max-width:760px" id="docsIndexCard" hidden>
     <div class="eyebrow">Docs &amp; architecture index (internal · superadmin only)</div>
-    <p class="intro" style="margin-top:var(--space-2)">Source of truth is the repository: <a href="{{ repo_url }}" target="_blank" rel="noopener">{{ repo_url }}</a> (branch <code>{{ branch }}</code>). Links open the file on GitHub; they work only if you are signed in to GitHub with access to the repo, and only for files already pushed.</p>
-    <ul style="margin:var(--space-3) 0 0;padding-left:var(--space-4);line-height:1.9">
-        {% for d in docs %}
-        <li><a href="{{ repo_url }}/blob/{{ branch }}/docs/{{ d.name }}" target="_blank" rel="noopener">{{ d.name }}</a> <span style="color:var(--text-muted);font-size:var(--text-xs)">· {{ d.kind }}</span></li>
-        {% else %}<li>No docs found.</li>{% endfor %}
-    </ul>
+    <p class="intro" style="margin-top:var(--space-2)" id="docsIntro"></p>
+    <ul style="margin:var(--space-3) 0 0;padding-left:var(--space-4);line-height:1.9" id="docsList"></ul>
 </div>
-{% else %}
-<p class="intro">Product documentation for your firm will appear here.</p>
-{% endif %}
+<script>
+(function(){
+  var t=localStorage.getItem('jwt'); if(!t) return;
+  fetch('/api/docs-index',{headers:{'Authorization':'Bearer '+t}}).then(function(r){return r.ok?r.json():null}).then(function(d){
+    if(!d) return;
+    var card=document.getElementById('docsIndexCard'), intro=document.getElementById('docsIntro'), ul=document.getElementById('docsList');
+    var a=document.createElement('a'); a.href=d.repo_url; a.target='_blank'; a.rel='noopener'; a.textContent=d.repo_url;
+    intro.append('Source of truth is the repository: '); intro.append(a);
+    intro.append(' (branch '+d.branch+'). Links open the file on GitHub: they need GitHub access to the repo and only work for files already pushed.');
+    d.docs.forEach(function(x){
+      var li=document.createElement('li'), l=document.createElement('a');
+      l.href=d.repo_url+'/blob/'+encodeURIComponent(d.branch)+'/docs/'+encodeURIComponent(x.name); l.target='_blank'; l.rel='noopener'; l.textContent=x.name;
+      var k=document.createElement('span'); k.style.cssText='color:var(--text-muted);font-size:var(--text-xs)'; k.textContent=' · '+x.kind;
+      li.append(l,k); ul.append(li);
+    });
+    card.hidden=false;
+  }).catch(function(){});
+})();
+</script>
 {% endblock %}

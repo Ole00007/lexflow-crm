@@ -464,18 +464,29 @@ def settings_page():
 @views_bp.route('/document-center')
 @jwt_required(optional=True)
 def document_center():
-    """Docs + architecture index. The repo index is shown to superadmins only (internal architecture)."""
-    import os as _os
-    from pathlib import Path as _P
-    root = _P(__file__).resolve().parents[2] / 'docs'
+    """Docs + architecture index. The index itself is fetched client-side from /api/docs-index (superadmin only)."""
+    return render_template('document_center.html')
+
+
+@views_bp.route('/api/docs-index')
+@jwt_required()
+def docs_index():
+    """Names of the repo's docs/ files + GitHub base link. Superadmin only (internal architecture)."""
+    from ..models.user import User
+    user = User.query.filter_by(id=int(get_jwt_identity()), is_deleted=False).first()
+    if not user or user.role != 'superadmin':
+        abort(403)
+    root = Path(__file__).resolve().parents[2] / 'docs'
     items = []
     try:
         for f in sorted(root.iterdir()):
             if f.is_file() and f.suffix in ('.md', '.json', '.html'):
-                items.append({'name': f.name, 'kind': 'Architecture / decision' if 'architecture' in f.name.lower() or 'decision' in f.name.lower() else 'Doc'})
+                low = f.name.lower()
+                items.append({'name': f.name, 'kind': 'Architecture / decision' if ('architecture' in low or 'decision' in low) else 'Doc'})
     except OSError:
         pass
-    return render_template('document_center.html', docs=items, branch=_os.environ.get('LEXFLOW_REPO_BRANCH', 'lexflow_hermes_v1'))
+    repo = os.environ.get('LEXFLOW_REPO_URL', 'https://github.com/Ole00007/lexflow-crm').rstrip('/')
+    return jsonify({'repo_url': repo, 'branch': os.environ.get('LEXFLOW_REPO_BRANCH', 'lexflow_hermes_v1'), 'docs': items})
 
 
 @views_bp.route('/templates')

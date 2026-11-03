@@ -145,7 +145,6 @@
                 <li><a class="nav-link{{ ' active' if ep == 'views.templates_page' }}" href="{{ url_for('views.templates_page') }}">📄 Templates</a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.drafts_page' }}" href="{{ url_for('views.drafts_page') }}">✎ My drafts</a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.document_center' }}" href="{{ url_for('views.document_center') }}">📚 Document center</a></li>
-                {% if current_user %}
                 <li><details class="nav-group" id="navConfig"{% if ep in ('views.settings_page',) %} open{% endif %}>
                     <summary class="nav-link">⚙ Configuration</summary>
                     <ul class="nav-sub">
@@ -153,6 +152,7 @@
                         <li><div class="nav-ver" title="Build running now">Version <strong>{{ app_version.version }}</strong><br>branch {{ app_version.branch }} · {{ app_version.commit }}<br>schema {{ app_version.schema }}</div></li>
                     </ul>
                 </details></li>
+                {% if current_user %}
                 <li><a class="nav-link" href="#" onclick="doLogout(event)">Logout</a></li>
                 {% endif %}
                 {% if is_superadmin %}
