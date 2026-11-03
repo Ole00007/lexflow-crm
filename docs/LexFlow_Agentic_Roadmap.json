@@ -596,14 +596,14 @@
     {
       "id": "T-027",
       "title": "Graph: real Hindsight memory nodes (currently stub) + daily Today digest",
-      "column": "backlog",
+      "column": "local_verified",
       "assigned_agent": "backend_dev",
-      "deploy_status": null,
+      "deploy_status": "local",
       "priority": "P3",
       "depends_on": [
         "T-021"
       ],
-      "notes": "Context graph shows vault notes only. Add Hindsight recall as node source (superadmin only) and a daily Today-panel digest.",
+      "notes": "LOCAL ONLY (branch feat/t027-hindsight-memory, not pushed). GET /api/context/memory + /api/context/digest, superadmin-only, flag CONTEXT_MEMORY_ENABLED default off; needs HINDSIGHT_URL + HINDSIGHT_API_KEY. Hindsight reachable 2026-11-03 (recall ~7.5s). Cap 25 nodes (ceiling 40), client names scrubbed to Avv.Pagl. tests/test_context_memory.py 29 PASS incl. live.",
       "start_date": "2026-11-02",
       "due_date": "2026-11-13",
       "tenant_scope": [

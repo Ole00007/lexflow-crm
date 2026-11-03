@@ -50,3 +50,5 @@
 .graph-page .gp-btn:hover { border-color: var(--accent); }
 .graph-page .gp-excerpt { font-size: 12px; color: var(--text-muted); margin: 8px 0 0; line-height: 1.5; border-left: 2px solid #E879F9; padding-left: 8px; }
 @media (max-width: 960px) { .graph-page .gp-main { grid-template-columns: 1fr; } .graph-page { height: auto; } .graph-page .gp-canvas-wrap { height: 60vh; } }
+.graph-page .gp-digest-item { font-size: 12px; color: var(--text-muted); line-height: 1.45; margin: 0 0 8px; border-left: 2px solid #22D3EE; padding-left: 8px; }
+.graph-page .gp-digest-item em { display: block; font-style: normal; color: var(--text-faint); font-size: 11px; }

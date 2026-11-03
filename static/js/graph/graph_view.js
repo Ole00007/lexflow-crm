@@ -10,6 +10,8 @@
 
   var ENDPOINT = '/api/roadmap/graph';
   var NOTES_ENDPOINT = '/api/context/notes';   // superadmin-only; 403/404/offline => silently no notes
+  var MEMORY_ENDPOINT = '/api/context/memory';   // superadmin-only Hindsight recall; 403/404/offline => no memory nodes
+  var DIGEST_ENDPOINT = '/api/context/digest';
   var POLL_MS = 30000;
   var FINISHED = { done: 1, closed: 1, completed: 1, archived: 1, resolved: 1, won: 1, lost: 1 };
 
@@ -20,7 +22,8 @@
     staff:   { color: '#A78BFA', label: 'Staff',    href: '/workspace' },
     event:   { color: '#0F9B8E', label: 'Events',   href: '/calendar' },
     status:  { color: '#7E90A9', label: 'Statuses', href: null },
-    note:    { color: '#E879F9', label: 'Notes',    href: null }
+    note:    { color: '#E879F9', label: 'Notes',    href: null },
+    memory:  { color: '#22D3EE', label: 'Memory',   href: null }
   };
   var TODAY_COLOR = { overdue: '#EF4444', today: '#F59E0B', active: '#3B7DD8', soon: '#7E90A9' };
 
@@ -107,9 +110,27 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   }
-  function mergeNotes(graph, notes) {
-    if (!notes || !Array.isArray(notes.nodes) || !notes.nodes.length) { state.vaultName = null; return graph; }
-    state.vaultName = notes.vault_name || null;
+  function fetchJson(url, t) {
+    return fetch(url, { headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+  function renderDigest(d) {
+    var card = $('gp-digest-card'), host = $('gp-digest');
+    if (!card || !host) { return; }
+    if (!d || !Array.isArray(d.items) || !d.items.length) { card.hidden = true; return; }
+    host.textContent = '';
+    d.items.forEach(function (it) {
+      var p = el('p', 'gp-digest-item', it.text);
+      if (it.when) { p.appendChild(el('em', null, fmtDate(it.when))); }
+      host.appendChild(p);
+    });
+    if (d.is_today === false) { host.appendChild(el('p', 'gp-empty', 'Nothing dated today — showing most recent.')); }
+    card.hidden = false;
+  }
+  function mergeNotes(graph, notes, keepVault) {
+    if (!notes || !Array.isArray(notes.nodes) || !notes.nodes.length) { if (!keepVault) { state.vaultName = null; } return graph; }
+    if (!keepVault) { state.vaultName = notes.vault_name || null; }
     var taskByRef = {};
     (graph.nodes || []).forEach(function (n) {
       if (n.type !== 'task') { return; }
@@ -138,6 +159,12 @@
       })
       .then(function (j) {
         return fetchNotes(t).then(function (notes) { return mergeNotes(j, notes); });
+      })
+      .then(function (j) {
+        return Promise.all([fetchJson(MEMORY_ENDPOINT, t), fetchJson(DIGEST_ENDPOINT, t)]).then(function (res) {
+          renderDigest(res[1]);
+          return mergeNotes(j, res[0], true);   // same node/edge contract; vaultName stays from notes
+        });
       })
       .then(function (j) {
         ingest(j);
@@ -445,8 +472,9 @@
     if (d.duedate) { row('Due', fmtDate(d.duedate)); }
     if (n.today) { row('Today', { overdue: 'Overdue', today: 'Due today', active: 'In progress', soon: 'Due within 7 days' }[n.today]); }
     row('Email', d.email); row('Phone', d.phone); row('Company', d.company); row('Role', d.role);
-    if (n.type === 'note') {
-      row('Note path', d.path_rel); row('Updated', fmtDate(d.updated));
+    if (n.type === 'note' || n.type === 'memory') {
+      if (n.type === 'note') { row('Note path', d.path_rel); } else { row('Kind', d.kind); }
+      row('Updated', fmtDate(d.updated));
       if (d.tags && d.tags.length) { row('Tags', d.tags.join(', ')); }
       if (d.excerpt) { var ex = el('p', 'gp-excerpt', d.excerpt); host.appendChild(ex); }
     }
