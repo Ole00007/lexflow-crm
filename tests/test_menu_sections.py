@@ -19,7 +19,7 @@ def test_menu_has_new_sections_and_version_on_every_base_page():
         r = _get(st, 'super', path)
         assert r.status_code == 200, (path, r.status_code)
         h = r.get_data(as_text=True)
-        for needle in ('Configuration', 'Templates', 'My drafts', 'Document center', 'nav-ver', 'schema m4a5b6c7d8e9', 'position:sticky'):
+        for needle in ('Configuration', 'Templates', 'My drafts', 'Document center', 'nav-ver', 'schema j1e2f3a4b5c6', 'position:sticky'):
             assert needle in h, (path, needle)
 
 

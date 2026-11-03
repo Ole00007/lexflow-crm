@@ -65,16 +65,21 @@ def superadmin_headers(client):
     return {}
 
 
-# Plain-script tests (run with `python tests/<file>.py`, they end in sys.exit()) must not be
-# collected by pytest — a module-level sys.exit() crashes collection.
-collect_ignore = [
-    "test_gantt_dependencies.py", "test_context_notes.py", "test_gantt_team.py",
-    "test_notify.py", "test_deadline_calendar_isolation.py",
-]
-
-# Plain-script tests (own env + own DB, sys.exit at import level) cannot be collected by pytest:
-# they are found by a column-0 `sys.exit(` and run in isolated subprocesses by test_plain_scripts.py.
+# Test files that cannot share the pytest process:
+#  - SCRIPT_TESTS: plain scripts (column-0 `sys.exit(`): run as scripts in a subprocess.
+#  - ENV_TESTS: pytest files that set DATABASE_URL at import level (pollutes every other test): run with pytest in a subprocess.
+# Both are executed by test_plain_scripts.py and never collected in-process.
 import pathlib as _pl
-SCRIPT_TESTS = sorted(f.name for f in _pl.Path(__file__).parent.glob('test_*.py')
-                      if any(line.startswith('sys.exit(') for line in f.read_text(errors='ignore').splitlines()))
-collect_ignore = sorted(set(collect_ignore) | set(SCRIPT_TESTS))
+_files = sorted(_pl.Path(__file__).parent.glob('test_*.py'))
+def _lines(f):
+    return f.read_text(errors='ignore').splitlines()
+def _is_script(f):
+    ls = _lines(f)
+    return any(l.startswith('sys.exit(') for l in ls) or any(l.strip().startswith('sys.exit(') and not l.startswith('    sys.exit(main')
+                                                              and 'def ' not in l for l in ls if l.startswith('    sys.exit(0)') or l.startswith('    sys.exit(1)')) \
+        or not any(l.startswith(('def test_', 'async def test_')) or l.startswith('    def test_') for l in ls)
+SCRIPT_TESTS = [f.name for f in _files if f.name != 'test_plain_scripts.py' and _is_script(f)]
+ENV_TESTS = [f.name for f in _files if f.name not in SCRIPT_TESTS and f.name != 'test_plain_scripts.py'
+             and any(l.startswith(('os.environ.update(DATABASE_URL', "os.environ.setdefault('DATABASE_URL'", 'os.environ["DATABASE_URL"]', "os.environ['DATABASE_URL']")) for l in _lines(f))]
+collect_ignore = sorted({'test_gantt_dependencies.py', 'test_context_notes.py', 'test_gantt_team.py', 'test_notify.py',
+                         'test_deadline_calendar_isolation.py'} | set(SCRIPT_TESTS) | set(ENV_TESTS))
