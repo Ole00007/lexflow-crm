@@ -38,7 +38,7 @@ def _alembic_head() -> str:
 def get_version() -> dict:
     sha = os.environ.get('RAILWAY_GIT_COMMIT_SHA') or os.environ.get('GIT_COMMIT') or _git('rev-parse', '--short', 'HEAD')
     return {
-        'version': os.environ.get('LEXFLOW_VERSION') or _git('describe', '--tags', '--always') or (sha[:7] if sha else 'dev'),
+        'version': os.environ.get('LEXFLOW_VERSION') or _git('describe', '--tags', '--match', 'v[0-9]*') or ('dev-' + sha[:7] if sha else 'dev'),
         'commit': (sha or '')[:7] or 'unknown',
         'branch': os.environ.get('RAILWAY_GIT_BRANCH') or _git('rev-parse', '--abbrev-ref', 'HEAD') or 'unknown',
         'schema': _alembic_head() or 'unknown',
