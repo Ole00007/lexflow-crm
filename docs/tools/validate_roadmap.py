@@ -13,7 +13,7 @@ Checks
 Authority: docs/LexFlow_Agentic_Roadmap.json (this repo). Read-only.
 No model, provider or other environment-specific literal is embedded (Rule §12).
 """
-import json, os, sys, sqlite3, datetime, pathlib
+import json, os, sys, sqlite3, datetime, pathlib, subprocess
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 ROADMAP = REPO / "docs" / "LexFlow_Agentic_Roadmap.json"
@@ -33,11 +33,40 @@ ALLOWED = {
 EVIDENCE_COLUMNS = {"done", "deployed"}
 
 
+def _git_common_dir(path):
+    """git common dir of the repo containing `path` (None if not a git checkout)."""
+    try:
+        out = subprocess.run(["git", "-C", str(path), "rev-parse",
+                              "--path-format=absolute", "--git-common-dir"],
+                             capture_output=True, text=True, timeout=15)
+        if out.returncode != 0:
+            return None
+        return os.path.realpath(out.stdout.strip())
+    except Exception:
+        return None
+
+
 def load_cards():
     if not KANBAN.exists():
         return None
-    con = sqlite3.connect(f"file:{KANBAN}?mode=ro", uri=True)
-    return {r[0]: r[1] for r in con.execute("SELECT id, status FROM tasks")}
+    # The board is WAL-mode; a strict mode=ro URI fails with "unable to open
+    # database file" when no -shm already exists. Fall back to a normal
+    # connection - this script only ever issues SELECTs.
+    for attempt in ("ro", "ro_immutable", "rw"):
+        try:
+            if attempt == "ro":
+                con = sqlite3.connect(f"file:{KANBAN}?mode=ro", uri=True, timeout=10)
+            elif attempt == "ro_immutable":
+                con = sqlite3.connect(f"file:{KANBAN}?mode=ro&immutable=1",
+                                      uri=True, timeout=10)
+            else:
+                con = sqlite3.connect(str(KANBAN), timeout=10)
+            rows = con.execute("SELECT id, status FROM tasks").fetchall()
+            con.close()
+            return {r[0]: r[1] for r in rows}
+        except sqlite3.Error:
+            continue
+    return None
 
 
 def main():
@@ -78,13 +107,23 @@ def main():
                 v.append(f"[B] {tid} unfinished (column={t.get('column')}) has no card")
 
     # C. one-clone / one-tracker guard
+    # A second copy only counts as a parallel tracker when it belongs to a
+    # DIFFERENT repo (or no repo). Checkouts of this same repo - git worktrees
+    # for feature branches - are derived by construction; they are tracked by
+    # git, not an independent registry (Rule §9).
+    repo_common = _git_common_dir(REPO)
     roots = [HOME / "projects", HOME / "Obsidian", HOME / "Downloads", HOME / "Desktop"]
     copies = []
     for root in roots:
         if root.exists():
             copies += [p for p in root.rglob("LexFlow_Agentic_Roadmap.json")
                        if "_archive" not in p.parts and "Trash" not in p.parts]
-    seen = {os.path.realpath(p) for p in copies}
+    seen, worktree_copies = set(), 0
+    for p in copies:
+        if repo_common and _git_common_dir(p.parent) == repo_common:
+            worktree_copies += 1
+            continue
+        seen.add(os.path.realpath(p))
     if len(seen) > 1:
         v.append("[C] more than one tracker on disk: " + ", ".join(sorted(seen)))
 
@@ -100,6 +139,11 @@ def main():
         return 1
     print(f"ROADMAP VALIDATION OK - {len(nodes)} nodes, {len(cmap)} cards, "
           f"last_updated={d['last_updated']}")
+    if worktree_copies:
+        print(f"  (info) {worktree_copies} same-repo worktree checkout(s) of this "
+              f"tracker ignored by the one-tracker guard")
+    if seen:
+        print(f"  (info) canonical copy: {sorted(seen)[0]}")
     return 0
 
 
