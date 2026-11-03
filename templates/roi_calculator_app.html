@@ -24,12 +24,15 @@
 .roi-field:last-child { margin-bottom: 0; }
 .roi-field label { display: block; margin-bottom: 5px; font-size: .82rem; font-weight: 600; color: var(--text-muted); }
 .roi-field label em { font-style: italic; font-weight: 500; color: var(--accent-h); }
-.roi-field input {
+.roi-field input, .roi-field select {
   width: 100%; padding: 10px 12px;
   background: var(--surface-2); color: var(--text);
   border: 1px solid var(--border); border-radius: 9px; font-size: 1rem; font-weight: 600;
 }
+.roi-field select { appearance: auto; }
 .roi-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.roi-field-hint { display: block; margin-top: 4px; font-size: .74rem; color: var(--text-muted); }
+.roi-field-suffix { font-size: .8rem; color: var(--text-muted); }
 .roi-note { margin: 12px 0 0; font-size: .76rem; color: var(--text-muted); }
 .roi-summary {
   margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: var(--accent);
@@ -44,32 +47,72 @@
 .roi-chart svg { width: 100%; height: auto; display: block; }
 .roi-chart-year { font-size: 9px; fill: var(--text-muted); }
 .roi-bar-1 { fill: var(--accent); }
+.roi-bar-1b { fill: var(--accent-h); opacity: .85; }
 .roi-bar-2 { fill: var(--text-faint, #7E90A9); opacity: .85; }
-.roi-legend { display: flex; gap: 16px; margin-top: 8px; font-size: .78rem; color: var(--text-muted); }
+.roi-legend { display: flex; gap: 14px; margin-top: 8px; font-size: .78rem; color: var(--text-muted); flex-wrap: wrap; }
 .roi-legend > span { display: inline-flex; align-items: center; gap: 6px; }
 .roi-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
 .roi-dot-1 { background: var(--accent); }
 .roi-dot-2 { background: var(--text-faint, #7E90A9); }
 .roi-formula { font-size: .8rem; color: var(--text-muted); }
 .roi-rate-used { margin: 8px 0 0; font-size: .78rem; color: var(--accent-h); }
+.roi-method-used { margin: 4px 0 0; font-size: .78rem; color: var(--accent-h); }
+.roi-honesty { margin: 14px 0 8px; font-size: .82rem; font-weight: 600; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 12px; }
+.roi-inspec { margin: 10px 0; font-size: .84rem; }
+.roi-inspec summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.roi-difftable { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .8rem; }
+.roi-difftable th, .roi-difftable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+.roi-difftable th { color: var(--text-muted); }
+.roi-difftable-diff td { background: rgba(233,196,106,.08); }
+.roi-result-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.roi-btn {
+  background: var(--accent); color: #1a1205; border: 1px solid var(--accent);
+  border-radius: 9px; padding: 9px 14px; font-size: .86rem; font-weight: 700; cursor: pointer;
+}
+.roi-btn-secondary { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.roi-scen-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.roi-scen { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.roi-scen-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.roi-scen-head h3 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--text); }
+.roi-scen-badge { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; background: var(--border); color: var(--text-muted); }
+.roi-scen-exp .roi-scen-badge { background: rgba(233,196,106,.16); color: var(--accent-h); }
+.roi-scen-kpis { margin: 0; display: grid; gap: 6px; }
+.roi-scen-kpis > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.roi-scen-kpis dt { font-size: .72rem; color: var(--text-muted); }
+.roi-scen-kpis dd { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text); }
+.roi-scen-roi-row dd { font-size: 1.25rem !important; }
+.roi-scen-roi-eur { font-size: .76rem; color: var(--text-muted); }
+.roi-scen-roi-eur b { color: var(--text); }
 .roi-assumptions { margin: 20px 0 10px; }
 .roi-assumptions details {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 4px 16px;
 }
 .roi-assumptions summary { padding: 12px 0; cursor: pointer; font-weight: 600; font-size: .92rem; color: var(--text); }
+.roi-assumptions summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .roi-assum-body { padding-bottom: 16px; }
-.roi-field-suffix { font-size: .8rem; color: var(--text-muted); }
+.roi-assum-sec { margin: 16px 0 8px; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+.roi-assum-sec:first-child { margin-top: 4px; }
+.roi-scen-multipliers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.roi-scen-multipliers fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 0; }
+.roi-scen-multipliers legend { font-size: .76rem; font-weight: 700; color: var(--text-muted); padding: 0 4px; }
+.roi-scen-multipliers label { display: flex; align-items: center; gap: 8px; font-size: .76rem; color: var(--text-muted); margin-bottom: 6px; }
+.roi-scen-multipliers input { width: 84px; }
 .roi-disclaimer { font-size: .78rem; color: var(--text-muted); margin: 4px 0 6px; }
-/* settings gear sits at the bottom of the sidebar, where the old "back to app"
-   link was — matching the app's existing settings placement in base.html */
 .roi-app-settings { display: flex; justify-content: flex-end; margin-top: 20px; }
 .roi-app-settings a {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: .82rem; font-weight: 700; color: var(--accent-h); text-decoration: none;
   border: 1px solid var(--border); border-radius: 9999px; padding: 6px 14px; background: var(--surface-2);
 }
-@media (max-width: 720px) { .roi-grid { grid-template-columns: 1fr; } .roi-hero h1 { font-size: 1.4rem; } }
+@media (max-width: 720px) { .roi-grid, .roi-scen-wrap, .roi-scen-multipliers { grid-template-columns: 1fr; } .roi-hero h1 { font-size: 1.4rem; } }
 @media (max-width: 480px) { .roi-kpi-grid { grid-template-columns: 1fr 1fr; } .roi-hero h1 { font-size: 1.28rem; } }
+@media print {
+  .sidebar, .topbar, .roi-lang, .roi-result-actions, .roi-assumptions, .roi-track, .roi-inspec,
+  .app-sidebar, .app-topbar { display: none !important; }
+  .roi-main { max-width: 100%; padding: 0; }
+  .roi-card, .roi-scen { break-inside: avoid; }
+  body { background: #fff !important; color: #111 !important; }
+}
 </style>
 {% if roi_tracker_enabled %}<link rel="stylesheet" href="{{ url_for('static', filename='css/roi/roi_progress.css') }}">{% endif %}
 {% endblock %}
@@ -79,11 +122,10 @@
   <section class="roi-hero">
     <p class="roi-eyebrow" data-it="Tempo recuperato, valore reale" data-en="Time saved, real value">Tempo recuperato, valore reale</p>
     <h1 data-it="Quante ore recupera il tuo studio con LexFlow?" data-en="How many hours does your firm win back with LexFlow?">Quante ore recupera il tuo studio con LexFlow?</h1>
-    <p class="roi-intro" data-it="Stima in pochi secondi le ore di lavoro recuperate con LexFlow e il loro valore economico. Nessun dato viene salvato o tracciato." data-en="Estimate in seconds the working hours LexFlow gives back and their euro value. Nothing is stored or tracked.">Stima in pochi secondi le ore di lavoro recuperate con LexFlow e il loro valore economico. Nessun dato viene salvato o tracciato.</p>
+    <p class="roi-intro" data-it="Stima in pochi secondi le ore di lavoro recuperate con LexFlow e il loro valore economico, con uno scenario prudente e uno ottimista. Nessun dato viene salvato o tracciato." data-en="Estimate in seconds the working hours LexFlow gives back and their euro value, with a conservative and an optimistic scenario. Nothing is stored or tracked.">Stima in pochi secondi le ore di lavoro recuperate con LexFlow e il loro valore economico, con uno scenario prudente e uno ottimista. Nessun dato viene salvato o tracciato.</p>
   </section>
 
   <section class="roi-grid" aria-label="Calculator">
-    <!-- Inputs -->
     <div class="roi-card roi-inputs">
       <h2 data-it="Il tuo studio" data-en="Your firm">Il tuo studio</h2>
       <div class="roi-field">
@@ -109,54 +151,150 @@
       <p class="roi-note" data-it="I valori si aggiornano automaticamente mentre scrivi." data-en="Values update as you type.">I valori si aggiornano automaticamente mentre scrivi.</p>
     </div>
 
-    <!-- Outputs -->
     <div class="roi-card roi-results">
       <h2 data-it="Risultato stimato" data-en="Estimated result">Risultato stimato</h2>
-
       <p class="roi-summary" id="roiSummary" aria-live="polite">—</p>
 
-      <div class="roi-kpi-grid">
-        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Ore recuperate / mese" data-en="Hours regained / month">Ore recuperate / mese</span><strong id="k_hoursMonth">—</strong></div>
-        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Ore recuperate / anno" data-en="Hours regained / year">Ore recuperate / anno</span><strong id="k_hoursYear">—</strong></div>
-        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Valore ore / mese" data-en="Hour value / month">Valore ore / mese</span><strong id="k_valueMonth">—</strong></div>
-        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Valore ore / anno" data-en="Hour value / year">Valore ore / anno</span><strong id="k_valueYear">—</strong></div>
-        <div class="roi-kpi"><span class="roi-kpi-label" data-it="ROI a 3 anni" data-en="3-year ROI">ROI a 3 anni</span><strong id="k_roi">—</strong></div>
-        <div class="roi-kpi"><span class="roi-kpi-label" data-it="Rientro (mese)" data-en="Payback (month)">Rientro (mese)</span><strong id="k_payback">—</strong></div>
+      <div class="roi-scen-wrap">
+        <div class="roi-scen roi-scen-cons" data-scen="conservative">
+          <div class="roi-scen-head">
+            <h3 data-it="Scenario prudente" data-en="Conservative scenario">Scenario prudente</h3>
+            <span class="roi-scen-badge" data-it="Predefinito" data-en="Default">Predefinito</span>
+          </div>
+          <dl class="roi-scen-kpis">
+            <div><dt data-it="Ore recuperate / mese" data-en="Hours regained / month">Ore recuperate / mese</dt><dd id="c_hoursMonth">—</dd></div>
+            <div><dt data-it="Ore recuperate / anno" data-en="Hours regained / year">Ore recuperate / anno</dt><dd id="c_hoursYear">—</dd></div>
+            <div><dt data-it="Valore ore / mese" data-en="Hour value / month">Valore ore / mese</dt><dd id="c_valueMonth">—</dd></div>
+            <div><dt data-it="Valore ore / anno" data-en="Hour value / year">Valore ore / anno</dt><dd id="c_valueYear">—</dd></div>
+            <div class="roi-scen-roi-row"><dt data-it="ROI a 3 anni" data-en="3-year ROI">ROI a 3 anni</dt><dd id="c_roi" class="roi-kpi-pos">—</dd></div>
+            <div class="roi-scen-roi-eur" data-it="Beneficio vs costo" data-en="Benefit vs cost"><span data-it="Beneficio" data-en="Benefit">Beneficio</span> <b id="c_benefit">—</b> <span data-it="su costo" data-en="over cost">su costo</span> <b id="c_cost">—</b></div>
+            <div><dt data-it="Rientro (mese)" data-en="Payback (month)">Rientro (mese)</dt><dd id="c_payback">—</dd></div>
+          </dl>
+        </div>
+
+        <div class="roi-scen roi-scen-exp" data-scen="expected">
+          <div class="roi-scen-head">
+            <h3 data-it="Scenario ottimista" data-en="Expected scenario">Scenario ottimista</h3>
+            <span class="roi-scen-badge" data-it="Se l'adozione va bene" data-en="If adoption goes well">Se l'adozione va bene</span>
+          </div>
+          <dl class="roi-scen-kpis">
+            <div><dt data-it="Ore recuperate / mese" data-en="Hours regained / month">Ore recuperate / mese</dt><dd id="e_hoursMonth">—</dd></div>
+            <div><dt data-it="Ore recuperate / anno" data-en="Hours regained / year">Ore recuperate / anno</dt><dd id="e_hoursYear">—</dd></div>
+            <div><dt data-it="Valore ore / mese" data-en="Hour value / month">Valore ore / mese</dt><dd id="e_valueMonth">—</dd></div>
+            <div><dt data-it="Valore ore / anno" data-en="Hour value / year">Valore ore / anno</dt><dd id="e_valueYear">—</dd></div>
+            <div class="roi-scen-roi-row"><dt data-it="ROI a 3 anni" data-en="3-year ROI">ROI a 3 anni</dt><dd id="e_roi" class="roi-kpi-pos">—</dd></div>
+            <div class="roi-scen-roi-eur" data-it="Beneficio vs costo" data-en="Benefit vs cost"><span data-it="Beneficio" data-en="Benefit">Beneficio</span> <b id="e_benefit">—</b> <span data-it="su costo" data-en="over cost">su costo</span> <b id="e_cost">—</b></div>
+            <div><dt data-it="Rientro (mese)" data-en="Payback (month)">Rientro (mese)</dt><dd id="e_payback">—</dd></div>
+          </dl>
+        </div>
       </div>
 
       <div class="roi-chart" role="img" aria-label="Chart of 3-year benefit vs cost">
         <svg id="roiChart" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet" role="presentation"></svg>
         <div class="roi-legend">
-          <span><i class="roi-dot roi-dot-1"></i><span data-it="Beneficio" data-en="Benefit">Beneficio</span></span>
+          <span><i class="roi-dot roi-dot-1"></i><span data-it="Beneficio (prudente)" data-en="Benefit (conservative)">Beneficio (prudente)</span></span>
+          <span><i class="roi-dot roi-dot-1 roi-dot-1b"></i><span data-it="Beneficio (ottimista)" data-en="Benefit (expected)">Beneficio (ottimista)</span></span>
           <span><i class="roi-dot roi-dot-2"></i><span data-it="Costo LexFlow" data-en="LexFlow cost">Costo LexFlow</span></span>
         </div>
       </div>
 
       <p class="roi-formula" id="roiFormula"></p>
       <p class="roi-rate-used" id="roiRateUsed" aria-live="polite"></p>
+      <p class="roi-method-used" id="roiMethodUsed" aria-live="polite"></p>
+
+      <p class="roi-honesty" id="roiHonesty" data-it="Stima basata sui valori che hai inserito — non è una garanzia." data-en="Estimate based on the figures you entered — not a guarantee.">Stima basata sui valori che hai inserito — non è una garanzia.</p>
+
+      <details class="roi-inspec">
+        <summary data-it="Cosa ho inserito vs valori predefiniti" data-en="What you entered vs defaults used">Cosa ho inserito vs valori predefiniti</summary>
+        <table class="roi-difftable" id="roiDiffTable">
+          <thead><tr><th data-it="Parametro" data-en="Parameter">Parametro</th><th data-it="Il tuo valore" data-en="Your value">Il tuo valore</th><th data-it="Predefinito" data-en="Default">Predefinito</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
+
+      <div class="roi-result-actions">
+        <button type="button" id="roiReset" class="roi-btn roi-btn-secondary" data-it="Ripristina i predefiniti" data-en="Reset to defaults">Ripristina i predefiniti</button>
+        <button type="button" id="roiPrint" class="roi-btn" data-it="Stampa / Salva PDF" data-en="Print / Save as PDF">🖶 Stampa / Salva PDF</button>
+      </div>
     </div>
   </section>
 
-  <!-- Assumptions (editable, collapsed) -->
   <section class="roi-assumptions">
     <details id="roiAssumptions">
-      <summary data-it="Ipotesi e parametri (modificabili)" data-en="Assumptions &amp; parameters (editable)">Ipotesi e parametri (modificabili)</summary>
+      <summary data-it="Usa i tuoi valori reali (avanzato)" data-en="Use your own figures (advanced)">Usa i tuoi valori reali (avanzato)</summary>
       <div class="roi-assum-body">
+        <h4 class="roi-assum-sec" data-it="Ore risparmiate" data-en="Hours saved">Ore risparmiate</h4>
         <div class="roi-field">
           <label for="in_hmatter">
-            <span data-it="Ore risparmiate per pratica" data-en="Hours saved per matter">Ore risparmiate per pratica</span>
-            <em data-it="(IPOTESI: da validare con un avvocato)" data-en="(ASSUMPTION: validate with a lawyer)">(IPOTESI: da validare con un avvocato)</em>
+            <span data-it="Ore risparmiate per pratica (ipotesi base)" data-en="Hours saved per matter (base assumption)">Ore risparmiate per pratica (ipotesi base)</span>
+            <em data-it="(IPOTESI: valida con un avvocato; usata con il metodo flat)" data-en="(ASSUMPTION: validate with a lawyer; used when flat method)">(IPOTESI: valida con un avvocato; usata con il metodo flat)</em>
           </label>
-          <input type="number" id="in_hmatter" min="0" step="0.5" inputmode="decimal" value="1.5">
+          <input type="number" id="in_hmatter" min="0" step="0.1" inputmode="decimal" value="0.5">
+          <span class="roi-field-hint" data-it="Ore di lavoro amministrativo/bozza risparmiate per ogni pratica." data-en="Admin/drafting hours saved per matter handled.">Ore di lavoro amministrativo/bozza risparmiate per ogni pratica.</span>
         </div>
+        <div class="roi-field">
+          <label for="in_baseline">
+            <span data-it="Ore amministrative/bozza per pratica OGGI" data-en="Baseline admin/drafting hours per matter TODAY">Ore amministrative/bozza per pratica OGGI</span>
+            <em data-it="(se compilato, sostituisce l'ipotesi base — metodo derivato)" data-en="(if filled, overrides the base assumption — derived method)">(se compilato, sostituisce l'ipotesi base — metodo derivato)</em>
+          </label>
+          <input type="number" id="in_baseline" min="0" step="0.5" inputmode="decimal" value="">
+          <span class="roi-field-hint" data-it="Quanto tempo dedichi oggi a ogni pratica. Dà origine alle ore risparmiate." data-en="How long you actually spend on each matter today. Drives the hours saved.">Quanto tempo dedichi oggi a ogni pratica. Dà origine alle ore risparmiate.</span>
+        </div>
+        <div class="roi-field">
+          <label for="in_baseline_pct" data-it="Riduzione ottenuta con LexFlow (%)" data-en="Reduction LexFlow delivers (%)">Riduzione ottenuta con LexFlow (%)</label>
+          <input type="number" id="in_baseline_pct" min="0" max="100" step="5" inputmode="numeric" value="40">
+          <span class="roi-field-suffix">%</span>
+          <span class="roi-field-hint" data-it="Frazione del tempo base che LexFlow taglia. Ore risparmiate = base × riduzione." data-en="Share of baseline time LexFlow cuts. Hours saved = baseline × reduction.">Frazione del tempo base che LexFlow taglia. Ore risparmiate = base × riduzione.</span>
+        </div>
+
+        <h4 class="roi-assum-sec" data-it="Valorizzazione del tempo" data-en="Valuing time">Valorizzazione del tempo</h4>
         <div class="roi-field">
           <label for="in_billable" data-it="Ore fatturabili all'anno per avvocato" data-en="Billable hours per year, per lawyer">Ore fatturabili all'anno per avvocato</label>
           <input type="number" id="in_billable" min="1" step="100" inputmode="numeric" value="1500">
+          <span class="roi-field-hint" data-it="Base per il valore orario quando la tariffa è vuota." data-en="Basis for the hourly value when the rate is empty.">Base per il valore orario quando la tariffa è vuota.</span>
         </div>
         <div class="roi-field">
-          <label for="in_ramp" data-it="Tasso di adozione" data-en="Adoption ramp">Tasso di adozione</label>
-          <input type="number" id="in_ramp" min="0" max="100" step="5" inputmode="numeric" value="100">
-          <span class="roi-field-suffix">%</span>
+          <label for="in_training" data-it="Ore di formazione per avvocato (una tantum)" data-en="Training hours per lawyer (one-off)">Ore di formazione per avvocato (una tantum)</label>
+          <input type="number" id="in_training" min="0" step="1" inputmode="numeric" value="0">
+          <span class="roi-field-hint" data-it="Costo una tantum, valorizzato alla tariffa oraria." data-en="One-off cost, valued at the hourly rate.">Costo una tantum, valorizzato alla tariffa oraria.</span>
+        </div>
+        <div class="roi-field">
+          <label for="in_setup" data-it="Costo di setup/onboarding (€, una tantum)" data-en="Setup/onboarding cost (€, one-off)">Costo di setup/onboarding (€, una tantum)</label>
+          <input type="number" id="in_setup" min="0" step="500" inputmode="numeric" value="0">
+          <span class="roi-field-hint" data-it="Importo una tantum: configureremo insieme l'avvio." data-en="One-off amount — we set up together at launch.">Importo una tantum: configureremo insieme l'avvio.</span>
+        </div>
+        <div class="roi-field">
+          <label for="in_assistants" data-it="Assistenti legali (facoltativo)" data-en="Legal assistants (optional)">Assistenti legali (facoltativo)</label>
+          <input type="number" id="in_assistants" min="0" max="500" step="1" inputmode="numeric" value="0">
+          <span class="roi-field-hint" data-it="Aggiunge le ore recuperate dagli assistenti al loro valore orario." data-en="Adds the hours assistants regain, at their own hourly value.">Aggiunge le ore recuperate dagli assistenti al loro valore orario.</span>
+        </div>
+        <div class="roi-field">
+          <label for="in_assistcost" data-it="Costo annuo per assistente (€)" data-en="Annual cost per assistant (€)">Costo annuo per assistente (€)</label>
+          <input type="number" id="in_assistcost" min="0" step="1000" inputmode="numeric" value="30000">
+          <span class="roi-field-hint" data-it="Usato per calcolare il valore orario dell'assistente." data-en="Used to compute the assistant's hourly value.">Usato per calcolare il valore orario dell'assistente.</span>
+        </div>
+
+        <h4 class="roi-assum-sec" data-it="Adozione" data-en="Adoption">Adozione</h4>
+        <div class="roi-field">
+          <label for="in_rampmonths" data-it="Mesi di adozione fino alla piena adozione" data-en="Months of ramp-up to full adoption">Mesi di adozione fino alla piena adozione</label>
+          <input type="number" id="in_rampmonths" min="0" max="36" step="1" inputmode="numeric" value="3">
+          <span class="roi-field-hint" data-it="L'adozione sale linearmente da 0 a piena in questi mesi." data-en="Adoption scales linearly from 0 to full over these months.">L'adozione sale linearmente da 0 a piena in questi mesi.</span>
+        </div>
+
+        <h4 class="roi-assum-sec" data-it="Moltiplicatori degli scenari" data-en="Scenario multipliers">Moltiplicatori degli scenari</h4>
+        <div class="roi-scen-multipliers">
+          <fieldset>
+            <legend data-it="Prudente" data-en="Conservative">Prudente</legend>
+            <label>× ore <input type="number" id="sc_cons_hours" min="0" step="0.1" inputmode="decimal" value="1.0"></label>
+            <label>adozione % <input type="number" id="sc_cons_adh" min="0" max="100" step="5" inputmode="numeric" value="70"></label>
+            <label>valorizza % <input type="number" id="sc_cons_val" min="0" max="100" step="5" inputmode="numeric" value="50"></label>
+          </fieldset>
+          <fieldset>
+            <legend data-it="Ottimista (se l'adozione va bene)" data-en="Expected (if adoption goes well)">Ottimista (se l'adozione va bene)</legend>
+            <label>× ore <input type="number" id="sc_exp_hours" min="0" step="0.1" inputmode="decimal" value="1.6"></label>
+            <label>adozione % <input type="number" id="sc_exp_adh" min="0" max="100" step="5" inputmode="numeric" value="90"></label>
+            <label>valorizza % <input type="number" id="sc_exp_val" min="0" max="100" step="5" inputmode="numeric" value="70"></label>
+          </fieldset>
         </div>
       </div>
     </details>
@@ -183,6 +321,13 @@
       <div class="roi-field">
         <label for="tp_matters" data-it="Pratiche gestite (reali)" data-en="Matters handled (actual)">Pratiche gestite (reali)</label>
         <input type="number" id="tp_matters" min="0" step="1" inputmode="numeric" value="0">
+      </div>
+      <div class="roi-field">
+        <label for="tp_scen" data-it="Scenario della proiezione" data-en="Projection scenario">Scenario della proiezione</label>
+        <select id="tp_scen" class="roi-select">
+          <option value="conservative" data-it="Prudente" data-en="Conservative">Prudente</option>
+          <option value="expected" data-it="Ottimista" data-en="Expected">Ottimista</option>
+        </select>
       </div>
       <div class="roi-field roi-field-wide">
         <label for="tp_note" data-it="Nota (facoltativa)" data-en="Note (optional)">Nota (facoltativa)</label>
@@ -236,7 +381,8 @@
   if (!RC) return;
 
   function $(id) { return document.getElementById(id); }
-  function readVal(id, fallback) { var v = $(id); return v ? Number(v.value) : fallback; }
+  function readVal(id, fb) { var v = $(id); return v && v.value !== '' ? Number(v.value) : fb; }
+
   function lang() { return document.body.getAttribute('data-lang') || document.querySelector('.roi-main').getAttribute('data-lang') || 'it'; }
 
   function applyDataAttrs() {
@@ -244,65 +390,115 @@
     document.querySelectorAll('[data-it]').forEach(function (el) {
       var k = l === 'en' ? 'data-en' : 'data-it';
       var txt = el.getAttribute(k);
-      if (txt != null && !el.matches('input,textarea')) el.innerHTML = txt;
+      if (txt != null && !el.matches('input,select,textarea')) el.innerHTML = txt;
+    });
+    document.querySelectorAll('select option[data-it]').forEach(function (o) {
+      var k = l === 'en' ? 'data-en' : 'data-it';
+      var t = o.getAttribute(k);
+      if (t != null) o.textContent = t;
     });
   }
+
   function euros(n) { return RC.fmtEur(n); }
   function ints(n) { return RC.fmtInt(n); }
   function plural(laws) { var l = lang(); var s = l === 'en' ? (laws === 1 ? 'lawyer' : 'lawyers') : (laws === 1 ? 'avvocato' : 'avvocati'); return s; }
-  function setIt(el, it, en) { if (el) { el.setAttribute('data-it', it); el.setAttribute('data-en', en); el.innerHTML = lang() === 'en' ? en : it; } }
 
-  function renderSummary(r) {
-    var el = $('roiSummary'); if (!el) return;
-    var l = lang();
-    var hours = ints(r.hoursRegainedPerMonth);
-    var eur = euros(r.valuePerYear);
-    var p = plural(r.lawyers);
-    var it = hours + ' ore recuperate al mese per ' + r.lawyers + ' ' + p + '. Valore stimato ' + eur + ' l\u2019anno.';
-    var en = hours + ' hours regained per month across ' + r.lawyers + ' ' + p + ', worth around ' + eur + ' a year.';
-    el.textContent = l === 'en' ? en : it;
+  function readAll() {
+    return {
+      lawyers: readVal('in_lawyers', RC.DEFAULTS.lawyers),
+      annualCost: readVal('in_cost', RC.DEFAULTS.annualCost),
+      mattersPerMonth: readVal('in_matters', RC.DEFAULTS.mattersPerMonth),
+      price: readVal('in_price', RC.DEFAULTS.price),
+      averageHourRate: readVal('in_rate', RC.DEFAULTS.averageHourRate),
+      hoursPerMatter: readVal('in_hmatter', RC.DEFAULTS.hoursPerMatter),
+      billableHours: readVal('in_billable', RC.DEFAULTS.billableHours),
+      baselineHoursPerMatter: readVal('in_baseline', RC.DEFAULTS.baselineHoursPerMatter),
+      baselineReductionPct: readVal('in_baseline_pct', RC.DEFAULTS.baselineReductionPct),
+      trainingHours: readVal('in_training', RC.DEFAULTS.trainingHours),
+      setupCost: readVal('in_setup', RC.DEFAULTS.setupCost),
+      assistants: readVal('in_assistants', RC.DEFAULTS.assistants),
+      assistantAnnualCost: readVal('in_assistcost', RC.DEFAULTS.assistantAnnualCost),
+      rampUpMonths: readVal('in_rampmonths', RC.DEFAULTS.rampUpMonths),
+      scenarios: {
+        conservative: {
+          hoursMultiplier: readVal('sc_cons_hours', RC.SCENARIOS.conservative.hoursMultiplier),
+          adoption: readVal('sc_cons_adh', RC.SCENARIOS.conservative.adoption * 100) / 100,
+          realisation: readVal('sc_cons_val', RC.SCENARIOS.conservative.realisation * 100) / 100
+        },
+        expected: {
+          hoursMultiplier: readVal('sc_exp_hours', RC.SCENARIOS.expected.hoursMultiplier),
+          adoption: readVal('sc_exp_adh', RC.SCENARIOS.expected.adoption * 100) / 100,
+          realisation: readVal('sc_exp_val', RC.SCENARIOS.expected.realisation * 100) / 100
+        }
+      }
+    };
   }
 
-  function renderKPIs(r) {
-    $('k_hoursMonth').textContent = ints(r.hoursRegainedPerMonth) + ' h';
-    $('k_hoursYear').textContent = ints(r.hoursRegainedPerYear) + ' h';
-    $('k_valueMonth').textContent = euros(r.valuePerMonth);
-    $('k_valueYear').textContent = euros(r.valuePerYear);
-    var roiEl = $('k_roi');
+  function paybackLabel(r) {
+    var l = lang();
+    if (r.paybackMonths == null) return l === 'en' ? '— (no payback)' : '— (nessun rientro)';
+    return l === 'en'
+      ? r.paybackMonths + ' ' + (r.paybackMonths === 1 ? 'month' : 'months')
+      : r.paybackMonths + ' ' + (r.paybackMonths === 1 ? 'mese' : 'mesi');
+  }
+
+  function renderScen(prefix, r) {
+    $(prefix + '_hoursMonth').textContent = ints(r.hoursRegainedPerMonth) + ' h';
+    $(prefix + '_hoursYear').textContent = ints(r.hoursRegainedPerYear) + ' h';
+    $(prefix + '_valueMonth').textContent = euros(r.valuePerMonth);
+    $(prefix + '_valueYear').textContent = euros(r.valuePerYear);
+    var roiEl = $(prefix + '_roi');
     roiEl.textContent = (r.roiPct >= 0 ? '+' : '') + r.roiPct + '%';
     roiEl.className = r.net3y >= 0 ? 'roi-kpi-pos' : 'roi-kpi-neg';
-    var pb = $('k_payback');
-    if (r.paybackMonths == null) { setIt(pb, '—', '—'); pb.textContent = '—'; }
-    else if (r.paybackMonths === 0) { pb.textContent = lang() === 'en' ? '0 (immediate)' : '0 (immediato)'; }
-    else {
-      pb.textContent = lang() === 'en'
-        ? r.paybackMonths + ' ' + (r.paybackMonths === 1 ? 'month' : 'months')
-        : r.paybackMonths + ' ' + (r.paybackMonths === 1 ? 'mese' : 'mesi');
-    }
+    $(prefix + '_benefit').textContent = euros(r.value3y);
+    $(prefix + '_cost').textContent = euros(r.cost3y);
+    $(prefix + '_payback').textContent = paybackLabel(r);
   }
 
-  function renderFormula(r) {
-    var el = $('roiFormula'); if (!el) return;
+  function buildDiff(all) {
+    var tb = document.querySelector('#roiDiffTable tbody');
+    if (!tb) return;
+    var rows = [
+      ['lawyers', 'Numero di avvocati', 'Number of lawyers'],
+      ['annualCost', 'Costo annuo per avvocato', 'Annual cost per lawyer'],
+      ['mattersPerMonth', 'Pratiche al mese', 'Matters / month'],
+      ['price', 'Prezzo LexFlow', 'LexFlow price'],
+      ['hoursPerMatter', 'Ore risparmiate per pratica', 'Hours saved / matter'],
+      ['billableHours', 'Ore fatturabili/anno', 'Billable hours / year'],
+      ['averageHourRate', 'Tariffa oraria', 'Hourly rate'],
+      ['baselineHoursPerMatter', 'Ore di base oggi', 'Baseline hours today'],
+      ['baselineReductionPct', 'Riduzione base %', 'Baseline reduction %'],
+      ['trainingHours', 'Ore di formazione', 'Training hours'],
+      ['setupCost', 'Costo setup', 'Setup cost'],
+      ['assistants', 'Assistenti', 'Assistants'],
+      ['assistantAnnualCost', 'Costo annuo assistente', 'Assistant annual cost'],
+      ['rampUpMonths', 'Mesi di adozione', 'Ramp-up months']
+    ];
+    var ins = readAll();
     var l = lang();
-    var f = l === 'en'
-      ? 'Formula: hourly value = entered hourly rate (or annual cost ÷ billable hours if left empty). Hours regained = matters/month × hours saved per matter × lawyers × adoption. 3-yr ROI = (3-yr benefit − 3-yr LexFlow cost) ÷ 3-yr cost.'
-      : 'Formula: valore orario = tariffa oraria inserita (o costo annuo ÷ ore fatturabili se vuota). Ore recuperate = pratiche/mese × ore per pratica × avvocati × adozione. ROI 3 anni = (beneficio 3 anni − costo LexFlow 3 anni) ÷ costo 3 anni.';
-    el.textContent = f;
+    var html = '';
+    rows.forEach(function (r) {
+      var key = r[0];
+      var val = ins[key];
+      var def = RC.DEFAULTS[key];
+      var diffm = ('' + val) !== ('' + def) ? ' class="roi-difftable-diff"' : '';
+      var showVal = val === 0 ? '—' : ('' + val !== '' ? val : '—');
+      var showDef = (key === 'averageHourRate' && def === 0) ? '(auto)' : (def === 0 ? '—' : def);
+      html += '<tr' + diffm + '><td>' + (l === 'en' ? r[2] : r[1]) + '</td><td>' + showVal + '</td><td>' + showDef + '</td></tr>';
+    });
+    tb.innerHTML = html;
   }
 
-  function renderRateUsed(r) {
-    var el = $('roiRateUsed'); if (!el) return;
+  function renderMethod(all) {
+    var el = $('roiMethodUsed'); if (!el) return;
     var l = lang();
-    var used = r.hourlyValue;
-    if (r.hourlyRateSource === 'input') {
-      el.textContent = l === 'en'
-        ? 'Hourly rate used: ' + used + ' EUR/h — from the rate you entered.'
-        : 'Valore orario usato: ' + used + ' EUR/h — da tariffa inserita.';
-    } else {
-      el.textContent = l === 'en'
-        ? 'Hourly rate used: ' + used + ' EUR/h — computed from annual cost ÷ billable hours.'
-        : 'Valore orario usato: ' + used + ' EUR/h — calcolato dal costo annuo ÷ ore fatturabili.';
-    }
+    var m = all.method === 'derived'
+      ? (l === 'en' ? 'Method used: from your baseline — ' : 'Metodo usato: dal tuo dato di base — ')
+      : (l === 'en' ? 'Method used: flat assumption — ' : 'Metodo usato: ipotesi flat — ');
+    var baseTxt = l === 'en'
+      ? 'hours saved per matter = ' + all.baseHoursPerMatter + ' h (x scenario); hour value = '
+      : 'ore risparmiate per pratica = ' + all.baseHoursPerMatter + ' h (× scenario); valore orario = ';
+    el.textContent = m + baseTxt + all.hourlyValue + ' €/h';
   }
 
   function renderPlaceholderRate() {
@@ -316,47 +512,119 @@
       : 'es. ' + fb + ' (vuoto = costo annuo / ore fatturabili)';
   }
 
-  function drawChart(r) {
+  function drawChart(all) {
     var svg = $('roiChart'); if (!svg) return;
     var W = 320, H = 180, yBase = H - 12;
-    var max = Math.max(r.value3y, r.cost3y, 1);
-    var s = r.series || [];
+    var c = all.conservative, e = all.expected;
+    var max = Math.max(c.value3y, c.cost3y, e.value3y, 1);
     var bw = (W - 60) / 3, gap = 14;
     var html = '';
-    s.forEach(function (p, i) {
+    var cons = c.series, exp = e.series;
+    for (var i = 0; i < 3; i++) {
+      var p = cons[i], q = exp[i];
       var bx = 40 + i * (bw + gap);
-      var bhBen = (p.benefit / max) * (H - 40);
-      var bhCost = (p.cost / max) * (H - 40);
-      var byBen = yBase - bhBen, byCost = yBase - bhCost;
+      var hBenC = (p.benefit / max) * (H - 40);
+      var hBenE = (q.benefit / max) * (H - 40);
+      var hCost = (p.cost / max) * (H - 40);
       html += '<text x="'+(bx+bw/2)+'" y="'+(H-1)+'" text-anchor="middle" class="roi-chart-year">'+(p.year)+'</text>';
-      html += '<rect x="'+bx+'" y="'+byBen+'" width="'+bw/2+'" height="'+bhBen+'" class="roi-bar-1"><title>Year '+p.year+' benefit '+euros(p.benefit)+'</title></rect>';
-      html += '<rect x="'+(bx+bw/2)+'" y="'+byCost+'" width="'+bw/2+'" height="'+bhCost+'" class="roi-bar-2"><title>Year '+p.year+' cost '+euros(p.cost)+'</title></rect>';
-    });
+      html += '<rect x="'+bx+'" y="'+(yBase-hBenC)+'" width="'+(bw/3)+'" height="'+hBenC+'" class="roi-bar-1"><title>Conservative year '+p.year+' benefit '+euros(p.benefit)+'</title></rect>';
+      html += '<rect x="'+(bx+bw/3)+'" y="'+(yBase-hBenE)+'" width="'+(bw/3)+'" height="'+hBenE+'" class="roi-bar-1 roi-bar-1b"><title>Expected year '+q.year+' benefit '+euros(q.benefit)+'</title></rect>';
+      html += '<rect x="'+(bx+2*bw/3)+'" y="'+(yBase-hCost)+'" width="'+(bw/3)+'" height="'+hCost+'" class="roi-bar-2"><title>Year '+p.year+' cost '+euros(p.cost)+'</title></rect>';
+    }
     svg.innerHTML = html;
   }
 
-  function update() {
-    var r = RC.computeRoi({
-      lawyers: readVal('in_lawyers', RC.DEFAULTS.lawyers),
-      annualCost: readVal('in_cost', RC.DEFAULTS.annualCost),
-      mattersPerMonth: readVal('in_matters', RC.DEFAULTS.mattersPerMonth),
-      price: readVal('in_price', RC.DEFAULTS.price),
-      hoursPerMatter: readVal('in_hmatter', RC.DEFAULTS.hoursPerMatter),
-      billableHours: readVal('in_billable', RC.DEFAULTS.billableHours),
-      averageHourRate: readVal('in_rate', RC.DEFAULTS.averageHourRate),
-      ramp: readVal('in_ramp', RC.DEFAULTS.ramp * 100) / 100
-    });
-    renderSummary(r);
-    renderKPIs(r);
-    renderFormula(r);
-    renderRateUsed(r);
-    renderPlaceholderRate();
-    drawChart(r);
+  function renderSummary(all) {
+    var el = $('roiSummary'); if (!el) return;
+    var l = lang();
+    var c = all.conservative;
+    var hours = ints(c.hoursRegainedPerMonth);
+    var eur = euros(c.valuePerYear);
+    var p = plural(c.lawyers);
+    var it = 'Scenario prudente: ' + hours + ' ore recuperate al mese per ' + c.lawyers + ' ' + p + ', valore stimato ' + eur + ' all\u2019anno. ROI a 3 anni ' + (c.roiPct>=0?'+':'') + c.roiPct + '% su un costo di ' + euros(c.cost3y) + '.';
+    var en = 'Conservative: ' + hours + ' hours regained per month across ' + c.lawyers + ' ' + p + ', worth around ' + eur + ' a year. 3-year ROI ' + (c.roiPct>=0?'+':'') + c.roiPct + '% on a cost of ' + euros(c.cost3y) + '.';
+    el.textContent = l === 'en' ? en : it;
   }
 
-  ['in_lawyers','in_cost','in_rate','in_matters','in_price','in_hmatter','in_billable','in_ramp'].forEach(function (id) {
-    var el = $(id); if (el) el.addEventListener('input', update);
-  });
+  function renderRateUsed(all) {
+    var el = $('roiRateUsed'); if (!el) return;
+    var l = lang();
+    var used = all.hourlyValue;
+    if (all.hourlyRateSource === 'input') {
+      el.textContent = l === 'en'
+        ? 'Hourly rate used: ' + used + ' EUR/h — from the rate you entered.'
+        : 'Valore orario usato: ' + used + ' EUR/h — da tariffa inserita.';
+    } else {
+      el.textContent = l === 'en'
+        ? 'Hourly rate used: ' + used + ' EUR/h — computed from annual cost ÷ billable hours.'
+        : 'Valore orario usato: ' + used + ' EUR/h — calcolato dal costo annuo ÷ ore fatturabili.';
+    }
+  }
+
+  function renderFormula() {
+    var el = $('roiFormula'); if (!el) return;
+    var l = lang();
+    var f = l === 'en'
+      ? 'Formula: hourly value = entered hourly rate (or annual cost ÷ billable hours if left empty). Hours regained = matters/month × hours saved per matter × people × adoption. 3-yr ROI = (3-yr benefit − 3-yr LexFlow cost) ÷ 3-yr cost.'
+      : 'Formula: valore orario = tariffa oraria inserita (o costo annuo ÷ ore fatturabili se vuota). Ore recuperate = pratiche/mese × ore per pratica × persone × adozione. ROI 3 anni = (beneficio 3 anni − costo LexFlow 3 anni) ÷ costo 3 anni.';
+    el.textContent = f;
+  }
+
+  var INPUT_IDS = ['in_lawyers','in_cost','in_rate','in_matters','in_price','in_hmatter','in_billable','in_baseline','in_baseline_pct','in_training','in_setup','in_assistants','in_assistcost','in_rampmonths','sc_cons_hours','sc_cons_adh','sc_cons_val','sc_exp_hours','sc_exp_adh','sc_exp_val'];
+  var INPUT_DEFS = {
+    in_lawyers: 'lawyers', in_cost: 'annualCost', in_matters: 'mattersPerMonth', in_price: 'price',
+    in_rate: '', in_hmatter: 'hoursPerMatter', in_billable: 'billableHours',
+    in_baseline: '', in_baseline_pct: 'baselineReductionPct', in_training: 'trainingHours',
+    in_setup: 'setupCost', in_assistants: 'assistants', in_assistcost: 'assistantAnnualCost',
+    in_rampmonths: 'rampUpMonths',
+    sc_cons_hours: ['scenarios','conservative','hoursMultiplier'],
+    sc_cons_adh: ['scen-pct','conservative','adoption'],
+    sc_cons_val: ['scen-pct','conservative','realisation'],
+    sc_exp_hours: ['scenarios','expected','hoursMultiplier'],
+    sc_exp_adh: ['scen-pct','expected','adoption'],
+    sc_exp_val: ['scen-pct','expected','realisation']
+  };
+
+  function scenPctBase() {
+    return {
+      conservative: { adoption: RC.SCENARIOS.conservative.adoption * 100, realisation: RC.SCENARIOS.conservative.realisation * 100 },
+      expected: { adoption: RC.SCENARIOS.expected.adoption * 100, realisation: RC.SCENARIOS.expected.realisation * 100 }
+    };
+  }
+
+  function resetAll() {
+    var spb = scenPctBase();
+    INPUT_IDS.forEach(function (id) {
+      var el = $(id); if (!el) return;
+      var spec = INPUT_DEFS[id];
+      var def;
+      if (spec === '') def = '';
+      else if (Array.isArray(spec) && spec[0] === 'scen-pct') def = spb[spec[1]][spec[2]];
+      else if (Array.isArray(spec)) def = RC.SCENARIOS[spec[1]][spec[2]];
+      else def = RC.DEFAULTS[spec];
+      el.value = def;
+    });
+    update();
+  }
+  var resetBtn = $('roiReset');
+  if (resetBtn) resetBtn.addEventListener('click', resetAll);
+  var printBtn = $('roiPrint');
+  if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
+
+  function update() {
+    var all = RC.computeScenarios(readAll());
+    renderSummary(all);
+    renderScen('c', all.conservative);
+    renderScen('e', all.expected);
+    drawChart(all);
+    renderMethod(all);
+    renderRateUsed(all);
+    renderFormula();
+    renderPlaceholderRate();
+    buildDiff(all);
+  }
+
+  INPUT_IDS.forEach(function (id) { var el = $(id); if (el) el.addEventListener('input', update); });
 
   applyDataAttrs();
   update();
