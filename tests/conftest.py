@@ -71,3 +71,10 @@ collect_ignore = [
     "test_gantt_dependencies.py", "test_context_notes.py", "test_gantt_team.py",
     "test_notify.py", "test_deadline_calendar_isolation.py",
 ]
+
+# Plain-script tests (own env + own DB, sys.exit at import level) cannot be collected by pytest:
+# they are found by a column-0 `sys.exit(` and run in isolated subprocesses by test_plain_scripts.py.
+import pathlib as _pl
+SCRIPT_TESTS = sorted(f.name for f in _pl.Path(__file__).parent.glob('test_*.py')
+                      if any(line.startswith('sys.exit(') for line in f.read_text(errors='ignore').splitlines()))
+collect_ignore = sorted(set(collect_ignore) | set(SCRIPT_TESTS))
