@@ -298,6 +298,7 @@ def create_app():
     from .routes.notify import notify_bp
     from .routes.agent import agent_bp
     from .routes.roi import roi_bp
+    from .routes.context_memory import context_memory_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(contacts_bp)
@@ -321,6 +322,7 @@ def create_app():
     app.register_blueprint(notify_bp)
     app.register_blueprint(agent_bp)
     app.register_blueprint(roi_bp)
+    app.register_blueprint(context_memory_bp)
 
     # Google Calendar OAuth
     from .routes.google_oauth_routes import google_oauth_bp

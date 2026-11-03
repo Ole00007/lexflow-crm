@@ -78,3 +78,5 @@
 @media (max-width:480px){
 .lf-filter-panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;min-width:0;border-radius:var(--radius-lg,16px) var(--radius-lg,16px) 0 0;border-bottom:none;box-shadow:0 -8px 30px rgba(0,0,0,.45);padding:14px}
 }
+.graph-page .gp-digest-item { font-size: 12px; color: var(--text-muted); line-height: 1.45; margin: 0 0 8px; border-left: 2px solid #22D3EE; padding-left: 8px; }
+.graph-page .gp-digest-item em { display: block; font-style: normal; color: var(--text-faint); font-size: 11px; }
