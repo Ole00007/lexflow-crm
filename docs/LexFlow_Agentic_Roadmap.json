@@ -71,7 +71,7 @@
         "[C] 2 foreign copies under ~/Desktop/projects/.../LEXFLOW Production/ (14 KB 2026-09-03 and 33 KB 2026-10-06) — deletion gated on Ole"
       ],
       "corrected_today": "[D] last_updated stamped 2026-11-03 (was 10 days stale); 8 [B] 'unfinished task has no card' gaps closed by creating one card each for T-022..T-029.",
-      "left_open": "4 [A] report_rule gaps and 7 [B] drift lines — no evidence supports a correction, and the drift lines are card-side or validator-mapping disagreements. Explicitly NOT papered over."
+      "left_open": "4 [A] report_rule gaps and 7 [B] drift lines — no evidence supports a correction, and the drift lines are card-side or validator-mapping disagreements. Explicitly NOT papered over. POST-RUN NOTE (same day): within ~10 minutes of creation the dispatcher claimed T-022 / T-023 / T-027 / T-028 / T-029 (cards now 'running'), so a re-run of the validator reports 5 ADDITIONAL [B] lines purely because the roadmap columns have not advanced yet — expected churn from real work starting, not a data error; the count at stamp time was 12."
     }
   },
   "kanban_card_map": {
