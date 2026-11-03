@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Checklist — LexFlow{% endblock %}
+
+{#
+  Matter-stage checklist page (WS-K). Page shell only: the JWT lives in
+  localStorage, so all authorization happens on the JSON endpoints under
+  /api/checklist and /api/cases/<id>/checklist. The MATTER_CHECKLIST_ENABLED
+  kill-switch is enforced server-side (checklist_bp.before_request -> 404).
+  Assets are served from 'self' (production CSP) — no CDN, no libraries.
+#}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/checklist/checklist.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="checklist-page"
+         aria-labelledby="checklist-heading"
+         data-case-id="{{ case_id }}">
+  <div class="cl-head">
+    <div>
+      <p class="eyebrow">Matter stage checklist</p>
+      <h1 id="checklist-heading">Checklist <span id="cl-caseno" class="cl-caseno"></span></h1>
+      <p class="cl-disclaimer" id="cl-disclaimer"></p>
+    </div>
+    <div class="cl-progress" aria-live="polite">
+      <div class="cl-ring" id="cl-ring" style="--pct:0">
+        <span id="cl-ring-pct">0%</span>
+      </div>
+      <span class="cl-progress-label">complete</span>
+    </div>
+  </div>
+
+  {# admin-only: initialise a checklist from a template when none exists #}
+  <div class="cl-init" id="cl-init" hidden>
+    <p>No checklist yet for this matter.</p>
+    <div class="cl-init-row">
+      <label for="cl-template">Template</label>
+      <select id="cl-template"></select>
+      <button type="button" class="button" id="cl-init-btn">Initialise checklist</button>
+    </div>
+  </div>
+
+  {# the agent-facing "next missing" summary #}
+  <div class="cl-next" id="cl-next" hidden>
+    <span class="cl-next-label">Next missing</span>
+    <span class="cl-next-item" id="cl-next-item"></span>
+  </div>
+
+  {# stage stepper #}
+  <ol class="cl-stepper" id="cl-stepper" aria-label="Stages"></ol>
+
+  {# page states #}
+  <div class="cl-state" id="cl-loading">Loading checklist…</div>
+  <div class="cl-state cl-state--error" id="cl-error" hidden>Could not load the checklist. Please retry.</div>
+  <div class="cl-state" id="cl-denied" hidden>Please <a href="/login">sign in</a> to view this checklist.</div>
+
+  {# stages + items #}
+  <div class="cl-stages" id="cl-stages"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/checklist/checklist.js') }}"></script>
+{% endblock %}
