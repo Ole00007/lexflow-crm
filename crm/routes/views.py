@@ -460,6 +460,37 @@ def settings_page():
     return render_template('settings.html')
 
 
+# ── Menu sections: Document center, Templates, My drafts ───────────
+@views_bp.route('/document-center')
+@jwt_required(optional=True)
+def document_center():
+    """Docs + architecture index. The repo index is shown to superadmins only (internal architecture)."""
+    import os as _os
+    from pathlib import Path as _P
+    root = _P(__file__).resolve().parents[2] / 'docs'
+    items = []
+    try:
+        for f in sorted(root.iterdir()):
+            if f.is_file() and f.suffix in ('.md', '.json', '.html'):
+                items.append({'name': f.name, 'kind': 'Architecture / decision' if 'architecture' in f.name.lower() or 'decision' in f.name.lower() else 'Doc'})
+    except OSError:
+        pass
+    return render_template('document_center.html', docs=items, branch=_os.environ.get('LEXFLOW_REPO_BRANCH', 'lexflow_hermes_v1'))
+
+
+@views_bp.route('/templates')
+@jwt_required(optional=True)
+def templates_page():
+    from ..agent.drafts import KINDS
+    return render_template('templates_page.html', kinds=KINDS)
+
+
+@views_bp.route('/my-drafts')
+@jwt_required(optional=True)
+def drafts_page():
+    return render_template('drafts_page.html')
+
+
 # ── Intake Routes ──────────────────────────────────────────────────
 @views_bp.route('/')
 def index():

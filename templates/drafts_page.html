@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}My drafts — LexFlow{% endblock %}
+{% block content %}
+<h1>My drafts</h1>
+<p class="intro">Client-facing drafts you or Elisa prepared, waiting for lawyer review and signature.</p>
+
+<div class="card" style="max-width:760px">
+    <div class="eyebrow">Not saved yet</div>
+    <p class="intro" style="margin-top:var(--space-2)">Drafts Elisa writes today live only in the chat; they are not stored. This page is where saved client drafts will be listed (with matter, language, status and a “reviewed by” field). Open decision for 4 Nov 2026: store drafts per matter in the CRM or in the vault.</p>
+    <a class="button button-secondary" href="{{ url_for('views.templates_page') }}">See templates</a>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Document center — LexFlow{% endblock %}
+{% block content %}
+<h1>Document center</h1>
+<p class="intro">Where documents live. Matter documents (client files, drafts, attachments) are opened from each matter; the product and architecture index below is for the LexFlow team.</p>
+
+<div class="card" style="max-width:760px;margin-bottom:var(--space-4)">
+    <div class="eyebrow">Matter documents</div>
+    <p class="intro" style="margin-top:var(--space-2)">Open a matter to see its attachments, or ask Elisa: “list documents for matter &lt;name&gt;”.</p>
+    <a class="button button-secondary" href="{{ url_for('views.admin_list') }}">Go to Matters</a>
+</div>
+
+{% if is_superadmin %}
+<div class="card" style="max-width:760px">
+    <div class="eyebrow">Docs &amp; architecture index (internal · superadmin only)</div>
+    <p class="intro" style="margin-top:var(--space-2)">Source of truth is the repository: <a href="{{ repo_url }}" target="_blank" rel="noopener">{{ repo_url }}</a> (branch <code>{{ branch }}</code>). Links open the file on GitHub; they work only if you are signed in to GitHub with access to the repo, and only for files already pushed.</p>
+    <ul style="margin:var(--space-3) 0 0;padding-left:var(--space-4);line-height:1.9">
+        {% for d in docs %}
+        <li><a href="{{ repo_url }}/blob/{{ branch }}/docs/{{ d.name }}" target="_blank" rel="noopener">{{ d.name }}</a> <span style="color:var(--text-muted);font-size:var(--text-xs)">· {{ d.kind }}</span></li>
+        {% else %}<li>No docs found.</li>{% endfor %}
+    </ul>
+</div>
+{% else %}
+<p class="intro">Product documentation for your firm will appear here.</p>
+{% endif %}
+{% endblock %}

@@ -264,6 +264,8 @@ def create_app():
             "notify_enabled": os.environ.get('NOTIFY_BUTTONS_ENABLED', 'false').strip().lower() in _on,
             "roi_calculator_enabled": os.environ.get('ROI_CALCULATOR_ENABLED', 'false').strip().lower() in _on,
             "roi_tracker_enabled": os.environ.get('ROI_TRACKER_ENABLED', 'false').strip().lower() in _on,
+            "app_version": __import__('crm.version', fromlist=['get_version']).get_version(),
+            "repo_url": os.environ.get('LEXFLOW_REPO_URL', 'https://github.com/Ole00007/lexflow-crm').rstrip('/'),
             "current_user": user,
             "main_site_url": main_site_url,
             "favicon_url": favicon_url,
