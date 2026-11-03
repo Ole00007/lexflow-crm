@@ -3,6 +3,60 @@
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
   "last_updated": "2026-11-03",
+  "gantt_dates": {
+    "pass": "T-028 2026-11-03",
+    "purpose": "Real start_date/due_date per task node, so /gantt and the seeded task rows stop deriving dates from the roadmap column.",
+    "policy": [
+      "start_date = the earliest DATED evidence of work on the node (git commit, Kanban card event, or a dated note).",
+      "due_date = the latest DATED evidence of completion for a finished piece of work; for an open node only if a plan deadline is documented — otherwise EMPTY.",
+      "Never estimated, interpolated, or copied from the column. A node with no evidence stays undated and carries 'date_source' saying why.",
+      "A passed plan date on an unfinished node is either re-baselined to dated evidence (T-028, T-029) or the node is marked blocked with 'blocked_reason' (T-025, T-026) — never silently shifted.",
+      "Evidence sources used: git log on lexflow_hermes_v1, ~/.hermes/kanban.db card events/comments, and the dated notes already in each node. No external assumption was used."
+    ],
+    "dated_by_this_pass": {
+      "T-001": "commit 309e33c 2026-09-01 'fix(intake): disable browser autofill so fields accept manual entry' — the only dated evidence on this node. The user confirmation in notes is undated, and prod_url/commit_hash are still missing (pre-existing [A] report_rule gap, not filled by guess).",
+      "T-002": "start = roadmap v2 commit 0d33da9 2026-09-03, which first records reflection_rules[] as drafted (the drafting session itself is not dated). NO due_date: the node is still 'awaiting explicit go before code' and was re-verified unimplemented on 2026-10-29 (card t_a5f4dd68 comment) — there is no planned deadline to show.",
+      "T-005": "start = scoping note delivered 2026-10-06 (commit 016568e, card t_cba427b1 closed 2026-10-06 09:57). NO due_date: implementation is still gated on Ole approving the scope (node note: HARD GATE) — no deadline exists.",
+      "T-007": "commits 51c36f1 (internal firm-team directory) + ef293ab (client-facing lifecycle/tags) 2026-09-03; the node note records the user confirmation the same day. prod_url/commit_hash still missing (pre-existing [A] report_rule gap).",
+      "T-008": "start = card t_6cf123af created 2026-09-19 11:05 (audit scheduled/started); due = consolidated register delivered 2026-10-06 (commit 7e4343b, card closed 2026-10-06 10:04).",
+      "T-009": "delivered and review-approved LOCAL on 2026-10-06 (card t_7bdb5c53: run 09:44->10:12, review 10:02, migration f4a5b6c7d8e9). The 8 files stayed untracked and were never committed, which is why the column remains 'backlog' — these dates record the real work window, not the column.",
+      "T-010": "start = fact-check + SMTP-fallback mitigation 2026-09-04 (commit 5182bf8, card t_da4552e5). NO due_date: delivery is blocked on an external Resend domain verification, which has no date, and no deadline was ever set.",
+      "T-014": "start = RLS audit 2026-09-16 (card t_4637a500). NO due_date: the node is blocked on real-Postgres tests + ALTER ROLE NOBYPASSRLS (Ole's Railway access) with no plan date, so it is blocked, not overdue.",
+      "T-017": "card t_4af8abb6 run 2026-10-06 09:44->10:12, tests/test_seat_limit.py ALL PASSED (default 5 + DB-only override to 8, no redeploy), local only.",
+      "T-019": "start = audit delivered 2026-09-04 (commit b455e97 + contrast fix 3aaea16); implementation ran 2026-10-10 -> 2026-10-21 (card t_bc68191b) and was PAUSED by Ole on 2026-10-26. NO due_date: paused behind Ole's design review, no plan deadline exists."
+    },
+    "undated_after_this_pass": {
+      "T-003": "UNDATED — no dated evidence of work or of a plan. The node entered the tracker in commit 0d33da9 (2026-09-03) as a Phase-2 dependency of T-002 and its card t_a7e05e2c has carried no activity since creation (2026-09-19). Left empty rather than guessed.",
+      "T-004": "UNDATED — no dated evidence of work or of a plan. Depends on T-002 + T-009; entered the tracker 2026-09-03 (0d33da9), card t_34e5415d idle since 2026-09-19. Left empty rather than guessed.",
+      "T-006": "UNDATED — no dated evidence; Phase-4 node, depends on T-004, in the tracker since 2026-09-03 (0d33da9) with card t_ba95cc42 idle since 2026-09-19.",
+      "T-011": "UNDATED — card t_226f9045 has only its creation events (2026-09-19) and there is no inventory deliverable on disk. The vault workspace inventory (created 2026-08-31, updated 2026-09-03) predates this node and is not its artifact. Left empty rather than guessed.",
+      "T-012": "UNDATED — no dated evidence; local-only Romanelli mock test, dependency of T-002, card t_b8dfc0cc idle since 2026-09-19.",
+      "T-013": "UNDATED — the 141 card events on t_5cf7a308 (2026-10-06 -> 2026-10-21) are dispatcher crash loops on a Nous auth blocker, not work; no deliverable exists. The 2026-09-03 note's 'end of September' target is superseded and is deliberately NOT used as a due_date.",
+      "T-015": "UNDATED — the plan is confirmed but no date was ever recorded; card t_f0a8b939 has only its creation events (2026-09-19) and no redeploy has been approved. Left empty rather than guessed.",
+      "T-016": "UNDATED — commit da19b36 is not an object in this repo and the Netlify landing repo it came from is no longer on disk. The vault inventory records the repoint as already done by its 2026-09-03 update, which is only an upper bound, not a date. Left empty rather than guessed.",
+      "T-018": "UNDATED — spec-before-code node, depends on T-009, card t_f48b0a11 idle since 2026-09-19. No dated evidence of work or of a plan.",
+      "T-020": "UNDATED — Ole's 2026-09-04 decision deferred i18n and explicitly closed the window ('do NOT touch language now'); card t_a4e0ad76 is blocked and no work has started. The 'next week' wording is not a dated plan, so neither date is set."
+    },
+    "stale_dates_decided": {
+      "T-025": "re-baselined start -> 2026-11-03 (card t_fe4e8687 created that day), due_date removed (no new deadline; T-024 gate still closed)",
+      "T-026": "left as the 2026-10-25..2026-10-28 historical plan — card t_76894c79 was claimed by a worker on 2026-11-03, so re-baselining here would race it; decision still Ole's",
+      "T-028": "re-baselined to 2026-11-03 (this pass)",
+      "T-029": "re-baselined to 2026-11-03 (card t_8115f68b delivered locally 09:07 that day)",
+      "T-030": "no change needed — due 2026-10-27 is the deploy day (396bea2), the node is finished",
+      "T-031": "no change needed — deployed 2026-10-27, three days before its 2026-10-30 due date"
+    },
+    "live_board_note": "Roadmap COLUMNS were deliberately not flipped for the in-flight nodes: cards T-022/T-023/T-027/T-028/T-029 were created and claimed within minutes on 2026-11-03, so any column edit made here races the workers and manufactures card<->roadmap [B] drift. Dates and blocked-state evidence only.",
+    "verified_correct_no_change": {
+      "T-021": "due 2026-10-27 vs local build finished 2026-10-24 (commits 4da5d22/3c243a8) — met, open only because unpushed",
+      "T-022": "due 2026-10-26 vs local fixes 2026-10-24 — met",
+      "T-023": "start=due 2026-10-24 = commit 73765bd that day — met",
+      "T-024": "blocked on Ole's Railway access, dates are the historical plan",
+      "T-027": "plan window 2026-11-02..2026-11-13 still current",
+      "T-030": "due 2026-10-27 = deploy day (396bea2, deploy 7354426195) — met",
+      "T-031": "due 2026-10-30 vs deployed 2026-10-27 — met early"
+    },
+    "known_gap": "seed_gantt_data.py still fabricates start/end from the column when a node carries no date (derive_dates()). Fixing it is a code change (separate card), not a tracker edit."
+  },
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
@@ -200,7 +254,10 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Confirmed fixed by user."
+      "notes": "Confirmed fixed by user.",
+      "start_date": "2026-09-01",
+      "due_date": "2026-09-01",
+      "date_source": "commit 309e33c 2026-09-01 'fix(intake): disable browser autofill so fields accept manual entry' — the only dated evidence on this node. The user confirmation in notes is undated, and prod_url/commit_hash are still missing (pre-existing [A] report_rule gap, not filled by guess)."
     },
     {
       "id": "T-002",
@@ -218,7 +275,9 @@
       "priority": "P1",
       "depends_on": [],
       "notes": "Reflection table drafted and refined against Clio Grow/HubSpot/Lawmatics. Awaiting explicit go before code. (Kanban card t_a5f4dd68, created blocked; it is the parent of T-003, T-004, T-012.)",
-      "reflection_rules_ref": "see reflection_rules[]"
+      "reflection_rules_ref": "see reflection_rules[]",
+      "start_date": "2026-09-03",
+      "date_source": "start = roadmap v2 commit 0d33da9 2026-09-03, which first records reflection_rules[] as drafted (the drafting session itself is not dated). NO due_date: the node is still 'awaiting explicit go before code' and was re-verified unimplemented on 2026-10-29 (card t_a5f4dd68 comment) — there is no planned deadline to show."
     },
     {
       "id": "T-003",
@@ -236,7 +295,8 @@
       "depends_on": [
         "T-002"
       ],
-      "notes": "Phase 2. Do not auto-progress past this gate."
+      "notes": "Phase 2. Do not auto-progress past this gate.",
+      "date_source": "UNDATED — no dated evidence of work or of a plan. The node entered the tracker in commit 0d33da9 (2026-09-03) as a Phase-2 dependency of T-002 and its card t_a7e05e2c has carried no activity since creation (2026-09-19). Left empty rather than guessed."
     },
     {
       "id": "T-004",
@@ -256,7 +316,8 @@
         "T-002",
         "T-009"
       ],
-      "notes": "Requires scheduled_actions table (T-009) first. Event-driven delayed task, not simple cron."
+      "notes": "Requires scheduled_actions table (T-009) first. Event-driven delayed task, not simple cron.",
+      "date_source": "UNDATED — no dated evidence of work or of a plan. Depends on T-002 + T-009; entered the tracker 2026-09-03 (0d33da9), card t_34e5415d idle since 2026-09-19. Left empty rather than guessed."
     },
     {
       "id": "T-005",
@@ -273,7 +334,9 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "SCOPED 2026-10-06 (backend_dev, kanban t_cba427b1; full note docs/WhatsApp-Business-API-Scoping-2026-10-06.md): Provider = META CLOUD API direct (drop UltraMsg from prod path — it is NOT a Meta-endorsed BSP; roadmap decision confirmed). Consent = explicit channel opt-in wa_opt_in(+ts+source) on contacts, transactional(legit-interest) vs marketing(explicit opt-in) split under GDPR+ePrivacy; same-channel opt-out honored. Suppression = single shared should_notify(contact,channel,type) gate used by email AND WhatsApp; honor reflection_rules suppression + Meta 24h window + webhook delivery. Cost = per-message category pricing, NO per-seat; single-digit EUR/mo at current volume; real cost is business verification (external, Ole ~1-3wk). Priority: KEEP P2/backlog, parallel-safe but sequence AFTER P0 prod-restore + T-010 email-delivery fix (email is the real blocker, WhatsApp is complementary not a substitute). Owner backend_dev. HARD GATE: no code/deploy/push/sends until Ole approves scope."
+      "notes": "SCOPED 2026-10-06 (backend_dev, kanban t_cba427b1; full note docs/WhatsApp-Business-API-Scoping-2026-10-06.md): Provider = META CLOUD API direct (drop UltraMsg from prod path — it is NOT a Meta-endorsed BSP; roadmap decision confirmed). Consent = explicit channel opt-in wa_opt_in(+ts+source) on contacts, transactional(legit-interest) vs marketing(explicit opt-in) split under GDPR+ePrivacy; same-channel opt-out honored. Suppression = single shared should_notify(contact,channel,type) gate used by email AND WhatsApp; honor reflection_rules suppression + Meta 24h window + webhook delivery. Cost = per-message category pricing, NO per-seat; single-digit EUR/mo at current volume; real cost is business verification (external, Ole ~1-3wk). Priority: KEEP P2/backlog, parallel-safe but sequence AFTER P0 prod-restore + T-010 email-delivery fix (email is the real blocker, WhatsApp is complementary not a substitute). Owner backend_dev. HARD GATE: no code/deploy/push/sends until Ole approves scope.",
+      "start_date": "2026-10-06",
+      "date_source": "start = scoping note delivered 2026-10-06 (commit 016568e, card t_cba427b1 closed 2026-10-06 09:57). NO due_date: implementation is still gated on Ole approving the scope (node note: HARD GATE) — no deadline exists."
     },
     {
       "id": "T-006",
@@ -292,7 +355,8 @@
       "depends_on": [
         "T-004"
       ],
-      "notes": "Phase 4."
+      "notes": "Phase 4.",
+      "date_source": "UNDATED — no dated evidence; Phase-4 node, depends on T-004, in the tracker since 2026-09-03 (0d33da9) with card t_ba95cc42 idle since 2026-09-19."
     },
     {
       "id": "T-007",
@@ -309,7 +373,10 @@
       ],
       "priority": "P3",
       "depends_on": [],
-      "notes": "USER CONFIRMED 2026-09-03: full two-model split (Internal staff directory, workspace-filtered + Client-Facing with lifecycle/consent/tags). operator_installer's firm_team.py draft is the starting point for the Internal side. Cross-audit applies: operator reviews backend_dev code, backend_dev reviews operator code, before every local test. Implementation plan only if user requests or operator has doubt (per process_rules)."
+      "notes": "USER CONFIRMED 2026-09-03: full two-model split (Internal staff directory, workspace-filtered + Client-Facing with lifecycle/consent/tags). operator_installer's firm_team.py draft is the starting point for the Internal side. Cross-audit applies: operator reviews backend_dev code, backend_dev reviews operator code, before every local test. Implementation plan only if user requests or operator has doubt (per process_rules).",
+      "start_date": "2026-09-03",
+      "due_date": "2026-09-03",
+      "date_source": "commits 51c36f1 (internal firm-team directory) + ef293ab (client-facing lifecycle/tags) 2026-09-03; the node note records the user confirmation the same day. prod_url/commit_hash still missing (pre-existing [A] report_rule gap)."
     },
     {
       "id": "T-008",
@@ -326,7 +393,10 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "CONSOLIDATED REGISTER DELIVERED 2026-10-06 (t_6cf123af): two-part mandate complete. PART A gaps: (A1)[NEW-CRITICAL] /api/auth/seed is an UNPROTECTED destructive endpoint (wipes User+Workspace, reseeds 6 known-cred accounts incl superadmin Test12345!) — P0, 0.5-1h; (A2)[NEW] _ensure_workspace_users/_ensure_test_users re-seed hardcoded production creds (lexflow0826, crm0826, pagliano0826, Romanelli0826, Test1) on every boot until user changes password — force password change; (A3)[NEW] SECRET_KEY/JWT_SECRET_KEY fall back to committed dev key if env missing — verify both set in Railway; (A4) dead-button sweep: login 'Entra' 415 ALREADY FIXED locally (doLogin JSON fetch, fddbb7b 2026-09-04); (A5) RLS open: feat/rls not merged, workspace_filter on 8 tables, gap tables contact_relationship+firm_team_member, 5 alembic risks (see T-014); (A6) cross-feature: intake creates NO CalendarEvent, task->calendar disconnected, /tasks attachment 404; A6.4 CORRECTION: prior audit 'no workspace filtering in any API route' was vs BROKEN prod — local cases/contacts/tasks/views DO call workspace_filter(); (A7) prod 404 P0-PROD-DOWN root cause = Railway outage, not code; (A8)[NEW] hygiene: duplicate ' * 2.py' files tracked in git, crm_local.db committed, 19 legacy dead routes. PART B proposed: B1 first-login pw change, B2+B3 login rate-limit + shared Redis store, B4 RLS merge (T-014), B5 CSP nonce hardening, B6 task/calendar/intake reflection (T-002), B7 /tasks attachment, B8 workspace_id 'or 1' fallback fix, B9 cleanup, B10 unified activity audit trail. Full register: kanban t_6cf123af artifact lexflow-t008-gap-register.md. Reading: date=2026-10-06, by=backend-dev, local-only, no deploy, no push."
+      "notes": "CONSOLIDATED REGISTER DELIVERED 2026-10-06 (t_6cf123af): two-part mandate complete. PART A gaps: (A1)[NEW-CRITICAL] /api/auth/seed is an UNPROTECTED destructive endpoint (wipes User+Workspace, reseeds 6 known-cred accounts incl superadmin Test12345!) — P0, 0.5-1h; (A2)[NEW] _ensure_workspace_users/_ensure_test_users re-seed hardcoded production creds (lexflow0826, crm0826, pagliano0826, Romanelli0826, Test1) on every boot until user changes password — force password change; (A3)[NEW] SECRET_KEY/JWT_SECRET_KEY fall back to committed dev key if env missing — verify both set in Railway; (A4) dead-button sweep: login 'Entra' 415 ALREADY FIXED locally (doLogin JSON fetch, fddbb7b 2026-09-04); (A5) RLS open: feat/rls not merged, workspace_filter on 8 tables, gap tables contact_relationship+firm_team_member, 5 alembic risks (see T-014); (A6) cross-feature: intake creates NO CalendarEvent, task->calendar disconnected, /tasks attachment 404; A6.4 CORRECTION: prior audit 'no workspace filtering in any API route' was vs BROKEN prod — local cases/contacts/tasks/views DO call workspace_filter(); (A7) prod 404 P0-PROD-DOWN root cause = Railway outage, not code; (A8)[NEW] hygiene: duplicate ' * 2.py' files tracked in git, crm_local.db committed, 19 legacy dead routes. PART B proposed: B1 first-login pw change, B2+B3 login rate-limit + shared Redis store, B4 RLS merge (T-014), B5 CSP nonce hardening, B6 task/calendar/intake reflection (T-002), B7 /tasks attachment, B8 workspace_id 'or 1' fallback fix, B9 cleanup, B10 unified activity audit trail. Full register: kanban t_6cf123af artifact lexflow-t008-gap-register.md. Reading: date=2026-10-06, by=backend-dev, local-only, no deploy, no push.",
+      "start_date": "2026-09-19",
+      "due_date": "2026-10-06",
+      "date_source": "start = card t_6cf123af created 2026-09-19 11:05 (audit scheduled/started); due = consolidated register delivered 2026-10-06 (commit 7e4343b, card closed 2026-10-06 10:04)."
     },
     {
       "id": "T-009",
@@ -343,7 +413,10 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "Foundation for all delayed/drip automation. Design schema extensible for future AI agent decision layer (T-013)."
+      "notes": "Foundation for all delayed/drip automation. Design schema extensible for future AI agent decision layer (T-013).",
+      "start_date": "2026-10-06",
+      "due_date": "2026-10-06",
+      "date_source": "delivered and review-approved LOCAL on 2026-10-06 (card t_7bdb5c53: run 09:44->10:12, review 10:02, migration f4a5b6c7d8e9). The 8 files stayed untracked and were never committed, which is why the column remains 'backlog' — these dates record the real work window, not the column."
     },
     {
       "id": "T-010",
@@ -356,7 +429,9 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "FACT-CHECK DONE 2026-09-04: code live in notification_service.py (views.py:26,739; auth.py:56); email_service.py dead code. API key re_... validated (domains 200). ⚠️ DELIVERY BLOCKED: EMAIL_FROM=onboarding@resend.dev only delivers to account owner (olesya00007@yahoo.com); Resend 403 'verify a domain' for alegra_007@proton.me/ms.okuneva@internet.ru. REMAINING: add verified Resend domain + set EMAIL_FROM=no-reply@<domain> in Railway, then real send test. Also: upload notify (attachment_uploaded, commit pending) emails owner + client on file upload. MITIGATION COMMITTED 2026-09-04: SMTP fallback (commit 5182bf8) is preferred over Resend when SMTP_HOST is set — this unblocks client delivery without a verified Resend domain. Kanban card: t_da4552e5."
+      "notes": "FACT-CHECK DONE 2026-09-04: code live in notification_service.py (views.py:26,739; auth.py:56); email_service.py dead code. API key re_... validated (domains 200). ⚠️ DELIVERY BLOCKED: EMAIL_FROM=onboarding@resend.dev only delivers to account owner (olesya00007@yahoo.com); Resend 403 'verify a domain' for alegra_007@proton.me/ms.okuneva@internet.ru. REMAINING: add verified Resend domain + set EMAIL_FROM=no-reply@<domain> in Railway, then real send test. Also: upload notify (attachment_uploaded, commit pending) emails owner + client on file upload. MITIGATION COMMITTED 2026-09-04: SMTP fallback (commit 5182bf8) is preferred over Resend when SMTP_HOST is set — this unblocks client delivery without a verified Resend domain. Kanban card: t_da4552e5.",
+      "start_date": "2026-09-04",
+      "date_source": "start = fact-check + SMTP-fallback mitigation 2026-09-04 (commit 5182bf8, card t_da4552e5). NO due_date: delivery is blocked on an external Resend domain verification, which has no date, and no deadline was ever set."
     },
     {
       "id": "T-011",
@@ -373,7 +448,8 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Must precede any further fix. Future shortcut command target: 'inventory'."
+      "notes": "Must precede any further fix. Future shortcut command target: 'inventory'.",
+      "date_source": "UNDATED — card t_226f9045 has only its creation events (2026-09-19) and there is no inventory deliverable on disk. The vault workspace inventory (created 2026-08-31, updated 2026-09-03) predates this node and is not its artifact. Left empty rather than guessed."
     },
     {
       "id": "T-012",
@@ -398,7 +474,8 @@
       "depends_on": [
         "T-002"
       ],
-      "notes": "LOCAL ONLY, always. Command convention: 'operator test locally'. Never deploy without explicit user go."
+      "notes": "LOCAL ONLY, always. Command convention: 'operator test locally'. Never deploy without explicit user go.",
+      "date_source": "UNDATED — no dated evidence; local-only Romanelli mock test, dependency of T-002, card t_b8dfc0cc idle since 2026-09-19."
     },
     {
       "id": "T-013",
@@ -417,7 +494,8 @@
       "depends_on": [
         "T-009"
       ],
-      "notes": "Target: end of September. Architecture (T-009) must be built to support this as a plug-in decision layer, not require rewrite."
+      "notes": "Target: end of September. Architecture (T-009) must be built to support this as a plug-in decision layer, not require rewrite.",
+      "date_source": "UNDATED — the 141 card events on t_5cf7a308 (2026-10-06 -> 2026-10-21) are dispatcher crash loops on a Nous auth blocker, not work; no deliverable exists. The 2026-09-03 note's 'end of September' target is superseded and is deliberately NOT used as a due_date."
     },
     {
       "id": "T-014",
@@ -434,7 +512,9 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "BLOCKED until: 18 tests pass on real (non-sqlite) Postgres AND ALTER ROLE ... NOBYPASSRLS confirmed on Railway DATABASE_URL role. AUDIT 2026-09-16 (kanban t_4637a500): RLS built on feat/rls, NOT merged — app-level workspace_filter() only. workspace_filter() covers 8 tables (deadlines, contacts, tasks, cases, activity_log, notes, attachments, calendar_events); migration f3a4b5c6d7e8_rls.py covers 11 tables; 18 tests in tests/test_rls.py; depends on flask-rls>=0.1.1. GAP tables with workspace_id but no filter: contact_relationship, firm_team_member. Manual prerequisite ALTER ROLE <app_role> NOBYPASSRLS must run BEFORE the migration and needs Railway prod access (= Ole). Filing decision (Linear / GitHub / direct backend-dev handoff) awaiting Ole. Kanban card: t_594fcced."
+      "notes": "BLOCKED until: 18 tests pass on real (non-sqlite) Postgres AND ALTER ROLE ... NOBYPASSRLS confirmed on Railway DATABASE_URL role. AUDIT 2026-09-16 (kanban t_4637a500): RLS built on feat/rls, NOT merged — app-level workspace_filter() only. workspace_filter() covers 8 tables (deadlines, contacts, tasks, cases, activity_log, notes, attachments, calendar_events); migration f3a4b5c6d7e8_rls.py covers 11 tables; 18 tests in tests/test_rls.py; depends on flask-rls>=0.1.1. GAP tables with workspace_id but no filter: contact_relationship, firm_team_member. Manual prerequisite ALTER ROLE <app_role> NOBYPASSRLS must run BEFORE the migration and needs Railway prod access (= Ole). Filing decision (Linear / GitHub / direct backend-dev handoff) awaiting Ole. Kanban card: t_594fcced.",
+      "start_date": "2026-09-16",
+      "date_source": "start = RLS audit 2026-09-16 (card t_4637a500). NO due_date: the node is blocked on real-Postgres tests + ALTER ROLE NOBYPASSRLS (Ole's Railway access) with no plan date, so it is blocked, not overdue."
     },
     {
       "id": "T-015",
@@ -451,7 +531,8 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Plan confirmed: volume name web-uploads, mount /app/uploads, UPLOAD_FOLDER env set. Awaiting final go for redeploy."
+      "notes": "Plan confirmed: volume name web-uploads, mount /app/uploads, UPLOAD_FOLDER env set. Awaiting final go for redeploy.",
+      "date_source": "UNDATED — the plan is confirmed but no date was ever recorded; card t_f0a8b939 has only its creation events (2026-09-19) and no redeploy has been approved. Left empty rather than guessed."
     },
     {
       "id": "T-016",
@@ -464,7 +545,8 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Repoint pushed (da19b36), Netlify auto-deploy triggered. Visual redesign (52f1bc6) held separately on visual-redesign-hold branch, NOT merged."
+      "notes": "Repoint pushed (da19b36), Netlify auto-deploy triggered. Visual redesign (52f1bc6) held separately on visual-redesign-hold branch, NOT merged.",
+      "date_source": "UNDATED — commit da19b36 is not an object in this repo and the Netlify landing repo it came from is no longer on disk. The vault inventory records the repoint as already done by its 2026-09-03 update, which is only an upper bound, not a date. Left empty rather than guessed."
     },
     {
       "id": "T-017",
@@ -482,7 +564,10 @@
       ],
       "priority": "P4",
       "depends_on": [],
-      "notes": "DONE 2026-10-06 (kanban t_4af8abb6). Implemented: Config.SEAT_LIMIT_DEFAULT (env-overridable, default 5); workspaces.seat_limit NULLable DB column + Workspace.effective_seat_limit() (DB override wins, else config default); seat-check enforced on POST /api/workspace/<id>/user (blocks with 403 when existing seats >= effective limit); additive boot-time _ensure_schema ALTER + alembic migration 5a6b7c8d9e0f. Local test .venv/bin/python tests/test_seat_limit.py ALL PASSED — default 5 (seats 1-5=201, 6th=403 5/5), then DB-only override to 8 took effect with NO redeploy (seats 6-8=201, 9th=403 8/8), to_dict exposes seat_limit. NO push, NO deploy. Cross-audit (process_rules) route: operator-installer reviews these 5 files + the T-009 files were NOT touched by this task."
+      "notes": "DONE 2026-10-06 (kanban t_4af8abb6). Implemented: Config.SEAT_LIMIT_DEFAULT (env-overridable, default 5); workspaces.seat_limit NULLable DB column + Workspace.effective_seat_limit() (DB override wins, else config default); seat-check enforced on POST /api/workspace/<id>/user (blocks with 403 when existing seats >= effective limit); additive boot-time _ensure_schema ALTER + alembic migration 5a6b7c8d9e0f. Local test .venv/bin/python tests/test_seat_limit.py ALL PASSED — default 5 (seats 1-5=201, 6th=403 5/5), then DB-only override to 8 took effect with NO redeploy (seats 6-8=201, 9th=403 8/8), to_dict exposes seat_limit. NO push, NO deploy. Cross-audit (process_rules) route: operator-installer reviews these 5 files + the T-009 files were NOT touched by this task.",
+      "start_date": "2026-10-06",
+      "due_date": "2026-10-06",
+      "date_source": "card t_4af8abb6 run 2026-10-06 09:44->10:12, tests/test_seat_limit.py ALL PASSED (default 5 + DB-only override to 8, no redeploy), local only."
     },
     {
       "id": "T-018",
@@ -501,7 +586,8 @@
       "depends_on": [
         "T-009"
       ],
-      "notes": "Confirmed missing in v2 roadmap §5 — needs its own spec. Distinct from T-013 (adaptive follow-up): AI-personalized content generation per client. Spec before code."
+      "notes": "Confirmed missing in v2 roadmap §5 — needs its own spec. Distinct from T-013 (adaptive follow-up): AI-personalized content generation per client. Spec before code.",
+      "date_source": "UNDATED — spec-before-code node, depends on T-009, card t_f48b0a11 idle since 2026-09-19. No dated evidence of work or of a plan."
     },
     {
       "id": "T-019",
@@ -516,7 +602,9 @@
       ],
       "priority": "P3",
       "depends_on": [],
-      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). AUDIT DONE 2026-09-04: gap matrix + top-10 fix list (frontend_developer, read-only) in docs/UX-Test-Report-2026-09-04.md + LexFlux-UX-UI-Design-Research-Report-2025.md in Obsidian. Contrast quick-fix APPLIED locally (commit 3aaea16, --text-faint -> #7E90A9, btn text var(--bg); calendar/tasks white-on-accent still ~4.1:1 — pending). IMPLEMENTATION ORDER (Ole 2026-09-04): Pagliano (least populated) first -> verify locally -> Lexflow -> Romanelli. Hard rule: no design deploy before Ole's human review of local preview. STATUS 2026-09-19: still local_verified; calendar/tasks white-on-accent contrast still ~4.1:1 (WCAG AA requires 4.5:1) — open. Kanban card: t_bc68191b (blocked on Ole's localhost review)."
+      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). AUDIT DONE 2026-09-04: gap matrix + top-10 fix list (frontend_developer, read-only) in docs/UX-Test-Report-2026-09-04.md + LexFlux-UX-UI-Design-Research-Report-2025.md in Obsidian. Contrast quick-fix APPLIED locally (commit 3aaea16, --text-faint -> #7E90A9, btn text var(--bg); calendar/tasks white-on-accent still ~4.1:1 — pending). IMPLEMENTATION ORDER (Ole 2026-09-04): Pagliano (least populated) first -> verify locally -> Lexflow -> Romanelli. Hard rule: no design deploy before Ole's human review of local preview. STATUS 2026-09-19: still local_verified; calendar/tasks white-on-accent contrast still ~4.1:1 (WCAG AA requires 4.5:1) — open. Kanban card: t_bc68191b (blocked on Ole's localhost review).",
+      "start_date": "2026-09-04",
+      "date_source": "start = audit delivered 2026-09-04 (commit b455e97 + contrast fix 3aaea16); implementation ran 2026-10-10 -> 2026-10-21 (card t_bc68191b) and was PAUSED by Ole on 2026-10-26. NO due_date: paused behind Ole's design review, no plan deadline exists."
     },
     {
       "id": "T-020",
@@ -531,7 +619,8 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "Ole 2026-09-04: keep CRM English for now (tester lawyers speak English); landings stay Italian. Plan translation to Italian (and possibly Russian) for NEXT WEEK — bilingual by end of week. Do NOT touch language now. Reminder: operator-installer must remind Ole about this. Kanban card: t_a4e0ad76 (blocked — do not start before Ole opens the window)."
+      "notes": "Ole 2026-09-04: keep CRM English for now (tester lawyers speak English); landings stay Italian. Plan translation to Italian (and possibly Russian) for NEXT WEEK — bilingual by end of week. Do NOT touch language now. Reminder: operator-installer must remind Ole about this. Kanban card: t_a4e0ad76 (blocked — do not start before Ole opens the window).",
+      "date_source": "UNDATED — Ole's 2026-09-04 decision deferred i18n and explicitly closed the window ('do NOT touch language now'); card t_a4e0ad76 is blocked and no work has started. The 'next week' wording is not a dated plan, so neither date is set."
     },
     {
       "id": "T-021",
@@ -613,11 +702,11 @@
         "T-029"
       ],
       "notes": "Deploy gate before any push: run alembic upgrade to g8b9c0d1e2f3 on staging, tenant-isolation checks (Romanelli admin, client sub-workspace), flags on.",
-      "start_date": "2026-10-28",
-      "due_date": "2026-10-31",
+      "start_date": "2026-11-03",
       "tenant_scope": [
         "ws7"
-      ]
+      ],
+      "date_source": "re-baselined: the 2026-10-28..2026-10-31 plan was missed with the smoke test never run. The task was actually scheduled on 2026-11-03 (card t_fe4e8687 created 2026-11-03 09:03, parent-gated on T-022/T-024/T-029) — that card creation is the dated evidence. NO due_date: no new deadline agreed, and the real gate (T-024, Ole's Railway access) is still closed. Column deliberately NOT changed to 'blocked' — the live card is 'todo' and a column flip here would only add card<->roadmap drift."
     },
     {
       "id": "T-026",
@@ -634,7 +723,8 @@
       "due_date": "2026-10-28",
       "tenant_scope": [
         "ws7"
-      ]
+      ],
+      "date_source": "left as the 2026-10-25..2026-10-28 historical plan, no re-baseline: the task was picked up on the live board on 2026-11-03 (card t_76894c79 created 2026-11-03 09:03 and claimed by a worker the same morning), so a date change here would race the worker's own tracker update. The decision itself is still Ole's ('Ole to decide' in notes)."
     },
     {
       "id": "T-027",
@@ -656,34 +746,36 @@
     {
       "id": "T-028",
       "title": "Roadmap: real start/due dates per task (Gantt currently derives dates from column)",
-      "column": "backlog",
+      "column": "local_verified",
       "assigned_agent": "operator_installer",
       "deploy_status": null,
       "priority": "P2",
       "depends_on": [
         "T-022"
       ],
-      "notes": "seed_gantt_data.py now upserts from this file and honours optional start_date/due_date; fill them for T-001..T-020 so the Gantt shows real plan, not derived dates.",
-      "start_date": "2026-10-26",
-      "due_date": "2026-10-30",
+      "notes": "seed_gantt_data.py upserts from this file and honours optional start_date/due_date; T-001..T-020 now carry evidence-based dates (or an explicit date_source saying why they are undated) so the Gantt shows the real plan, not dates derived from the column. DONE 2026-11-03 locally (docs-only): 10 of T-001..T-020 dated, 10 left undated with reasons; stale past-due nodes decided per node (T-025 re-baselined, T-026 left as historical plan because a worker claimed it live, T-028/T-029 re-baselined). Remaining gap: seed_gantt_data.py still fabricates dates for nodes with no date — follow-up card filed.",
+      "start_date": "2026-11-03",
+      "due_date": "2026-11-03",
       "tenant_scope": [
         "ws7"
-      ]
+      ],
+      "date_source": "re-baselined to the real work window: card t_f3890cf5 created and run 2026-11-03, dates filled in this pass and committed locally on lexflow_hermes_v1 (docs-only, not pushed — a push triggers a Railway deploy). Previous plan dates 2026-10-26..2026-10-30 had been missed. Column advanced to local_verified with deploy_status null because the change exists only in the local checkout — no prod_url/commit-hash evidence exists to claim anything more."
     },
     {
       "id": "T-029",
       "title": "Add Alembic migration for notify_consents (currently create_all-only) before Railway gate",
-      "column": "backlog",
+      "column": "local_verified",
       "assigned_agent": "backend_dev",
       "deploy_status": null,
       "priority": "P1",
       "depends_on": [],
       "notes": "MAJOR finding from Wave 1 FINAL GATE (2026-10-25, integration/platform-wave1 @ 78238fe, report xreport_admy_wave1.md): notify_consents has NO Alembic migration — it is created only via runtime db.create_all() in the _ensure_schema before_request hook (checkfirst+additive). On a fresh Postgres deploy where only 'flask db upgrade' runs the migrations, the first db.create_all() still creates it (additive, so it self-heals), but it is ABSENT from the migration chain and from the ORM model registry import graph. MINOR companion: NotifyConsent not in models/__init__. Fix before the Railway deploy gate (T-025).",
-      "start_date": "2026-10-26",
-      "due_date": "2026-10-28",
+      "start_date": "2026-11-03",
       "tenant_scope": [
         "ws7"
-      ]
+      ],
+      "date_source": "re-baselined: the 2026-10-26..2026-10-28 plan was missed with the work unstarted. Work actually ran and finished on 2026-11-03 (card t_8115f68b created 09:03, done 09:07:54: notify_consents already had its migration on lexflow_hermes_v1, two further chain gaps fixed, clean 'flask db upgrade' on sqlite and real Postgres, local only, operator-installer cross-audit still outstanding). Column advanced to local_verified on that evidence.",
+      "due_date": "2026-11-03"
     },
     {
       "id": "T-030",
