@@ -6,6 +6,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -392,7 +393,9 @@ def test_elisa_chat_tasks_and_agenda():
     assert client.post('/api/agent/chat', headers=h, json={}).status_code == 400
     assert client.post('/api/agent/chat', headers=h, json={'message': 'x' * 501}).status_code == 400
 
-    r = client.post('/api/agent/chat', headers=h, json={'message': 'Create task Send filing receipt to client for matter Rasing separazione due 2026-11-03 priority high'})
+    due = (date.today() + timedelta(days=3)).isoformat()  # date-relative: never goes stale
+    hearing = (date.today() + timedelta(days=9)).isoformat()
+    r = client.post('/api/agent/chat', headers=h, json={'message': f'Create task Send filing receipt to client for matter Rasing separazione due {due} priority high'})
     d = r.get_json()
     assert r.status_code == 200, d
     assert d['status'] == 'pending_approval' and d['pending_action']['tool'] == 'create_task', d
@@ -404,15 +407,15 @@ def test_elisa_chat_tasks_and_agenda():
     assert ok.status_code == 200, ok.get_json()
     with state['app'].app_context():
         t = Task.query.filter_by(title='Send filing receipt to client').first()
-        assert t is not None and str(t.duedate) == '2026-11-03' and t.priority == 'High'
+        assert t is not None and str(t.duedate) == due and t.priority == 'High'
     assert client.post(f'/api/agent/chat/actions/{aid}/approve', headers=h).status_code == 409  # single use
 
-    r = client.post('/api/agent/chat', headers=h, json={'message': 'Schedule hearing Rasing vs Rossi on 2026-11-12 at 10:30 matter Rasing separazione'})
+    r = client.post('/api/agent/chat', headers=h, json={'message': f'Schedule hearing Rasing vs Rossi on {hearing} at 10:30 matter Rasing separazione'})
     d = r.get_json()
     assert d['pending_action']['tool'] == 'create_calendar_event', d
     assert client.post(f"/api/agent/chat/actions/{d['pending_action']['id']}/approve", headers=h).status_code == 200
     r = client.post('/api/agent/chat', headers=h, json={'message': 'What is on my agenda calendar?'})
-    assert '2026-11-12 10:30' in r.get_json()['reply'], r.get_json()
+    assert f'{hearing} 10:30' in r.get_json()['reply'], r.get_json()
 
     r = client.post('/api/agent/chat', headers=h, json={'message': 'show my open tasks'})
     assert 'Send filing receipt' in r.get_json()['reply'], r.get_json()
