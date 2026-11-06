@@ -3,48 +3,147 @@
     "is_derived": true,
     "note": "DERIVED READ-ONLY COPY. Do not edit. Regenerated from the authority by scripts/sync-data.mjs.",
     "authority": "lexflow-crm/docs/LexFlow_Agentic_Roadmap.json",
-    "generated_at": "2026-10-21T12:45:42.639Z",
-    "authority_last_updated": "2026-10-14"
+    "generated_at": "2026-11-06T21:13:25.168Z",
+    "authority_last_updated": "2026-11-06"
   },
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-10-14",
+  "last_updated": "2026-11-06",
+  "gantt_dates": {
+    "pass": "T-028 2026-11-03",
+    "purpose": "Real start_date/due_date per task node, so /gantt and the seeded task rows stop deriving dates from the roadmap column.",
+    "policy": [
+      "start_date = the earliest DATED evidence of work on the node (git commit, Kanban card event, or a dated note).",
+      "due_date = the latest DATED evidence of completion for a finished piece of work; for an open node only if a plan deadline is documented — otherwise EMPTY.",
+      "Never estimated, interpolated, or copied from the column. A node with no evidence stays undated and carries 'date_source' saying why.",
+      "A passed plan date on an unfinished node is either re-baselined to dated evidence (T-028, T-029) or the node is marked blocked with 'blocked_reason' (T-025, T-026) — never silently shifted.",
+      "Evidence sources used: git log on lexflow_hermes_v1, ~/.hermes/kanban.db card events/comments, and the dated notes already in each node. No external assumption was used."
+    ],
+    "dated_by_this_pass": {
+      "T-001": "commit 309e33c 2026-09-01 'fix(intake): disable browser autofill so fields accept manual entry' — the only dated evidence on this node. The user confirmation in notes is undated, and prod_url/commit_hash are still missing (pre-existing [A] report_rule gap, not filled by guess).",
+      "T-002": "start = roadmap v2 commit 0d33da9 2026-09-03, which first records reflection_rules[] as drafted (the drafting session itself is not dated). NO due_date: the node is still 'awaiting explicit go before code' and was re-verified unimplemented on 2026-10-29 (card t_a5f4dd68 comment) — there is no planned deadline to show.",
+      "T-005": "start = scoping note delivered 2026-10-06 (commit 016568e, card t_cba427b1 closed 2026-10-06 09:57). NO due_date: implementation is still gated on Ole approving the scope (node note: HARD GATE) — no deadline exists.",
+      "T-007": "commits 51c36f1 (internal firm-team directory) + ef293ab (client-facing lifecycle/tags) 2026-09-03; the node note records the user confirmation the same day. prod_url/commit_hash still missing (pre-existing [A] report_rule gap).",
+      "T-008": "start = card t_6cf123af created 2026-09-19 11:05 (audit scheduled/started); due = consolidated register delivered 2026-10-06 (commit 7e4343b, card closed 2026-10-06 10:04).",
+      "T-009": "delivered and review-approved LOCAL on 2026-10-06 (card t_7bdb5c53: run 09:44->10:12, review 10:02, migration f4a5b6c7d8e9). The 8 files stayed untracked and were never committed, which is why the column remains 'backlog' — these dates record the real work window, not the column.",
+      "T-010": "start = fact-check + SMTP-fallback mitigation 2026-09-04 (commit 5182bf8, card t_da4552e5). NO due_date: delivery is blocked on an external Resend domain verification, which has no date, and no deadline was ever set.",
+      "T-014": "start = RLS audit 2026-09-16 (card t_4637a500). NO due_date: the node is blocked on real-Postgres tests + ALTER ROLE NOBYPASSRLS (Ole's Railway access) with no plan date, so it is blocked, not overdue.",
+      "T-017": "card t_4af8abb6 run 2026-10-06 09:44->10:12, tests/test_seat_limit.py ALL PASSED (default 5 + DB-only override to 8, no redeploy), local only.",
+      "T-019": "start = audit delivered 2026-09-04 (commit b455e97 + contrast fix 3aaea16); implementation ran 2026-10-10 -> 2026-10-21 (card t_bc68191b) and was PAUSED by Ole on 2026-10-26. NO due_date: paused behind Ole's design review, no plan deadline exists."
+    },
+    "undated_after_this_pass": {
+      "T-003": "UNDATED — no dated evidence of work or of a plan. The node entered the tracker in commit 0d33da9 (2026-09-03) as a Phase-2 dependency of T-002 and its card t_a7e05e2c has carried no activity since creation (2026-09-19). Left empty rather than guessed.",
+      "T-004": "UNDATED — no dated evidence of work or of a plan. Depends on T-002 + T-009; entered the tracker 2026-09-03 (0d33da9), card t_34e5415d idle since 2026-09-19. Left empty rather than guessed.",
+      "T-006": "UNDATED — no dated evidence; Phase-4 node, depends on T-004, in the tracker since 2026-09-03 (0d33da9) with card t_ba95cc42 idle since 2026-09-19.",
+      "T-011": "UNDATED — card t_226f9045 has only its creation events (2026-09-19) and there is no inventory deliverable on disk. The vault workspace inventory (created 2026-08-31, updated 2026-09-03) predates this node and is not its artifact. Left empty rather than guessed.",
+      "T-012": "UNDATED — no dated evidence; local-only Romanelli mock test, dependency of T-002, card t_b8dfc0cc idle since 2026-09-19.",
+      "T-013": "UNDATED — the 141 card events on t_5cf7a308 (2026-10-06 -> 2026-10-21) are dispatcher crash loops on a Nous auth blocker, not work; no deliverable exists. The 2026-09-03 note's 'end of September' target is superseded and is deliberately NOT used as a due_date.",
+      "T-015": "UNDATED — the plan is confirmed but no date was ever recorded; card t_f0a8b939 has only its creation events (2026-09-19) and no redeploy has been approved. Left empty rather than guessed.",
+      "T-016": "UNDATED — commit da19b36 is not an object in this repo and the Netlify landing repo it came from is no longer on disk. The vault inventory records the repoint as already done by its 2026-09-03 update, which is only an upper bound, not a date. Left empty rather than guessed.",
+      "T-018": "UNDATED — spec-before-code node, depends on T-009, card t_f48b0a11 idle since 2026-09-19. No dated evidence of work or of a plan.",
+      "T-020": "UNDATED — Ole's 2026-09-04 decision deferred i18n and explicitly closed the window ('do NOT touch language now'); card t_a4e0ad76 is blocked and no work has started. The 'next week' wording is not a dated plan, so neither date is set."
+    },
+    "stale_dates_decided": {
+      "T-025": "re-baselined start -> 2026-11-03 (card t_fe4e8687 created that day), due_date removed (no new deadline; T-024 gate still closed)",
+      "T-026": "left as the 2026-10-25..2026-10-28 historical plan — card t_76894c79 was claimed by a worker on 2026-11-03, so re-baselining here would race it; decision still Ole's",
+      "T-028": "re-baselined to 2026-11-03 (this pass)",
+      "T-029": "re-baselined to 2026-11-03 (card t_8115f68b delivered locally 09:07 that day)",
+      "T-030": "no change needed — due 2026-10-27 is the deploy day (396bea2), the node is finished",
+      "T-031": "no change needed — deployed 2026-10-27, three days before its 2026-10-30 due date"
+    },
+    "live_board_note": "Roadmap COLUMNS were deliberately not flipped for the in-flight nodes: cards T-022/T-023/T-027/T-028/T-029 were created and claimed within minutes on 2026-11-03, so any column edit made here races the workers and manufactures card<->roadmap [B] drift. Dates and blocked-state evidence only.",
+    "verified_correct_no_change": {
+      "T-021": "due 2026-10-27 vs local build finished 2026-10-24 (commits 4da5d22/3c243a8) — met, open only because unpushed",
+      "T-022": "due 2026-10-26 vs local fixes 2026-10-24 — met",
+      "T-023": "start=due 2026-10-24 = commit 73765bd that day — met",
+      "T-024": "blocked on Ole's Railway access, dates are the historical plan",
+      "T-027": "plan window 2026-11-02..2026-11-13 still current",
+      "T-030": "due 2026-10-27 = deploy day (396bea2, deploy 7354426195) — met",
+      "T-031": "due 2026-10-30 vs deployed 2026-10-27 — met early"
+    },
+    "known_gap": "seed_gantt_data.py still fabricates start/end from the column when a node carries no date (derive_dates()). Fixing it is a code change (separate card), not a tracker edit."
+  },
   "open_p0": [
     {
       "id": "P0-PROD-DOWN",
       "since": "2026-09-26 (first observed 07:41 CEST)",
-      "status": "OPEN — day 19",
+      "status": "RESOLVED 2026-10-27 — prod back at 200 (deploy 7354426195, commit 396bea2, pushed lexflow_hermes_v1 19b5401..396bea2). /health 200, / 200 verified 2026-10-27. RE-VERIFIED 2026-11-03 09:0x CET by the daily status run: / 200 (1.34s), /health 200 (0.23s), /login?ws=lexflow 200 (0.24s) — no Railway-edge fallback signature. Prod is serving origin/lexflow_hermes_v1 = ddec0aa (2026-10-27, superadmin token opt-in), which contains 396bea2.  ||  RE-BASELINED 2026-11-06 22:08 CET (card t_ba26097d): this RESOLVED stamp is NOT re-confirmed. web-production-031a6 is back to the Railway EDGE FALLBACK (x-railway-fallback: true, \"Application not found\"), i.e. no service is bound to that hostname today, while a DIFFERENT LexFlow service (lexflow-web-production) is live and healthy. Whether the 2026-10-27 resolve was a different service/domain binding cannot be determined without Railway access. Deliberately NOT flipped open or closed here — see P0-PROD-IDENTITY-UNCONFIRMED-2026-11-06.",
       "detail": "Production CRM https://web-production-031a6.up.railway.app/ returns HTTP 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\"} with headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: cdg1 — i.e. the Railway edge has NO active service bound to that domain. Reproduced 4/4 probes 2026-09-27 09:20 CEST on /, /health, /healthz, /api/health; /login timed out (curl 000). On 2026-09-25 the same endpoint returned 200, so this is a real regression, not a stale state. Still down 2026-09-28 09:01 CEST (probes: / 404, /health 404, /login 404, /api/health 000 after a 12s timeout); the 08:12 LEXFLOW TRY-DEMO REGRESSION CHECK cron independently recorded health=000, /login?ws=lexflow=000, /login?ws=romanelli-studio=000 and anon /api/admin/users=000 (expected 401). Still down 2026-09-29 09:00 CEST (probes: / 404, /health 404, /login 404, /api/health 404 — all fast, ~0.3-0.4s, no timeout unlike 2026-09-28's 12s /api/health 000; body carries request_id WaDnnWF9RAe0xwmQLPU1MQ). This is an APP-LAYER outage: it is NOT visible in the repo, and no roadmap task status change can fix it. kanban card: t_8cbc766e (blocked). DAY 9 (2026-10-04 09:04 CEST): still down — probes / 404 (0.30s), /health 404 (0.26s), /api/health 404 (0.27s), /login?ws=lexflow 404 (0.26s). Signature unchanged; still no Railway access to inspect or restart the service. Independently corroborated 2026-10-04 08:00 by lexflow-try-demo-daily-check (exit 1: health=404, /login?ws=lexflow=404, /login?ws=romanelli-studio=404, anon /api/admin/users=404 instead of 401, kanban siteMap missing lexflow). No status run occurred 2026-09-30..2026-10-03 (this job failed at the provider/credit layer on all four days), so this is the first confirmation since 2026-09-29. Still down 2026-10-14 09:00 CEST (day 19; probes: / 404 0.27s, /health 404 0.25s, /login?ws=lexflow 404 1.67s, /api/health 404 0.24s). Signature unchanged.",
       "owner": "Ole (Railway prod access) — Railway CLI token gets 403 on Backboard GraphQL, so operator-installer cannot inspect or restart the service",
       "blocked_by": "credentials/access, not code",
-      "note": "First reported by cron lexflow-morning-plan in ~/Obsidian/05-Daily/2026-09-26.md §operator-installer. Day 9: still no new information — this run only re-confirms it is down (probes 2026-10-04 09:04 CEST), independently corroborated by the LEXFLOW TRY-DEMO REGRESSION CHECK cron 2026-10-04 08:00 (exit 1: health=404, /login?ws=lexflow=404, /login?ws=romanelli-studio=404, anon /api/admin/users=404 instead of 401, kanban siteMap missing lexflow). The unblocking action is unchanged and entirely on Ole: restore Railway prod access so the service can be rebound/restarted."
+      "note": "First reported by cron lexflow-morning-plan in ~/Obsidian/05-Daily/2026-09-26.md §operator-installer. Day 9: still no new information — this run only re-confirms it is down (probes 2026-10-04 09:04 CEST), independently corroborated by the LEXFLOW TRY-DEMO REGRESSION CHECK cron 2026-10-04 08:00 (exit 1: health=404, /login?ws=lexflow=404, /login?ws=romanelli-studio=404, anon /api/admin/users=404 instead of 401, kanban siteMap missing lexflow). The unblocking action is unchanged and entirely on Ole: restore Railway prod access so the service can be rebound/restarted.",
+      "rebaseline_2026_11_06_2208": {
+        "measured_by": "operator-installer (card t_ba26097d)",
+        "measured_at": "2026-11-06 22:08 CET",
+        "web_production_031a6": "GET https://web-production-031a6.up.railway.app/ -> 404 in 0.29s, body {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"lRhwwHphTiuQz0QO9o6EoQ\"}; headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: cdg1, content-type: application/json. Also /health -> 404 (0.26s) and /login?ws=lexflow -> 404 (0.33s), identical signature.",
+        "lexflow_web_production": "GET https://lexflow-web-production.up.railway.app/api/health -> 200 in 0.17s {\"status\":\"ok\",\"database\":\"healthy\",\"document_storage\":\"healthy\",\"service\":\"lexflow\"}; / -> 200 in 0.11s, Next.js HTML (x-powered-by: Next.js, x-nextjs-cache: HIT, html lang=\"hr\", <title>LexFlow</title>); /login -> 200; /api/openapi.json -> 200, FastAPI 3.1.0 spec \"LexFlow\" v0.3.0 \"Local-first digital case file system for law firms\", 106 paths, tags [auth, case-intelligence, cases, clients, costs, documents, email-accounts, email-attachments, email-threads, internal, proceeding-actions, public-contact, smart-scan]; anon GET /api/cases -> 401 {\"detail\":\"Not authenticated\"} (properly gated); GET /api/contacts -> 404 {\"detail\":\"Not Found\"} (no such path in that OpenAPI, so the 404 is a missing route, not a gate). No x-railway-fallback header on any of these — a real service IS bound to this hostname.",
+        "conclusion": "The two hostnames are NOT the same deployment. 031a6 answers from the Railway edge with no bound service; lexflow-web-production answers from a bound FastAPI+Next service. identity_of_live_service and its source repo are UNCONFIRMED.",
+        "open_question": "Which Railway service is the real LexFlow production, and where is the source repo for the FastAPI 0.3.0 / Next.js service? It is not under /Users/olesiarasing/projects (grep for 'Local-first digital case file system', 'case-intelligence', 'smart-scan' over ~/projects: 0 hits), and this repo (/Users/olesiarasing/projects/lexflow/lexflow-crm) is a Flask/Jinja CRM with a different route surface — so the healthy service is a different codebase."
+      }
+    },
+    {
+      "id": "P0-PROD-DOWN-REGRESSION-2026-11-04",
+      "since": "2026-11-04 (first observed 08:14 CET by the daily status run)",
+      "status": "OPEN — REGRESSION, DAY 3. Prod was 200 at the 2026-11-03 run, 404 on 2026-11-04, and still 404 on 2026-11-06 (09:07 CET). No change; still needs Ole's Railway access.",
+      "detail": "https://web-production-031a6.up.railway.app returns HTTP 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\"} with headers server: railway-hikari, x-railway-fallback: true — the Railway edge again has NO active service bound to that domain. Probes 2026-11-04 08:14 CET: / -> 404 (0.34s), /login?ws=lexflow -> 404, /kanban -> 404. Same signature as the 2026-09-26..10-27 outage. This blocks the 'deployed' claims for T-030/T-031 from being re-verified and blocks any user-facing demo. RE-CONFIRMED 2026-11-06 09:07 CET (day 3 of this regression): / -> 404 (0.38s), /health -> 404 (0.40s), /login?ws=lexflow -> 404 (0.49s); headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: zrh1, x-railway-request-id: osXtECbuSX21k4xW9fVATg; body request_id nAf9ceXXSGGC6twPLPU1MQ. Identical signature, no partial recovery. The 2026-11-05 run never executed (see last_status_run.evidence_used), so this is the first probe since 2026-11-04. RE-CONFIRMED AGAIN 2026-11-06 22:08 CET (card t_ba26097d): GET https://web-production-031a6.up.railway.app/ -> 404 in 0.29s, body {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"lRhwwHphTiuQz0QO9o6EoQ\"}; headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: cdg1, content-type: application/json. Also /health -> 404 (0.26s) and /login?ws=lexflow -> 404 (0.33s), identical signature. Same fallback signature as the 2026-11-04 entry — day 3 stands. See P0-PROD-IDENTITY-UNCONFIRMED-2026-11-06 for the newly measured fact that a different LexFlow hostname (lexflow-web-production) is serving a healthy FastAPI+Next build.",
+      "needs": "Ole: Railway dashboard/service access — check whether the CRM service is still bound to web-production-031a6 (deploy 7354426195, commit 396bea2) or was deleted/idled, then redeploy or re-attach the domain. No agent can act without Railway access.",
+      "owner": "operator-installer (escalated to Ole)"
+    },
+    {
+      "id": "P0-PROD-IDENTITY-UNCONFIRMED-2026-11-06",
+      "since": "2026-11-06 22:08 CET (first observed by card t_ba26097d)",
+      "status": "OPEN QUESTION — recorded, deliberately not resolved either way. Two facts measured today: (a) web-production-031a6 is edge-404 (no service bound), (b) lexflow-web-production serves a healthy FastAPI 0.3.0 + Next.js LexFlow build. What is NOT known: whether either of them is 'the' LexFlow production the roadmap means, and which source repo the healthy service was built from.",
+      "detail": "web-production-031a6: GET https://web-production-031a6.up.railway.app/ -> 404 in 0.29s, body {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"lRhwwHphTiuQz0QO9o6EoQ\"}; headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: cdg1, content-type: application/json. Also /health -> 404 (0.26s) and /login?ws=lexflow -> 404 (0.33s), identical signature.  ///  lexflow-web-production: GET https://lexflow-web-production.up.railway.app/api/health -> 200 in 0.17s {\"status\":\"ok\",\"database\":\"healthy\",\"document_storage\":\"healthy\",\"service\":\"lexflow\"}; / -> 200 in 0.11s, Next.js HTML (x-powered-by: Next.js, x-nextjs-cache: HIT, html lang=\"hr\", <title>LexFlow</title>); /login -> 200; /api/openapi.json -> 200, FastAPI 3.1.0 spec \"LexFlow\" v0.3.0 \"Local-first digital case file system for law firms\", 106 paths, tags [auth, case-intelligence, cases, clients, costs, documents, email-accounts, email-attachments, email-threads, internal, proceeding-actions, public-contact, smart-scan]; anon GET /api/cases -> 401 {\"detail\":\"Not authenticated\"} (properly gated); GET /api/contacts -> 404 {\"detail\":\"Not Found\"} (no such path in that OpenAPI, so the 404 is a missing route, not a gate). No x-railway-fallback header on any of these — a real service IS bound to this hostname.  ///  Prior doc that measured the same two hosts: ~/Obsidian/01-Projects/LexFlow/LexFlow-Public-Intake-Contract-2026-09-15.md \"Re-measurement 2026-11-06\" section.",
+      "needs": "Ole: name the real LexFlow production hostname and point at the source repo of the FastAPI 0.3.0 / Next.js service (owner/org + repo, or the Railway project/service name). Without that, no agent can tell whether 031a6 is a deleted/boundary-of-lifetime service, a renamed domain, or a second unrelated deployment, and no deploy/rollback decision is safe.",
+      "owner": "operator-installer (escalated to Ole — requires Railway access + repo location)",
+      "evidence": {
+        "measured_at": "2026-11-06 22:08 CET",
+        "probe_tool": "curl -sS -D headers -w '%{http_code} %{time_total}s'",
+        "hosts": {
+          "https://web-production-031a6.up.railway.app/": "404 Railway edge fallback (x-railway-fallback: true)",
+          "https://lexflow-web-production.up.railway.app/api/health": "200 healthy"
+        },
+        "local_source_search": "grep -rI 'Local-first digital case file system' | 'case-intelligence' | 'smart-scan' over /Users/olesiarasing/projects -> 0 hits on 2026-11-06 22:1x CET"
+      }
     }
   ],
   "last_status_run": {
-    "date": "2026-10-04",
+    "date": "2026-11-06",
     "by": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
     "evidence_used": [
-      "THIS IS THE FIRST SUCCESSFUL STATUS RUN SINCE 2026-09-29. Four consecutive status days were MISSED: 2026-09-30 (RuntimeError: Hermes can't reach the model provider), 2026-10-01 (same provider RuntimeError), 2026-10-02 (HTTP 402 — insufficient OpenRouter credits: requested up to 131072 tokens, could afford 85924), 2026-10-03 (TimeoutError: idle 927s, limit 600s). All four are infrastructure/credit-layer failures, not project state. Evidence: ~/.hermes/profiles/smoothy_op_dir/cron/executions.db, job cda5f6d4a18a. Today's run started 2026-10-04 09:00:55 CEST.",
-      "git log -n 15 in lexflow-crm (branch lexflow_hermes_v1): HEAD b6b3f28 2026-09-29 (docs-status commit). NO commit of any kind since, and no CRM commit since the 2026-09-29 status stamp. Last real code commit remains 6ef25da 2026-09-17.",
-      "git status: working tree still carries only a pre-existing unstaged .gitignore edit and a modified crm_local.db. Neither belongs to this run; the status run stages only docs/LexFlow_Agentic_Roadmap.json.",
-      "PROD: https://web-production-031a6.up.railway.app/ = 404 'Application not found' (Railway fallback) — probes at 09:04 CEST 2026-10-04: / 404 (0.30s), /health 404 (0.26s), /api/health 404 (0.27s), /login?ws=lexflow 404 (0.26s). First observed 2026-09-26; was 200 on 2026-09-25. Now day 9 of the outage, signature unchanged. Independently corroborated 2026-10-04 08:00 by the lexflow-try-demo-daily-check cron (exit 1: health=404, /login?ws=lexflow=404, /login?ws=romanelli-studio=404, anon /api/admin/users=404 instead of 401, kanban siteMap missing lexflow). See open_p0 (day 9). The identical Railway-edge 404 still affects Hindsight (https://avibe-hindsight-production.up.railway.app → 404 on /, verified 09:04 CEST) — one edge/config action, not two independent bugs.",
-      "Kanban board: 53 cards. ~/.hermes/kanban.db mtime is 2026-09-29 15:53 — no card activity since the last status run. Every one of the 18 unfinished roadmap tasks still holds exactly one open card (kanban_card_map unchanged since 2026-09-19), so 0 new cards were created today (rules §9 / §10.3). The only prod-down card remains t_8cbc766e (operator-installer, blocked), which maps to open_p0 rather than to a task node, so it is not a duplicate registry.",
-      "remote origin/lexflow_hermes_v1 still at 8c17456 (2026-09-17); local HEAD was b6b3f28 before today's status commit, so local is now 13 commits ahead of origin — all docs/tracker commits, unpushed (a push triggers deploy → gated on Ole).",
-      "vault: 05-Daily/2026-10-04.md did not exist and was created by this run; daily notes 2026-09-30..2026-10-03 exist but carry only repo_sync autosync lines (no status entry — the status cron did not run those days). LexFlow-Project-Status.md refreshed in place (the single live status note — no second one created). Vault repo Ole00007/obsidian-vault: local main is now IN SYNC with origin/main (autosync commits ae95569 / 6f13586 / 2d3ff49 pushed 2026-10-01..10-03), which CONTRADICTS the 2026-09-29 note that pushes were blocked because the repo was public — either the repo was made private or the push guard changed. Not independently re-verified this run (gh check not run); flagged for Ole."
+      "git (canonical worktree /Users/olesiarasing/projects/lexflow/lexflow-crm-wt-merge on branch lexflow_hermes_v1): HEAD 155dd6d (2026-11-04 docs commit), clean tree. NO new commit since the 2026-11-04 status run — nothing on lexflow_hermes_v1 after 155dd6d, and the last CRM code commit remains 215bcc2 (2026-10-29). lexflow_hermes_v1 is still 13 commits ahead of origin/lexflow_hermes_v1 (ddec0aa, 2026-10-27) and unpushed — a push triggers a Railway deploy, so it stays gated on Ole.",
+      "PROD: https://web-production-031a6.up.railway.app — / 404 (0.38s), /health 404 (0.40s), /login?ws=lexflow 404 (0.49s), probed 2026-11-06 09:07 CET. Headers server: railway-hikari, x-railway-fallback: true, x-railway-edge: zrh1; body {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\"}. Day 3 of P0-PROD-DOWN-REGRESSION-2026-11-04, signature unchanged — no partial recovery.",
+      "MISSED RUN: the 2026-11-05 status run never completed. ~/.hermes/profiles/smoothy_op_dir/cron/executions.db shows job cda5f6d4a18a failing with 'RuntimeError: [Errno 8] nodename nor servname provided' plus an interrupted run ('Operation interrupted: waiting for model response'), so the tracker skipped one day and last_updated stayed 2026-11-04 until this run. That is a cron/infra gap, not project state.",
+      "Kanban (89 cards, board unchanged): every one of the 28 mapped cards holds the same status the 2026-11-04 run already reconciled with, so ZERO column flips and ZERO new cards are justified by today's evidence. No card<->roadmap drift was newly introduced or newly resolved.",
+      "Branch/worktree note: the primary checkout /Users/olesiarasing/projects/lexflow/lexflow-crm is still on integration/graph-gantt-local (053265e) where the tracker is a stale 2026-10-27 copy. That is a derived checkout of the same repo, not a second registry (§9) — the canonical file is this one on lexflow_hermes_v1 in wt-merge, and the validator ignores same-repo worktrees.",
+      "EVENING RE-CHECK (card t_0202e49699964110, 2026-11-06 21:58 CET): re-probed prod — / 404 (0.28s), /health 404 (0.24s), /login?ws=lexflow 404 (0.26s), same railway-hikari + x-railway-fallback: true signature; HEAD of lexflow_hermes_v1 still 9af129c (no commit after this morning's status commit); validator re-run gives the identical 4 violations; board unchanged. So the second, evening confirmation of today's run adds NO column change and NO card — the morning run stands as written.",
+      "ROOT CAUSE FIXED (not project state): the cron prompt of cda5f6d4a18a named the repo as `~/projects/lexflow-crm`, which does not exist — the clone is /Users/olesiarasing/projects/lexflow/lexflow-crm and branch lexflow_hermes_v1 lives in the lexflow-crm-wt-merge worktree. Corrected in place today (job id, schedule 0 9 * * *, deliver target and toolsets unchanged; no model pinned), plus step 0 added: this job OWNS the daily status, so a card restating it must be deduped, never double-run.",
+      "RE-BASELINE (2026-11-06 22:08 CET, card t_ba26097d): probed both hostnames. web-production-031a6 -> / 404 (0.29s), /health 404 (0.26s), /login?ws=lexflow 404 (0.33s), all with server: railway-hikari + x-railway-fallback: true (edge fallback, no service bound). lexflow-web-production -> /api/health 200 {\"status\":\"ok\",\"database\":\"healthy\",\"document_storage\":\"healthy\",\"service\":\"lexflow\"}, / 200 (Next.js, lang=hr), /login 200, /api/openapi.json 200 (FastAPI 'LexFlow' 0.3.0, 106 paths), anon /api/cases 401, /api/contacts 404. Recorded in open_p0 as P0-PROD-IDENTITY-UNCONFIRMED-2026-11-06 and annotated onto P0-PROD-DOWN + P0-PROD-DOWN-REGRESSION-2026-11-04; no P0 flipped open or closed, no column change on any task node. Freshness note: last_updated/last_status_run were ALREADY 2026-11-06 on this branch — the 2026-10-27/2026-10-04 values the card saw belong to the stale primary checkout /Users/olesiarasing/projects/lexflow/lexflow-crm on integration/graph-gantt-local, not to this canonical file."
     ],
-    "moved_today": "nothing — no CRM commit, no deploy, no push, and no movement on any roadmap task column. All 21 task nodes carried over unchanged (11 backlog, 1 in_progress, 1 blocked, 4 awaiting_confirmation, 1 local_verified, 2 done, 1 deployed). The only new facts are: the production outage entered day 9 with the unchanged fast-404 signature, Hindsight remains 404ing on the same edge signature, and this job failed on four consecutive days (2026-09-30..2026-10-03) at the provider/credit layer.",
-    "kanban_cards_created_2026_10_04": {},
-    "note": "2026-10-04 run (first successful run since 2026-09-29): re-read the board — every one of the 18 unfinished roadmap tasks still has exactly one open card, so NO new cards were created. No card activity at all since 2026-09-29 15:53.",
-    "open_data_gap": "T-001 and T-007 are column=done with deploy_status=deployed but carry no prod_url/commit_hash, which this file's own report_rule requires; T-016 names commit da19b36 in notes but has no prod_url field. Left unfilled rather than guessed.",
+    "moved_today": [
+      "nothing — no CRM commit, no deploy, no push, and no column change on any of the 31 task nodes. All 31 nodes carry over exactly as the 2026-11-04 run left them (2 done, 2 deployed, 11 local_verified, 4 awaiting_confirmation, 7 blocked, 5 backlog). The only new facts are the day-3 re-confirmation of the prod 404 regression and the missed 2026-11-05 run."
+    ],
+    "kanban_cards_created_2026_11_06": [],
+    "note": "No duplicate cards created — every unfinished node already owns exactly one open card, verified against the board before writing this. The one DUPLICATE-of-this-job card, t_0202e49699964110 ('LexFlow — overall project tracking (roadmap) not updated; run daily status'), was picked up by the operator-installer worker itself at 21:58 CET: it re-verified today's run (prod still 404, no new commit, same 4 validator violations) and is COMPLETED with this job cda5f6d4a18a named as the permanent owner — no second status registry, no second run. The cron prompt root cause (wrong repo path ~/projects/lexflow-crm) was corrected in the same sitting, so the next run starts from the right clone and worktree.",
+    "open_data_gap": [
+      "P0-PROD-DOWN-REGRESSION-2026-11-04 (day 3) — needs Ole's Railway access; no agent can probe or fix the edge binding.",
+      "T-016 still lacks report_rule evidence: commit da19b36 is not an object in this repo and the Netlify landing repo is gone from disk — left unfilled rather than guessed.",
+      "T-030/T-031 cards t_7fc8830f / t_c0c2b530 are still 'blocked' (awaiting Ole's visual approval) while the tracker says deployed — a human must close or re-scope them; not touched by this run.",
+      "Two legacy tracker copies still exist under ~/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/ (2026-09-03 and 2026-10-06). Deleting them is an approval-only action, so they are reported, not removed.",
+      "T-009's 8 delivered files were never committed — still only in the card record."
+    ],
     "parallel_sources_flagged": [
-      "NEW 2026-10-04 — DUPLICATE REGISTRY: a second, STALE copy of THIS FILE sits at ~/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/LexFlow_Agentic_Roadmap.json — one directory ABOVE the repo, last_updated 2026-09-03, 14 KB vs the 29 KB authority. It predates T-017..T-021 entirely and still lists T-007 and T-010 as in_progress. Authority = the repo file docs/LexFlow_Agentic_Roadmap.json. Should be deleted or replaced by a labelled derived copy — needs Ole's go (deletion is gated).",
-      "~/Obsidian/01-Projects/LexFlow/_from-repos/LexFlow-CRM/docs/LexFlow_Agentic_Roadmap.json — derived vault mirror, STILL STALE (last_updated 2026-09-03 vs authority 2026-10-04). Derived copy; authority = the repo file. Needs a 'derived' label or regeneration by repo_sync. Never written back.",
-      "Two hubs named LexFlow-INDEX.md (~/Obsidian/01-Projects/LexFlow/ and ~/Obsidian/01-Projects/AVibe-CRM/LexFlow/) — [[LexFlow-INDEX]] links remain ambiguous. Flagged, not renamed (client folder involved).",
-      "Stale July-2026 status notes in other folders (AVibe-CRM/LexFlow/LexFlow-Deployment-Status.md, aLEXy/_from-repos/...) — authority is this JSON + LexFlow-Project-Status.md.",
-      "Owner-profile drift (§10.3): the lexflow-* / obsidian-* cron jobs live in smoothy_op_dir's cron store while §10.3 names operator-installer as owner, and operator-installer has no jobs.json (0 jobs). Flagged 2026-09-27, still unfixed — needs Ole's decision before any job is re-homed.",
-      "PATH DRIFT: this job's prompt and several notes still say the repo is at ~/Desktop/projects/services/LEGAL/... — it is NOT. RESOLVED 2026-10-12: the canonical repo is now /Users/olesiarasing/projects/lexflow-crm (branch lexflow_hermes_v1) and THAT is the only LexFlow clone on disk (verified: exactly one LexFlow_Agentic_Roadmap.json, no ~/lexflow-crm). The §8 migration to ~/projects HAS been run for LexFlow. The legacy ~/Desktop/.../LEXFLOW Production/lexflow-crm clone is GONE (no longer on disk) — the 2026-10-10 recovery source no longer exists. ACTION STILL OPEN: this cron job's own prompt text has NOT been updated and still points at the dead path."
-    ]
+      "~/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/LexFlow_Agentic_Roadmap.json (legacy, 2026-09-03)",
+      "~/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/lexflow-crm/docs/LexFlow_Agentic_Roadmap.json (legacy clone, 2026-10-06)",
+      "No new registry was created; the canonical file is this one on lexflow_hermes_v1."
+    ],
+    "card_roadmap_drift_reported_not_papered": [
+      "T-030 (t_7fc8830f blocked vs roadmap deployed)",
+      "T-031 (t_c0c2b530 blocked vs roadmap deployed)",
+      "T-016 (report_rule evidence missing, unverifiable)"
+    ],
+    "validator_violations": "exit 1 — 4 violations remain, all human-gated and none justified by today's evidence: [A] T-016 report_rule evidence missing, [B] T-030 roadmap=deployed vs card blocked, [B] T-031 roadmap=deployed vs card blocked, [C] two legacy ~/Desktop tracker copies. [D] staleness was cleared by stamping last_updated=2026-11-06."
   },
   "kanban_card_map": {
     "T-002": "t_a5f4dd68",
@@ -64,13 +163,50 @@
     "T-018": "t_f48b0a11",
     "T-019": "t_bc68191b",
     "T-020": "t_a4e0ad76",
-    "T-021": "t_f0f709f5"
+    "T-021": "t_f0f709f5",
+    "T-030": "t_7fc8830f",
+    "T-031": "t_c0c2b530",
+    "T-022": "t_2fdf274d",
+    "T-023": "t_2f2479f8",
+    "T-024": "t_aa43a4c0",
+    "T-025": "t_fe4e8687",
+    "T-026": "t_76894c79",
+    "T-027": "t_a4eb8bf2",
+    "T-028": "t_f3890cf5",
+    "T-029": "t_8115f68b"
   },
   "report_rule": "Every status update MUST include deploy_status: 'local' (with local_preview_url) or 'deployed' (with prod_url + commit_hash). Never report done without one of these two.",
   "process_rules": {
     "cross_audit": "Before EVERY local test and before any deploy, operator_installer and backend_dev cross-audit each other's code changes: operator reviews backend_dev's code, backend_dev reviews operator's code. Then report to user, then deploy. Applies to all code changes, no exceptions.",
     "implementation_plan_gate": "backend_dev submits an implementation plan for sign-off BEFORE code ONLY when the user explicitly requests it OR when operator_installer has a genuine doubt. Not a routine gate — most tasks proceed to implementation directly.",
-    "report_gate": "Every 'fixed'/'done' must state LOCAL (preview link) or DEPLOYED (URL + commit hash). Permanent global rule."
+    "report_gate": "Every 'fixed'/'done' must state LOCAL (preview link) or DEPLOYED (URL + commit hash). Permanent global rule.",
+    "polish_order": "Ole 2026-10-26: finish ALL polish in the ENGLISH version first, THEN move to Italian, THEN set standards. Do NOT start Italian polish until English polish is done."
+  },
+  "ole_decisions_2026_10_26": {
+    "source": "frontend-developer session, on Ole's direct request (kanban t_1700fadc)",
+    "decisions": [
+      {
+        "id": "D-1",
+        "topic": "CRM assistant name + launcher",
+        "decision": "CRM assistant is 'Elisa' (NOT Eliza) — user must not know it's a different agent. Launcher reuses the LexFlow website Elisa pill-bulb (avatar + label 'Hi, I'm Elisa! happy to assist'), minimal, NO intake sections, just corrected styles.",
+        "status": "committed feat/ui-elisa-nav (wt-merge) 48094c2; local preview port 5003",
+        "roadmap_ref": "T-030"
+      },
+      {
+        "id": "D-2",
+        "topic": "Polish order",
+        "decision": "Finish ALL polish in the ENGLISH version first, THEN move to Italian, THEN set standards. Do NOT start Italian polish until English polish is done.",
+        "status": "active process rule",
+        "roadmap_ref": "process_rules.polish_order"
+      },
+      {
+        "id": "D-3",
+        "topic": "Blocked-state visual (kanban)",
+        "decision": "frontend-developer is building visual proposals (A-E) for blocked-state visibility on kanban/gantt/tasks/context-graph. Ole will assess the proposals and approve before any merge. Do NOT merge blocked-state work until Ole approves.",
+        "status": "proposals A-E in progress; awaiting Ole approval before merge",
+        "roadmap_ref": "T-031"
+      }
+    ]
   },
   "kanban_columns": [
     "backlog",
@@ -135,7 +271,12 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Confirmed fixed by user."
+      "notes": "Confirmed fixed by user. PROD EVIDENCE 2026-11-04: commit verified with `git merge-base --is-ancestor 309e33c origin/lexflow_hermes_v1` (origin tip ddec0aa == deployed 2026-10-27), so the change IS inside the deployed branch. CAVEAT: prod answered HTTP 404 (server: railway-hikari, x-railway-fallback: true) on /, /login?ws=lexflow and /kanban at 08:14 CET today, so this deploy record rests on commit ancestry, not on a live 200 — see open_p0 P0-PROD-DOWN-REGRESSION-2026-11-04.",
+      "start_date": "2026-09-01",
+      "due_date": "2026-09-01",
+      "date_source": "commit 309e33c 2026-09-01 'fix(intake): disable browser autofill so fields accept manual entry' — the only dated evidence on this node. The user confirmation in notes is undated, and prod_url/commit_hash are still missing (pre-existing [A] report_rule gap, not filled by guess).",
+      "prod_url": "https://web-production-031a6.up.railway.app",
+      "commit_hash": "309e33c"
     },
     {
       "id": "T-002",
@@ -153,7 +294,9 @@
       "priority": "P1",
       "depends_on": [],
       "notes": "Reflection table drafted and refined against Clio Grow/HubSpot/Lawmatics. Awaiting explicit go before code. (Kanban card t_a5f4dd68, created blocked; it is the parent of T-003, T-004, T-012.)",
-      "reflection_rules_ref": "see reflection_rules[]"
+      "reflection_rules_ref": "see reflection_rules[]",
+      "start_date": "2026-09-03",
+      "date_source": "start = roadmap v2 commit 0d33da9 2026-09-03, which first records reflection_rules[] as drafted (the drafting session itself is not dated). NO due_date: the node is still 'awaiting explicit go before code' and was re-verified unimplemented on 2026-10-29 (card t_a5f4dd68 comment) — there is no planned deadline to show."
     },
     {
       "id": "T-003",
@@ -171,7 +314,8 @@
       "depends_on": [
         "T-002"
       ],
-      "notes": "Phase 2. Do not auto-progress past this gate."
+      "notes": "Phase 2. Do not auto-progress past this gate.",
+      "date_source": "UNDATED — no dated evidence of work or of a plan. The node entered the tracker in commit 0d33da9 (2026-09-03) as a Phase-2 dependency of T-002 and its card t_a7e05e2c has carried no activity since creation (2026-09-19). Left empty rather than guessed."
     },
     {
       "id": "T-004",
@@ -191,12 +335,13 @@
         "T-002",
         "T-009"
       ],
-      "notes": "Requires scheduled_actions table (T-009) first. Event-driven delayed task, not simple cron."
+      "notes": "Requires scheduled_actions table (T-009) first. Event-driven delayed task, not simple cron.",
+      "date_source": "UNDATED — no dated evidence of work or of a plan. Depends on T-002 + T-009; entered the tracker 2026-09-03 (0d33da9), card t_34e5415d idle since 2026-09-19. Left empty rather than guessed."
     },
     {
       "id": "T-005",
       "title": "WhatsApp Business API integration (client + avvocato notifications)",
-      "column": "backlog",
+      "column": "local_verified",
       "assigned_agent": "backend_dev",
       "deploy_status": null,
       "tenant_scope": [
@@ -208,7 +353,9 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "SCOPED 2026-10-06 (backend_dev, kanban t_cba427b1; full note docs/WhatsApp-Business-API-Scoping-2026-10-06.md): Provider = META CLOUD API direct (drop UltraMsg from prod path — it is NOT a Meta-endorsed BSP; roadmap decision confirmed). Consent = explicit channel opt-in wa_opt_in(+ts+source) on contacts, transactional(legit-interest) vs marketing(explicit opt-in) split under GDPR+ePrivacy; same-channel opt-out honored. Suppression = single shared should_notify(contact,channel,type) gate used by email AND WhatsApp; honor reflection_rules suppression + Meta 24h window + webhook delivery. Cost = per-message category pricing, NO per-seat; single-digit EUR/mo at current volume; real cost is business verification (external, Ole ~1-3wk). Priority: KEEP P2/backlog, parallel-safe but sequence AFTER P0 prod-restore + T-010 email-delivery fix (email is the real blocker, WhatsApp is complementary not a substitute). Owner backend_dev. HARD GATE: no code/deploy/push/sends until Ole approves scope."
+      "notes": "SCOPED 2026-10-06 (backend_dev, kanban t_cba427b1; full note docs/WhatsApp-Business-API-Scoping-2026-10-06.md): Provider = META CLOUD API direct (drop UltraMsg from prod path — it is NOT a Meta-endorsed BSP; roadmap decision confirmed). Consent = explicit channel opt-in wa_opt_in(+ts+source) on contacts, transactional(legit-interest) vs marketing(explicit opt-in) split under GDPR+ePrivacy; same-channel opt-out honored. Suppression = single shared should_notify(contact,channel,type) gate used by email AND WhatsApp; honor reflection_rules suppression + Meta 24h window + webhook delivery. Cost = per-message category pricing, NO per-seat; single-digit EUR/mo at current volume; real cost is business verification (external, Ole ~1-3wk). Priority: KEEP P2/backlog, parallel-safe but sequence AFTER P0 prod-restore + T-010 email-delivery fix (email is the real blocker, WhatsApp is complementary not a substitute). Owner backend_dev. HARD GATE: no code/deploy/push/sends until Ole approves scope. COLUMN 2026-11-04: backlog->local_verified. Card t_cba427b1=done (closed 2026-10-06 09:57, commit 016568e, scoping note docs/WhatsApp-Business-API-Scoping-2026-10-06.md); the scope+provider decision IS the deliverable. Implementation stays gated on Ole (HARD GATE unchanged), so this is a delivered decision, not a shipped feature.",
+      "start_date": "2026-10-06",
+      "date_source": "start = scoping note delivered 2026-10-06 (commit 016568e, card t_cba427b1 closed 2026-10-06 09:57). NO due_date: implementation is still gated on Ole approving the scope (node note: HARD GATE) — no deadline exists."
     },
     {
       "id": "T-006",
@@ -227,7 +374,8 @@
       "depends_on": [
         "T-004"
       ],
-      "notes": "Phase 4."
+      "notes": "Phase 4.",
+      "date_source": "UNDATED — no dated evidence; Phase-4 node, depends on T-004, in the tracker since 2026-09-03 (0d33da9) with card t_ba95cc42 idle since 2026-09-19."
     },
     {
       "id": "T-007",
@@ -244,14 +392,19 @@
       ],
       "priority": "P3",
       "depends_on": [],
-      "notes": "USER CONFIRMED 2026-09-03: full two-model split (Internal staff directory, workspace-filtered + Client-Facing with lifecycle/consent/tags). operator_installer's firm_team.py draft is the starting point for the Internal side. Cross-audit applies: operator reviews backend_dev code, backend_dev reviews operator code, before every local test. Implementation plan only if user requests or operator has doubt (per process_rules)."
+      "notes": "USER CONFIRMED 2026-09-03: full two-model split (Internal staff directory, workspace-filtered + Client-Facing with lifecycle/consent/tags). operator_installer's firm_team.py draft is the starting point for the Internal side. Cross-audit applies: operator reviews backend_dev code, backend_dev reviews operator code, before every local test. Implementation plan only if user requests or operator has doubt (per process_rules). PROD EVIDENCE 2026-11-04: commit verified with `git merge-base --is-ancestor ef293ab origin/lexflow_hermes_v1` (origin tip ddec0aa == deployed 2026-10-27), so the change IS inside the deployed branch. CAVEAT: prod answered HTTP 404 (server: railway-hikari, x-railway-fallback: true) on /, /login?ws=lexflow and /kanban at 08:14 CET today, so this deploy record rests on commit ancestry, not on a live 200 — see open_p0 P0-PROD-DOWN-REGRESSION-2026-11-04.",
+      "start_date": "2026-09-03",
+      "due_date": "2026-09-03",
+      "date_source": "commits 51c36f1 (internal firm-team directory) + ef293ab (client-facing lifecycle/tags) 2026-09-03; the node note records the user confirmation the same day. prod_url/commit_hash still missing (pre-existing [A] report_rule gap).",
+      "prod_url": "https://web-production-031a6.up.railway.app",
+      "commit_hash": "ef293ab"
     },
     {
       "id": "T-008",
       "title": "Full read-only app audit + proactive improvement suggestions",
-      "column": "done",
+      "column": "local_verified",
       "assigned_agent": "backend_dev",
-      "deploy_status": "local",
+      "deploy_status": null,
       "tenant_scope": [
         "ws7",
         "ws9",
@@ -261,12 +414,15 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "CONSOLIDATED REGISTER DELIVERED 2026-10-06 (t_6cf123af): two-part mandate complete. PART A gaps: (A1)[NEW-CRITICAL] /api/auth/seed is an UNPROTECTED destructive endpoint (wipes User+Workspace, reseeds 6 known-cred accounts incl superadmin Test12345!) — P0, 0.5-1h; (A2)[NEW] _ensure_workspace_users/_ensure_test_users re-seed hardcoded production creds (lexflow0826, crm0826, pagliano0826, Romanelli0826, Test1) on every boot until user changes password — force password change; (A3)[NEW] SECRET_KEY/JWT_SECRET_KEY fall back to committed dev key if env missing — verify both set in Railway; (A4) dead-button sweep: login 'Entra' 415 ALREADY FIXED locally (doLogin JSON fetch, fddbb7b 2026-09-04); (A5) RLS open: feat/rls not merged, workspace_filter on 8 tables, gap tables contact_relationship+firm_team_member, 5 alembic risks (see T-014); (A6) cross-feature: intake creates NO CalendarEvent, task->calendar disconnected, /tasks attachment 404; A6.4 CORRECTION: prior audit 'no workspace filtering in any API route' was vs BROKEN prod — local cases/contacts/tasks/views DO call workspace_filter(); (A7) prod 404 P0-PROD-DOWN root cause = Railway outage, not code; (A8)[NEW] hygiene: duplicate ' * 2.py' files tracked in git, crm_local.db committed, 19 legacy dead routes. PART B proposed: B1 first-login pw change, B2+B3 login rate-limit + shared Redis store, B4 RLS merge (T-014), B5 CSP nonce hardening, B6 task/calendar/intake reflection (T-002), B7 /tasks attachment, B8 workspace_id 'or 1' fallback fix, B9 cleanup, B10 unified activity audit trail. Full register: kanban t_6cf123af artifact lexflow-t008-gap-register.md. Reading: date=2026-10-06, by=backend-dev, local-only, no deploy, no push."
+      "notes": "CONSOLIDATED REGISTER DELIVERED 2026-10-06 (t_6cf123af): two-part mandate complete. PART A gaps: (A1)[NEW-CRITICAL] /api/auth/seed is an UNPROTECTED destructive endpoint (wipes User+Workspace, reseeds 6 known-cred accounts incl superadmin Test12345!) — P0, 0.5-1h; (A2)[NEW] _ensure_workspace_users/_ensure_test_users re-seed hardcoded production creds (lexflow0826, crm0826, pagliano0826, Romanelli0826, Test1) on every boot until user changes password — force password change; (A3)[NEW] SECRET_KEY/JWT_SECRET_KEY fall back to committed dev key if env missing — verify both set in Railway; (A4) dead-button sweep: login 'Entra' 415 ALREADY FIXED locally (doLogin JSON fetch, fddbb7b 2026-09-04); (A5) RLS open: feat/rls not merged, workspace_filter on 8 tables, gap tables contact_relationship+firm_team_member, 5 alembic risks (see T-014); (A6) cross-feature: intake creates NO CalendarEvent, task->calendar disconnected, /tasks attachment 404; A6.4 CORRECTION: prior audit 'no workspace filtering in any API route' was vs BROKEN prod — local cases/contacts/tasks/views DO call workspace_filter(); (A7) prod 404 P0-PROD-DOWN root cause = Railway outage, not code; (A8)[NEW] hygiene: duplicate ' * 2.py' files tracked in git, crm_local.db committed, 19 legacy dead routes. PART B proposed: B1 first-login pw change, B2+B3 login rate-limit + shared Redis store, B4 RLS merge (T-014), B5 CSP nonce hardening, B6 task/calendar/intake reflection (T-002), B7 /tasks attachment, B8 workspace_id 'or 1' fallback fix, B9 cleanup, B10 unified activity audit trail. Full register: kanban t_6cf123af artifact lexflow-t008-gap-register.md. Reading: date=2026-10-06, by=backend-dev, local-only, no deploy, no push. RECLASSIFIED 2026-11-04 (daily run): column done->local_verified, deploy_status local->null. The deliverable is an audit register, not a deployed artifact; there is no local_preview_url to cite and 'done' with deploy_status 'local' can never satisfy report_rule. Card t_6cf123af=done. Tracker vocabulary gap logged (no 'delivered, no deploy' column).",
+      "start_date": "2026-09-19",
+      "due_date": "2026-10-06",
+      "date_source": "start = card t_6cf123af created 2026-09-19 11:05 (audit scheduled/started); due = consolidated register delivered 2026-10-06 (commit 7e4343b, card closed 2026-10-06 10:04)."
     },
     {
       "id": "T-009",
       "title": "scheduled_actions table + Railway worker poll (event-driven delay engine)",
-      "column": "backlog",
+      "column": "local_verified",
       "assigned_agent": "backend_dev",
       "deploy_status": null,
       "tenant_scope": [
@@ -278,7 +434,10 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "Foundation for all delayed/drip automation. Design schema extensible for future AI agent decision layer (T-013)."
+      "notes": "Foundation for all delayed/drip automation. Design schema extensible for future AI agent decision layer (T-013). COLUMN 2026-11-04: backlog->local_verified. Card t_7bdb5c53=done after independent review (2026-10-06): scheduled_actions table + migration f4a5b6c7d8e9 + worker poll + handler registry, all 8 files UNTRACKED (local only, no commit, no push, no deploy). No local_preview_url exists (backend only), so deploy_status stays null. NOT on any pushed branch — recovering these files is still an open gap.",
+      "start_date": "2026-10-06",
+      "due_date": "2026-10-06",
+      "date_source": "delivered and review-approved LOCAL on 2026-10-06 (card t_7bdb5c53: run 09:44->10:12, review 10:02, migration f4a5b6c7d8e9). The 8 files stayed untracked and were never committed, which is why the column remains 'backlog' — these dates record the real work window, not the column."
     },
     {
       "id": "T-010",
@@ -291,7 +450,9 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "FACT-CHECK DONE 2026-09-04: code live in notification_service.py (views.py:26,739; auth.py:56); email_service.py dead code. API key re_... validated (domains 200). ⚠️ DELIVERY BLOCKED: EMAIL_FROM=onboarding@resend.dev only delivers to account owner (olesya00007@yahoo.com); Resend 403 'verify a domain' for alegra_007@proton.me/ms.okuneva@internet.ru. REMAINING: add verified Resend domain + set EMAIL_FROM=no-reply@<domain> in Railway, then real send test. Also: upload notify (attachment_uploaded, commit pending) emails owner + client on file upload. MITIGATION COMMITTED 2026-09-04: SMTP fallback (commit 5182bf8) is preferred over Resend when SMTP_HOST is set — this unblocks client delivery without a verified Resend domain. Kanban card: t_da4552e5."
+      "notes": "FACT-CHECK DONE 2026-09-04: code live in notification_service.py (views.py:26,739; auth.py:56); email_service.py dead code. API key re_... validated (domains 200). ⚠️ DELIVERY BLOCKED: EMAIL_FROM=onboarding@resend.dev only delivers to account owner (olesya00007@yahoo.com); Resend 403 'verify a domain' for alegra_007@proton.me/ms.okuneva@internet.ru. REMAINING: add verified Resend domain + set EMAIL_FROM=no-reply@<domain> in Railway, then real send test. Also: upload notify (attachment_uploaded, commit pending) emails owner + client on file upload. MITIGATION COMMITTED 2026-09-04: SMTP fallback (commit 5182bf8) is preferred over Resend when SMTP_HOST is set — this unblocks client delivery without a verified Resend domain. Kanban card: t_da4552e5.",
+      "start_date": "2026-09-04",
+      "date_source": "start = fact-check + SMTP-fallback mitigation 2026-09-04 (commit 5182bf8, card t_da4552e5). NO due_date: delivery is blocked on an external Resend domain verification, which has no date, and no deadline was ever set."
     },
     {
       "id": "T-011",
@@ -308,7 +469,8 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Must precede any further fix. Future shortcut command target: 'inventory'."
+      "notes": "Must precede any further fix. Future shortcut command target: 'inventory'.",
+      "date_source": "UNDATED — card t_226f9045 has only its creation events (2026-09-19) and there is no inventory deliverable on disk. The vault workspace inventory (created 2026-08-31, updated 2026-09-03) predates this node and is not its artifact. Left empty rather than guessed."
     },
     {
       "id": "T-012",
@@ -333,12 +495,13 @@
       "depends_on": [
         "T-002"
       ],
-      "notes": "LOCAL ONLY, always. Command convention: 'operator test locally'. Never deploy without explicit user go."
+      "notes": "LOCAL ONLY, always. Command convention: 'operator test locally'. Never deploy without explicit user go.",
+      "date_source": "UNDATED — no dated evidence; local-only Romanelli mock test, dependency of T-002, card t_b8dfc0cc idle since 2026-09-19."
     },
     {
       "id": "T-013",
       "title": "AI adaptive/reflective email agent (behavior-based follow-up)",
-      "column": "backlog",
+      "column": "blocked",
       "assigned_agent": null,
       "deploy_status": null,
       "tenant_scope": [
@@ -352,7 +515,9 @@
       "depends_on": [
         "T-009"
       ],
-      "notes": "Target: end of September. Architecture (T-009) must be built to support this as a plug-in decision layer, not require rewrite."
+      "notes": "Target: end of September. Architecture (T-009) must be built to support this as a plug-in decision layer, not require rewrite.",
+      "date_source": "UNDATED — the 141 card events on t_5cf7a308 (2026-10-06 -> 2026-10-21) are dispatcher crash loops on a Nous auth blocker, not work; no deliverable exists. The 2026-09-03 note's 'end of September' target is superseded and is deliberately NOT used as a due_date.",
+      "blocked_reason": "Card t_5cf7a308=blocked. The 141 card events are dispatcher crash loops on a Nous auth blocker, not work; no deliverable exists. Also gated on T-009 (now local_verified, uncommitted)."
     },
     {
       "id": "T-014",
@@ -369,7 +534,9 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "BLOCKED until: 18 tests pass on real (non-sqlite) Postgres AND ALTER ROLE ... NOBYPASSRLS confirmed on Railway DATABASE_URL role. AUDIT 2026-09-16 (kanban t_4637a500): RLS built on feat/rls, NOT merged — app-level workspace_filter() only. workspace_filter() covers 8 tables (deadlines, contacts, tasks, cases, activity_log, notes, attachments, calendar_events); migration f3a4b5c6d7e8_rls.py covers 11 tables; 18 tests in tests/test_rls.py; depends on flask-rls>=0.1.1. GAP tables with workspace_id but no filter: contact_relationship, firm_team_member. Manual prerequisite ALTER ROLE <app_role> NOBYPASSRLS must run BEFORE the migration and needs Railway prod access (= Ole). Filing decision (Linear / GitHub / direct backend-dev handoff) awaiting Ole. Kanban card: t_594fcced."
+      "notes": "BLOCKED until: 18 tests pass on real (non-sqlite) Postgres AND ALTER ROLE ... NOBYPASSRLS confirmed on Railway DATABASE_URL role. AUDIT 2026-09-16 (kanban t_4637a500): RLS built on feat/rls, NOT merged — app-level workspace_filter() only. workspace_filter() covers 8 tables (deadlines, contacts, tasks, cases, activity_log, notes, attachments, calendar_events); migration f3a4b5c6d7e8_rls.py covers 11 tables; 18 tests in tests/test_rls.py; depends on flask-rls>=0.1.1. GAP tables with workspace_id but no filter: contact_relationship, firm_team_member. Manual prerequisite ALTER ROLE <app_role> NOBYPASSRLS must run BEFORE the migration and needs Railway prod access (= Ole). Filing decision (Linear / GitHub / direct backend-dev handoff) awaiting Ole. Kanban card: t_594fcced.",
+      "start_date": "2026-09-16",
+      "date_source": "start = RLS audit 2026-09-16 (card t_4637a500). NO due_date: the node is blocked on real-Postgres tests + ALTER ROLE NOBYPASSRLS (Ole's Railway access) with no plan date, so it is blocked, not overdue."
     },
     {
       "id": "T-015",
@@ -386,7 +553,8 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Plan confirmed: volume name web-uploads, mount /app/uploads, UPLOAD_FOLDER env set. Awaiting final go for redeploy."
+      "notes": "Plan confirmed: volume name web-uploads, mount /app/uploads, UPLOAD_FOLDER env set. Awaiting final go for redeploy.",
+      "date_source": "UNDATED — the plan is confirmed but no date was ever recorded; card t_f0a8b939 has only its creation events (2026-09-19) and no redeploy has been approved. Left empty rather than guessed."
     },
     {
       "id": "T-016",
@@ -399,7 +567,8 @@
       ],
       "priority": "P1",
       "depends_on": [],
-      "notes": "Repoint pushed (da19b36), Netlify auto-deploy triggered. Visual redesign (52f1bc6) held separately on visual-redesign-hold branch, NOT merged."
+      "notes": "Repoint pushed (da19b36), Netlify auto-deploy triggered. Visual redesign (52f1bc6) held separately on visual-redesign-hold branch, NOT merged.",
+      "date_source": "UNDATED — commit da19b36 is not an object in this repo and the Netlify landing repo it came from is no longer on disk. The vault inventory records the repoint as already done by its 2026-09-03 update, which is only an upper bound, not a date. Left empty rather than guessed."
     },
     {
       "id": "T-017",
@@ -417,12 +586,15 @@
       ],
       "priority": "P4",
       "depends_on": [],
-      "notes": "DONE 2026-10-06 (kanban t_4af8abb6). Implemented: Config.SEAT_LIMIT_DEFAULT (env-overridable, default 5); workspaces.seat_limit NULLable DB column + Workspace.effective_seat_limit() (DB override wins, else config default); seat-check enforced on POST /api/workspace/<id>/user (blocks with 403 when existing seats >= effective limit); additive boot-time _ensure_schema ALTER + alembic migration 5a6b7c8d9e0f. Local test .venv/bin/python tests/test_seat_limit.py ALL PASSED — default 5 (seats 1-5=201, 6th=403 5/5), then DB-only override to 8 took effect with NO redeploy (seats 6-8=201, 9th=403 8/8), to_dict exposes seat_limit. NO push, NO deploy. Cross-audit (process_rules) route: operator-installer reviews these 5 files + the T-009 files were NOT touched by this task."
+      "notes": "DONE 2026-10-06 (kanban t_4af8abb6). Implemented: Config.SEAT_LIMIT_DEFAULT (env-overridable, default 5); workspaces.seat_limit NULLable DB column + Workspace.effective_seat_limit() (DB override wins, else config default); seat-check enforced on POST /api/workspace/<id>/user (blocks with 403 when existing seats >= effective limit); additive boot-time _ensure_schema ALTER + alembic migration 5a6b7c8d9e0f. Local test .venv/bin/python tests/test_seat_limit.py ALL PASSED — default 5 (seats 1-5=201, 6th=403 5/5), then DB-only override to 8 took effect with NO redeploy (seats 6-8=201, 9th=403 8/8), to_dict exposes seat_limit. NO push, NO deploy. Cross-audit (process_rules) route: operator-installer reviews these 5 files + the T-009 files were NOT touched by this task.",
+      "start_date": "2026-10-06",
+      "due_date": "2026-10-06",
+      "date_source": "card t_4af8abb6 run 2026-10-06 09:44->10:12, tests/test_seat_limit.py ALL PASSED (default 5 + DB-only override to 8, no redeploy), local only."
     },
     {
       "id": "T-018",
       "title": "Agentic AI-personalized email automation spec (missing backlog item)",
-      "column": "backlog",
+      "column": "blocked",
       "assigned_agent": null,
       "deploy_status": null,
       "tenant_scope": [
@@ -436,7 +608,9 @@
       "depends_on": [
         "T-009"
       ],
-      "notes": "Confirmed missing in v2 roadmap §5 — needs its own spec. Distinct from T-013 (adaptive follow-up): AI-personalized content generation per client. Spec before code."
+      "notes": "Confirmed missing in v2 roadmap §5 — needs its own spec. Distinct from T-013 (adaptive follow-up): AI-personalized content generation per client. Spec before code.",
+      "date_source": "UNDATED — spec-before-code node, depends on T-009, card t_f48b0a11 idle since 2026-09-19. No dated evidence of work or of a plan.",
+      "blocked_reason": "Card t_f48b0a11=blocked (spec-before-code, same dispatcher auth blocker as T-013). Gated on T-009."
     },
     {
       "id": "T-019",
@@ -451,12 +625,14 @@
       ],
       "priority": "P3",
       "depends_on": [],
-      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). AUDIT DONE 2026-09-04: gap matrix + top-10 fix list (frontend_developer, read-only) in docs/UX-Test-Report-2026-09-04.md + LexFlux-UX-UI-Design-Research-Report-2025.md in Obsidian. Contrast quick-fix APPLIED locally (commit 3aaea16, --text-faint -> #7E90A9, btn text var(--bg); calendar/tasks white-on-accent still ~4.1:1 — pending). IMPLEMENTATION ORDER (Ole 2026-09-04): Pagliano (least populated) first -> verify locally -> Lexflow -> Romanelli. Hard rule: no design deploy before Ole's human review of local preview. STATUS 2026-09-19: still local_verified; calendar/tasks white-on-accent contrast still ~4.1:1 (WCAG AA requires 4.5:1) — open. Kanban card: t_bc68191b (blocked on Ole's localhost review)."
+      "notes": "Ole 2026-09-03: compare LexFlow CRM + LP design against 2025 official standards — LexFlux-Legal-SaaS-UX-UI-Design-Research-Report.md (WCAG 2.2 = ISO 40500:2025, EU EAA Law 11/2023; mobile nav patterns; role-based dashboards; trust bar; AI-native context-first UX; touch targets 44x44/24x24; reduced-motion; semantic HTML/ARIA). AUDIT DONE 2026-09-04: gap matrix + top-10 fix list (frontend_developer, read-only) in docs/UX-Test-Report-2026-09-04.md + LexFlux-UX-UI-Design-Research-Report-2025.md in Obsidian. Contrast quick-fix APPLIED locally (commit 3aaea16, --text-faint -> #7E90A9, btn text var(--bg); calendar/tasks white-on-accent still ~4.1:1 — pending). IMPLEMENTATION ORDER (Ole 2026-09-04): Pagliano (least populated) first -> verify locally -> Lexflow -> Romanelli. Hard rule: no design deploy before Ole's human review of local preview. STATUS 2026-09-19: still local_verified; calendar/tasks white-on-accent contrast still ~4.1:1 (WCAG AA requires 4.5:1) — open. Kanban card: t_bc68191b (blocked on Ole's localhost review).",
+      "start_date": "2026-09-04",
+      "date_source": "start = audit delivered 2026-09-04 (commit b455e97 + contrast fix 3aaea16); implementation ran 2026-10-10 -> 2026-10-21 (card t_bc68191b) and was PAUSED by Ole on 2026-10-26. NO due_date: paused behind Ole's design review, no plan deadline exists."
     },
     {
       "id": "T-020",
       "title": "i18n: CRM English -> Italian (+ Russian optional) — bilingual by end of week",
-      "column": "backlog",
+      "column": "blocked",
       "assigned_agent": null,
       "deploy_status": null,
       "tenant_scope": [
@@ -466,14 +642,16 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "Ole 2026-09-04: keep CRM English for now (tester lawyers speak English); landings stay Italian. Plan translation to Italian (and possibly Russian) for NEXT WEEK — bilingual by end of week. Do NOT touch language now. Reminder: operator-installer must remind Ole about this. Kanban card: t_a4e0ad76 (blocked — do not start before Ole opens the window)."
+      "notes": "Ole 2026-09-04: keep CRM English for now (tester lawyers speak English); landings stay Italian. Plan translation to Italian (and possibly Russian) for NEXT WEEK — bilingual by end of week. Do NOT touch language now. Reminder: operator-installer must remind Ole about this. Kanban card: t_a4e0ad76 (blocked — do not start before Ole opens the window).",
+      "date_source": "UNDATED — Ole's 2026-09-04 decision deferred i18n and explicitly closed the window ('do NOT touch language now'); card t_a4e0ad76 is blocked and no work has started. The 'next week' wording is not a dated plan, so neither date is set.",
+      "blocked_reason": "Card t_a4e0ad76=blocked — Ole's standing instruction: do NOT start i18n before he opens the window ('NEXT WEEK'; he must be reminded). No work started."
     },
     {
       "id": "T-021",
       "title": "Diagram view of task/case execution (n8n/Obsidian-graph style) on roadmap",
-      "column": "backlog",
-      "assigned_agent": null,
-      "deploy_status": null,
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": "local",
       "tenant_scope": [
         "ws7",
         "ws9",
@@ -483,7 +661,183 @@
       "depends_on": [
         "T-019"
       ],
-      "notes": "Ole 2026-09-04: add a visual architecture-style diagram of task execution to the roadmap (like Obsidian graph / n8n nodes) — native, clear who has what. Spec first, then local implementation on Pagliano, then replicate."
+      "notes": "Ole 2026-09-04: add a visual architecture-style diagram of task execution to the roadmap (like Obsidian graph / n8n nodes) — native, clear who has what. Spec first, then local implementation on Pagliano, then replicate. | 2026-10-24: built locally as live /graph (Obsidian-style context graph, vault notes as nodes) on branch integration/graph-gantt-local, merged to local lexflow_hermes_v1 (NOT pushed). Cross-tested by independent agent + Admy: GO local merge. Flags GRAPH_VIEW_ENABLED / CONTEXT_NOTES_ENABLED default off.",
+      "start_date": "2026-10-20",
+      "due_date": "2026-10-27"
+    },
+    {
+      "id": "T-022",
+      "title": "Gantt view (Frappe Gantt) with dependency arrows on /gantt",
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": "local",
+      "priority": "P2",
+      "depends_on": [
+        "T-002"
+      ],
+      "notes": "Local: bars fix (grid-background), tasks.depends_on + migration g8b9c0d1e2f3, overdue-crash fix (multi-class custom_class), chronological order. Flag GANTT_VIEW_ENABLED default off. Not pushed.",
+      "start_date": "2026-10-21",
+      "due_date": "2026-10-26",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-023",
+      "title": "Kanban: stop wiping the JWT on aborted fetch (empty Timeline/Graph/Matters after login)",
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": "local",
+      "priority": "P1",
+      "depends_on": [],
+      "notes": "templates/kanban.html removed localStorage jwt on any network error, so clicking away right after login logged users out. Commit 73765bd, local only. Bug exists on main/prod too.",
+      "start_date": "2026-10-24",
+      "due_date": "2026-10-24",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-024",
+      "title": "Railway: set SECRET_KEY + JWT_SECRET_KEY (no fallback in config.py) before any deploy",
+      "column": "blocked",
+      "assigned_agent": null,
+      "deploy_status": null,
+      "priority": "P1",
+      "depends_on": [],
+      "notes": "Admy cross-test 2026-10-24: crm/config.py now refuses to boot without them. Needs Ole Railway access (see open_p0 P0-PROD-DOWN).",
+      "start_date": "2026-10-25",
+      "due_date": "2026-10-27",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-025",
+      "title": "Staging smoke test: /gantt, /graph, /api/context/notes with flags on + migration on Postgres",
+      "column": "backlog",
+      "assigned_agent": "operator_installer",
+      "deploy_status": null,
+      "priority": "P1",
+      "depends_on": [
+        "T-022",
+        "T-021",
+        "T-024",
+        "T-029"
+      ],
+      "notes": "Deploy gate before any push: run alembic upgrade to g8b9c0d1e2f3 on staging, tenant-isolation checks (Romanelli admin, client sub-workspace), flags on.",
+      "start_date": "2026-11-03",
+      "tenant_scope": [
+        "ws7"
+      ],
+      "date_source": "re-baselined: the 2026-10-28..2026-10-31 plan was missed with the smoke test never run. The task was actually scheduled on 2026-11-03 (card t_fe4e8687 created 2026-11-03 09:03, parent-gated on T-022/T-024/T-029) — that card creation is the dated evidence. NO due_date: no new deadline agreed, and the real gate (T-024, Ole's Railway access) is still closed. Column deliberately NOT changed to 'blocked' — the live card is 'todo' and a column flip here would only add card<->roadmap drift."
+    },
+    {
+      "id": "T-026",
+      "title": "Decide scope of local merge: keep or split apps/progress-visualiser + auth hardening",
+      "column": "blocked",
+      "assigned_agent": "lexflow_head_admin",
+      "deploy_status": null,
+      "priority": "P2",
+      "depends_on": [
+        "T-022"
+      ],
+      "notes": "lexflow_hermes_v1..integration branch carries a React app and auth.py seed hardening beyond Gantt/graph. Ole to decide.",
+      "start_date": "2026-10-25",
+      "due_date": "2026-10-28",
+      "tenant_scope": [
+        "ws7"
+      ],
+      "date_source": "left as the 2026-10-25..2026-10-28 historical plan, no re-baseline: the task was picked up on the live board on 2026-11-03 (card t_76894c79 created 2026-11-03 09:03 and claimed by a worker the same morning), so a date change here would race the worker's own tracker update. The decision itself is still Ole's ('Ole to decide' in notes).",
+      "blocked_reason": "Card t_76894c79=blocked, assigned to the merge-scope decision owner. The decision is Ole's/Admy's: keep or split apps/progress-visualiser + auth hardening before the Railway gate."
+    },
+    {
+      "id": "T-027",
+      "title": "Graph: real Hindsight memory nodes (currently stub) + daily Today digest",
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": null,
+      "priority": "P3",
+      "depends_on": [
+        "T-021"
+      ],
+      "notes": "Context graph shows vault notes only. Add Hindsight recall as node source (superadmin only) and a daily Today-panel digest. COLUMN 2026-11-04: backlog->local_verified. Card t_a4eb8bf2=done 2026-11-03: Hindsight recall nodes + Today digest built and unit-tested (tests/test_context_memory.py 29 checks, test_context_notes.py still green) on branch feat/t027-hindsight-memory commit afc4d8e — NOT merged into lexflow_hermes_v1, not pushed, no deploy. Flag CONTEXT_MEMORY_ENABLED default OFF; HINDSIGHT_API_KEY must be a Railway variable before any deploy. The /graph page itself was not eyeballed in a browser.",
+      "start_date": "2026-11-02",
+      "due_date": "2026-11-13",
+      "tenant_scope": [
+        "ws7"
+      ],
+      "local_branch": "feat/t027-hindsight-memory",
+      "local_commit": "afc4d8e",
+      "local_worktree": "/Users/olesiarasing/projects/lexflow/lexflow-crm-wt-t027"
+    },
+    {
+      "id": "T-028",
+      "title": "Roadmap: real start/due dates per task (Gantt currently derives dates from column)",
+      "column": "local_verified",
+      "assigned_agent": "operator_installer",
+      "deploy_status": null,
+      "priority": "P2",
+      "depends_on": [
+        "T-022"
+      ],
+      "notes": "seed_gantt_data.py upserts from this file and honours optional start_date/due_date; T-001..T-020 now carry evidence-based dates (or an explicit date_source saying why they are undated) so the Gantt shows the real plan, not dates derived from the column. DONE 2026-11-03 locally (docs-only): 10 of T-001..T-020 dated, 10 left undated with reasons; stale past-due nodes decided per node (T-025 re-baselined, T-026 left as historical plan because a worker claimed it live, T-028/T-029 re-baselined). Remaining gap: seed_gantt_data.py still fabricates dates for nodes with no date — follow-up card filed.",
+      "start_date": "2026-11-03",
+      "due_date": "2026-11-03",
+      "tenant_scope": [
+        "ws7"
+      ],
+      "date_source": "re-baselined to the real work window: card t_f3890cf5 created and run 2026-11-03, dates filled in this pass and committed locally on lexflow_hermes_v1 (docs-only, not pushed — a push triggers a Railway deploy). Previous plan dates 2026-10-26..2026-10-30 had been missed. Column advanced to local_verified with deploy_status null because the change exists only in the local checkout — no prod_url/commit-hash evidence exists to claim anything more."
+    },
+    {
+      "id": "T-029",
+      "title": "Add Alembic migration for notify_consents (currently create_all-only) before Railway gate",
+      "column": "local_verified",
+      "assigned_agent": "backend_dev",
+      "deploy_status": null,
+      "priority": "P1",
+      "depends_on": [],
+      "notes": "MAJOR finding from Wave 1 FINAL GATE (2026-10-25, integration/platform-wave1 @ 78238fe, report xreport_admy_wave1.md): notify_consents has NO Alembic migration — it is created only via runtime db.create_all() in the _ensure_schema before_request hook (checkfirst+additive). On a fresh Postgres deploy where only 'flask db upgrade' runs the migrations, the first db.create_all() still creates it (additive, so it self-heals), but it is ABSENT from the migration chain and from the ORM model registry import graph. MINOR companion: NotifyConsent not in models/__init__. Fix before the Railway deploy gate (T-025).",
+      "start_date": "2026-11-03",
+      "tenant_scope": [
+        "ws7"
+      ],
+      "date_source": "re-baselined: the 2026-10-26..2026-10-28 plan was missed with the work unstarted. Work actually ran and finished on 2026-11-03 (card t_8115f68b created 09:03, done 09:07:54: notify_consents already had its migration on lexflow_hermes_v1, two further chain gaps fixed, clean 'flask db upgrade' on sqlite and real Postgres, local only, operator-installer cross-audit still outstanding). Column advanced to local_verified on that evidence.",
+      "due_date": "2026-11-03"
+    },
+    {
+      "id": "T-030",
+      "title": "CRM assistant launcher: 'Elisa' pill-bulb (reuse LexFlow website Elisa avatar + 'Hi, I'm Elisa! happy to assist'), minimal, NO intake sections",
+      "column": "deployed",
+      "assigned_agent": "frontend_developer",
+      "deploy_status": "deployed",
+      "prod_url": "https://web-production-031a6.up.railway.app",
+      "commit_hash": "396bea2",
+      "priority": "P2",
+      "depends_on": [],
+      "notes": "Ole 2026-10-26: CRM assistant is 'Elisa' (NOT Eliza) — user must not know it's a different agent. Launcher reuses the LexFlow website Elisa pill-bulb (avatar + label 'Hi, I'm Elisa! happy to assist'), minimal, NO intake sections, just corrected styles. DEPLOYED 2026-10-27 (deploy 7354426195, commit 396bea2, pushed lexflow_hermes_v1 19b5401..396bea2). Commits d2d6e42 (Elisa rename+avatar, clickable dashboard cards, '← Main site') + 48094c2 (launcher pill-bulb).",
+      "start_date": "2026-10-26",
+      "due_date": "2026-10-27",
+      "tenant_scope": [
+        "ws7"
+      ]
+    },
+    {
+      "id": "T-031",
+      "title": "Blocked-state visibility visual proposals (A-E) on kanban/gantt/tasks/context-graph",
+      "column": "deployed",
+      "assigned_agent": "frontend_developer",
+      "deploy_status": "deployed",
+      "prod_url": "https://web-production-031a6.up.railway.app",
+      "commit_hash": "396bea2",
+      "priority": "P2",
+      "depends_on": [],
+      "notes": "Ole 2026-10-26: frontend-developer is building visual proposals (A-E) for blocked-state visibility on kanban/gantt/tasks/context-graph. Ole will assess the proposals and approve before any merge. HARD GATE: do NOT merge blocked-state work until Ole approves. DEPLOYED 2026-10-27 — Ole's explicit 'deploy' command approved the merge; blocked-state visual language went live in deploy 7354426195 (commit 396bea2): f5b538c (kanban cards red stripe+hatch+⛔+pulse, graph dashed ring+🔒), 221cfa8 (/tasks blocked card stripe+hatch+badge, /gantt lock prefix), da09cf6 (agent-bus line follows A–E proposal). Graph/gantt surfaces remain flag-gated OFF on prod (GRAPH_VIEW_ENABLED/GANTT_VIEW_ENABLED default off) — the kanban/tasks blocked-state visuals are live.",
+      "start_date": "2026-10-26",
+      "due_date": "2026-10-30",
+      "tenant_scope": [
+        "ws7"
+      ]
     }
   ],
   "reflection_rules": [
@@ -621,42 +975,35 @@
     }
   },
   "integration_note_for_hermes": "Render this file's 'tasks' array as Kanban cards using 'column' as the board column and 'id' as card ID. Suggested location: new tab/panel next to /kanban route, e.g. /kanban/roadmap, reading this JSON directly. Update this file (not just chat replies) whenever task status changes, so it stays the single source of truth alongside chat reports.",
-  "status_run": {
-    "date": "2026-10-14",
-    "owner": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
-    "reconciliation": "Single source of truth = docs/LexFlow_Agentic_Roadmap.json in /Users/olesiarasing/projects/lexflow-crm (branch lexflow_hermes_v1). One clone, one tracker verified on disk.",
-    "previous_last_updated": "2026-10-12",
-    "evidence": {
-      "run_health": "2026-10-14 09:00 CEST. Last successful status run was 2026-10-12. No status run on 2026-10-13 (daily note holds only a repo_sync autosync line — provider failure again). The job carries model_snapshot=deepseek/deepseek-v4.1-flash / provider_snapshot=openrouter, which overrides the profile config.yaml default.",
-      "no_movement": "Nothing moved. No CRM commit since the 2026-10-12 status commit (2189902). The only commit since is e7ea978 (validator tool addition). No deploy, no push, no Kanban card activity (kanban.db mtime still 2026-10-10 22:23:25). All 21 task nodes carried over unchanged.",
-      "git": "lexflow-crm branch lexflow_hermes_v1 HEAD e7ea978 (chore(tools): add roadmap validator); working tree has untracked .DS_Store and Frappe-Gantt/. 18 commits ahead of origin/lexflow_hermes_v1 (origin tip 8c17456) — all docs/tracker/tooling, UNPUSHED (a push triggers a deploy and is gated on Ole).",
-      "kanban": "53 cards, kanban.db mtime 2026-10-10 22:23:25 — no card activity since the last status run. Every unfinished roadmap task still holds exactly one open card (kanban_card_map unchanged), so 0 new cards created today (rules §9 / §10.3).",
-      "single_clone_verified": "Exactly ONE tracker on disk: /Users/olesiarasing/projects/lexflow-crm/docs/LexFlow_Agentic_Roadmap.json. The 2026-10-10 dedupe HELD — no second tracker copy.",
-      "prod": "STILL DOWN — 2026-10-14 09:00 CEST probes: / 404 (0.27s), /health 404 (0.25s), /login?ws=lexflow 404 (1.67s), /api/health 404 (0.24s). Day 19. Same Railway-edge fallback signature (server: railway-hikari, x-railway-fallback: true). Root cause is outside the repo — needs Ole's Railway access.",
-      "vault": "05-Daily/2026-10-14.md created by this run; 2026-10-13.md holds only a repo_sync line (no status entry — provider failure). LexFlow-Project-Status.md refreshed in place — the single live status note, no second one created."
+  "previous_status_runs": [
+    {
+      "date": "2026-10-14",
+      "owner": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
+      "validator_exit": 1,
+      "summary": "First run to execute the validator: 8 violations (4 report_rule + 3 card drift + 1 multiple-tracker), none corrected (no evidence). No CRM commit, no deploy, no card activity."
     },
-    "validator_violations": {
-      "exit_code": 1,
-      "report_rule_gaps": [
-        "[A] T-001 column=done deploy_status=deployed lacks prod_url+commit_hash",
-        "[A] T-007 column=done deploy_status=deployed lacks prod_url+commit_hash",
-        "[A] T-008 column=done deploy_status=local lacks local_preview_url",
-        "[A] T-016 column=deployed deploy_status=deployed lacks prod_url+commit_hash"
-      ],
-      "card_roadmap_drift": [
-        "[B] T-005 roadmap=backlog vs card t_cba427b1=done",
-        "[B] T-009 roadmap=backlog vs card t_7bdb5c53=done",
-        "[B] T-020 roadmap=backlog vs card t_a4e0ad76=blocked"
-      ],
-      "multiple_trackers": [
-        "[C] 3 tracker files on disk: canonical=/Users/olesiarasing/projects/lexflow-crm/docs/LexFlow_Agentic_Roadmap.json; stale legacy copies at ~/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/LexFlow_Agentic_Roadmap.json and ~/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/lexflow-crm/docs/LexFlow_Agentic_Roadmap.json"
-      ],
-      "corrected_today": "none — no evidence to support column/deploy_status changes; tracker deletion is gated on Ole.",
-      "left_unfilled": "T-001/T-007/T-008/T-016 report_rule gaps need prod_url/commit_hash or local_preview_url evidence not in the repo. T-005/T-009/T-020 card<->roadmap drift: T-005+T-009 cards marked done 2026-10-06 but roadmap columns unchanged (needs investigation); T-020 card blocked vs roadmap backlog (card correctly blocked — i18n window not open). [C] duplicate trackers under ~/Desktop are stale legacy copies — the 2026-10-12 'one tracker' claim missed them because that run's find did not search ~/Desktop. Deletion gated on Ole."
+    {
+      "date": "2026-10-27",
+      "owner": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
+      "summary": "0895d5e/053265e: recorded the 2026-10-27 deploy (396bea2, deploy 7354426195) — P0-PROD-DOWN resolved (prod 200), T-030 Elisa launcher and T-031 blocked-state visual marked deployed. Run committed on integration/graph-gantt-local only; the deploy branch never received it."
     },
-    "p0_card_note": "Kanban card t_8cbc766e (P0 prod-down) is marked done (completed_at 2026-10-10 22:23:25 CEST) but production is STILL 404. The card was closed when a fix was briefly verified 200, but the platform reverted it. Card status does not reflect reality — flagged for Ole. This card maps to open_p0, not to a roadmap task node.",
-    "moved_today": "nothing — no CRM commit, no deploy, no push, no card activity. 21 task nodes carried over unchanged (10 backlog, 1 blocked, 4 awaiting_confirmation, 2 local_verified, 3 done, 1 deployed).",
-    "kanban_cards_created_2026_10_14": {},
-    "note": "2026-10-14 run: validator added to the repo (e7ea978) after the last status run. First run to execute the validator. Validator exits 1 with 8 violations (4 report_rule + 3 card drift + 1 multiple-tracker) — all pre-existing, none corrected (no evidence). See validator_violations."
-  }
+    {
+      "date": "2026-11-03",
+      "owner": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
+      "validator_exit": 1,
+      "summary": "See git history of this file at commit bdda48e (2026-11-03): tracker consolidated onto lexflow_hermes_v1, 8 missing cards created for T-022..T-029, prod re-verified 200 (origin ddec0aa contains 396bea2)."
+    },
+    {
+      "date": "2026-11-04",
+      "owner": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
+      "validator_exit": 1,
+      "summary": "Recorded P0-PROD-DOWN-REGRESSION-2026-11-04 (prod 404 again after a 200 on 2026-11-03), re-columned 7 nodes from card evidence, closed two reachable report_rule gaps with commit ancestry (T-001 309e33c, T-007 ef293ab). Committed as 155dd6d on lexflow_hermes_v1 (local only). See that commit for the full evidence list."
+    },
+    {
+      "date": "2026-11-05",
+      "owner": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
+      "validator_exit": null,
+      "summary": "DID NOT RUN — job cda5f6d4a18a failed at the network layer ('RuntimeError: [Errno 8] nodename nor servname provided') plus one interrupted attempt. No tracker, vault or kanban action was taken that day; recorded here so the gap is auditable rather than silent."
+    }
+  ]
 }
