@@ -401,9 +401,9 @@
     {
       "id": "T-009",
       "title": "scheduled_actions table + Railway worker poll (event-driven delay engine)",
-      "column": "backlog",
+      "column": "local_verified",
       "assigned_agent": "backend_dev",
-      "deploy_status": null,
+      "deploy_status": "local",
       "tenant_scope": [
         "ws7",
         "ws9",
@@ -413,11 +413,10 @@
       ],
       "priority": "P2",
       "depends_on": [],
-      "notes": "Foundation for all delayed/drip automation. Design schema extensible for future AI agent decision layer (T-013). COLUMN 2026-11-04: backlog->local_verified. Card t_7bdb5c53=done after independent review (2026-10-06): scheduled_actions table + migration f4a5b6c7d8e9 + worker poll + handler registry, all 8 files UNTRACKED (local only, no commit, no push, no deploy). No local_preview_url exists (backend only), so deploy_status stays null. NOT on any pushed branch — recovering these files is still an open gap.  ||  COLUMN 2026-11-09: local_verified -> backlog, ON EVIDENCE. The 8 'untracked files' this node relied on no longer exist anywhere: the canonical worktree /Users/olesiarasing/projects/lexflow/lexflow-crm-wt-merge is clean (git status empty), `grep -rlE 'class ScheduledAction|scheduled_actions' --include=*.py` over all of /Users/olesiarasing/projects/lexflow returns ZERO real hits (only gen_gantt_* scripts that merely mention the string), `find -name '*f4a5b6c7d8e9*'` returns nothing, and `git log --all -Sscheduled_actions -- '*.py'` shows only 1e1a357 (the gantt sidebar commit, unrelated). The code was never committed and has since been lost with the scratch worktrees, so 'local_verified' was no longer supportable. Nothing to 'recover' — it has to be rebuilt.",
+      "notes": "Foundation for all delayed/drip automation. Design schema extensible for future AI agent decision layer (T-013). COLUMN 2026-11-04: backlog->local_verified. Card t_7bdb5c53=done after independent review (2026-10-06): scheduled_actions table + migration f4a5b6c7d8e9 + worker poll + handler registry, all 8 files UNTRACKED (local only, no commit, no push, no deploy). No local_preview_url exists (backend only), so deploy_status stays null. NOT on any pushed branch — recovering these files is still an open gap.  ||  COLUMN 2026-11-09: local_verified -> backlog, ON EVIDENCE. The 8 'untracked files' this node relied on no longer exist anywhere: the canonical worktree /Users/olesiarasing/projects/lexflow/lexflow-crm-wt-merge is clean (git status empty), `grep -rlE 'class ScheduledAction|scheduled_actions' --include=*.py` over all of /Users/olesiarasing/projects/lexflow returns ZERO real hits (only gen_gantt_* scripts that merely mention the string), `find -name '*f4a5b6c7d8e9*'` returns nothing, and `git log --all -Sscheduled_actions -- '*.py'` shows only 1e1a357 (the gantt sidebar commit, unrelated). The code was never committed and has since been lost with the scratch worktrees, so 'local_verified' was no longer supportable. Nothing to 'recover' — it has to be rebuilt.  ||  REBUILT 2026-11-09 (card t_4e9ad46d, backend-dev): crm/models/scheduled_action.py, crm/services/{scheduled_actions,notify_gate}.py, crm/worker.py (python -m crm.worker [--once]), migrations/versions/l3a4b5c6d7e8_add_scheduled_actions.py (head, down=k2f3a4b5c6d7), registered in crm/models/__init__.py, tests/test_scheduled_actions.py 4/4 pass; COMMITTED locally on lexflow_hermes_v1 in /Users/olesiarasing/projects/lexflow/lexflow-crm-wt-merge, NOT pushed. Pending: operator_installer diff review. Pre-existing unrelated failure: tests/test_agent.py::test_elisa_chat_tasks_and_agenda.",
       "start_date": "2026-10-06",
       "due_date": "2026-10-06",
-      "date_source": "delivered and review-approved LOCAL on 2026-10-06 (card t_7bdb5c53: run 09:44->10:12, review 10:02, migration f4a5b6c7d8e9). The 8 files stayed untracked and were never committed, which is why the column remains 'backlog' — these dates record the real work window, not the column.",
-      "blocked_reason": "Deliverable absent from disk: no scheduled_actions model, migration f4a5b6c7d8e9 or worker poll exists in any worktree under /Users/olesiarasing/projects/lexflow as of 2026-11-09 09:00 CET, and no commit ever carried the code. Needs re-implementation before T-004 (drip sequence) can start."
+      "date_source": "delivered and review-approved LOCAL on 2026-10-06 (card t_7bdb5c53: run 09:44->10:12, review 10:02, migration f4a5b6c7d8e9). The 8 files stayed untracked and were never committed, which is why the column remains 'backlog' — these dates record the real work window, not the column."
     },
     {
       "id": "T-010",
