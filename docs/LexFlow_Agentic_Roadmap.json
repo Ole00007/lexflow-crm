@@ -738,7 +738,7 @@
       "title": "Graph: real Hindsight memory nodes (currently stub) + daily Today digest",
       "column": "local_verified",
       "assigned_agent": "backend_dev",
-      "deploy_status": null,
+      "deploy_status": "local",
       "priority": "P3",
       "depends_on": [
         "T-021"
