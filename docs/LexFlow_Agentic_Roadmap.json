@@ -743,7 +743,7 @@
       "depends_on": [
         "T-021"
       ],
-      "notes": "Context graph shows vault notes only. Add Hindsight recall as node source (superadmin only) and a daily Today-panel digest. COLUMN 2026-11-04: backlog->local_verified. Card t_a4eb8bf2=done 2026-11-03: Hindsight recall nodes + Today digest built and unit-tested (tests/test_context_memory.py 29 checks, test_context_notes.py still green) on branch feat/t027-hindsight-memory commit afc4d8e — NOT merged into lexflow_hermes_v1, not pushed, no deploy. Flag CONTEXT_MEMORY_ENABLED default OFF; HINDSIGHT_API_KEY must be a Railway variable before any deploy. The /graph page itself was not eyeballed in a browser.  ||  MERGE GAP RE-MEASURED 2026-11-09: commit afc4d8e on feat/t027-hindsight-memory is confirmed NOT an ancestor of lexflow_hermes_v1 (`git merge-base --is-ancestor afc4d8e lexflow_hermes_v1` -> exit 1) and `git branch --contains afc4d8e` lists only the feature branch. The work exists and the 29 unit checks pass, but it is not on the deploy branch, so the node stays local_verified with no deploy_status. Local merge card created (see last_status_run.cards_created).",
+      "notes": "Context graph shows vault notes only. Add Hindsight recall as node source (superadmin only) and a daily Today-panel digest. COLUMN 2026-11-04: backlog->local_verified. Card t_a4eb8bf2=done 2026-11-03: Hindsight recall nodes + Today digest built and unit-tested (tests/test_context_memory.py 29 checks, test_context_notes.py still green) on branch feat/t027-hindsight-memory commit afc4d8e — NOT merged into lexflow_hermes_v1, not pushed, no deploy. Flag CONTEXT_MEMORY_ENABLED default OFF; HINDSIGHT_API_KEY must be a Railway variable before any deploy. The /graph page itself was not eyeballed in a browser.  ||  MERGE GAP RE-MEASURED 2026-11-09: commit afc4d8e on feat/t027-hindsight-memory is confirmed NOT an ancestor of lexflow_hermes_v1 (`git merge-base --is-ancestor afc4d8e lexflow_hermes_v1` -> exit 1) and `git branch --contains afc4d8e` lists only the feature branch. The work exists and the 29 unit checks pass, but it is not on the deploy branch, so the node stays local_verified with no deploy_status.  ||  MERGED LOCALLY 2026-11-09: merge commit 848c2c3 on lexflow_hermes_v1 in /Users/olesiarasing/projects/lexflow/lexflow-crm-wt-merge (unpushed); test_context_memory 26 PASS lines ALL PASS, test_context_notes ALL PASS on merged tree; deploy_status=local. Needs HINDSIGHT_URL+HINDSIGHT_API_KEY Railway vars (Ole) before any deploy. Local merge card created (see last_status_run.cards_created).",
       "start_date": "2026-11-02",
       "due_date": "2026-11-13",
       "tenant_scope": [
@@ -751,6 +751,8 @@
       ],
       "local_branch": "feat/t027-hindsight-memory",
       "local_commit": "afc4d8e",
+      "merge_commit": "848c2c3",
+      "merged_into": "lexflow_hermes_v1 (local, unpushed) 2026-11-09",
       "local_worktree": "/Users/olesiarasing/projects/lexflow/lexflow-crm-wt-t027"
     },
     {
