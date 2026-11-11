@@ -6,7 +6,7 @@ Create Date: 2026-10-24
 
 Additive only: two new tables + one nullable column.
 """
-from alembic import op
+from alembic import context, op
 import sqlalchemy as sa
 
 revision = 'h9c0d1e2f3a4'
@@ -15,7 +15,30 @@ branch_labels = None
 depends_on = None
 
 
+def _ensure_firm_team_members():
+    # t_fdbc90f7: three FKs below point at firm_team_members, which no earlier
+    # revision creates. PostgreSQL rejects an FK to a missing table, so a fresh
+    # install failed here. Guarded create: a NO-OP on every DB that already has
+    # the table (create_all-built or already past this revision).
+    # (offline --sql mode has no live DB: assume fresh and emit the CREATE)
+    if not context.is_offline_mode() and sa.inspect(op.get_bind()).has_table('firm_team_members'):
+        return
+    op.create_table(
+        'firm_team_members',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('workspace_id', sa.Integer(), sa.ForeignKey('workspaces.id'), nullable=False),
+        sa.Column('name', sa.String(length=255), nullable=False),
+        sa.Column('role', sa.String(length=50), nullable=False),
+        sa.Column('email', sa.String(length=255), nullable=True),
+        sa.Column('phone', sa.String(length=50), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
+    )
+    op.create_index('ix_firm_team_members_workspace_id', 'firm_team_members', ['workspace_id'])
+
+
 def upgrade():
+    _ensure_firm_team_members()
     with op.batch_alter_table('tasks') as batch_op:
         batch_op.add_column(sa.Column('vault_ref', sa.String(length=255), nullable=True))
     op.create_table(

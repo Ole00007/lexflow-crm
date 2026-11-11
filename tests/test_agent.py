@@ -284,7 +284,7 @@ def run_migration_check(verbose=False):
     failures = []
     from alembic.script import ScriptDirectory
     heads = ScriptDirectory(str(REPO / 'migrations')).get_heads()
-    check('single alembic head is latest revision (T-009 scheduled_actions)', heads == ['l3a4b5c6d7e8'], failures, verbose)
+    check('single alembic head is latest revision (T-009 scheduled_actions)', heads == ['m4b5c6d7e8f9'], failures, verbose)
 
     tmp = Path(tempfile.mkdtemp(prefix='agent_migrate_'))
     db_path = tmp / 'migrate.db'
@@ -319,6 +319,24 @@ def run_migration_check(verbose=False):
         check('upgrade created agent_runs', 'agent_runs' in tables, failures, verbose)
         check('upgrade created agent_audit', 'agent_audit' in tables, failures, verbose)
         check('upgrade created agent_pending_actions', 'agent_pending_actions' in tables, failures, verbose)
+        # t_fdbc90f7 drift guard: every db.metadata table + column must exist after the chain.
+        drift_src = (
+            "import sys, sqlalchemy as sa\n"
+            "from crm import create_app\n"
+            "from crm.extensions import db\n"
+            "app = create_app()\n"
+            "with app.app_context():\n"
+            "    insp = sa.inspect(db.engine); have = set(insp.get_table_names()); out = []\n"
+            "    for t in db.metadata.sorted_tables:\n"
+            "        if t.name not in have: out.append('table:' + t.name); continue\n"
+            "        cols = {c['name'] for c in insp.get_columns(t.name)}\n"
+            "        out += ['col:%s.%s' % (t.name, c.name) for c in t.columns if c.name not in cols]\n"
+            "    print('DRIFT:' + ','.join(out))\n"
+        )
+        dp = subprocess.run([sys.executable, '-c', drift_src], cwd=str(REPO), env=env, capture_output=True, text=True)
+        drift = [l for l in dp.stdout.splitlines() if l.startswith('DRIFT:')]
+        missing = drift[-1][6:] if drift else 'drift probe failed: ' + dp.stderr[-300:]
+        check('migrated schema has every db.metadata table/column (missing: %s)' % (missing or 'none'), drift != [] and missing == '', failures, verbose)
     else:
         check('migration stderr captured', bool(proc.stderr), failures, verbose)
     return failures
