@@ -54,7 +54,8 @@ guarantee, not a setting.
 If the server or a call fails:
 
 1. `./local_venv/bin/python scripts/demo_smoke.py` → read the FAIL line; it names the broken step.
-2. If it is a data problem, reseed: `python seed_mindmap_notes.py && python seed_mindmap_demo.py --workspace lexflow`.
+2. If it is a data problem, reset and reseed:
+   `python scripts/demo_reset.py && python seed_mindmap_demo.py --workspace lexflow && python seed_mindmap_notes.py`
 3. If it is a code problem, switch to screenshots in `docs/`: `mindmap-ui-1440.png`,
    `mindmap-ui-390.png` (already generated), and continue the conversation from there.
 4. Never restart the server while the client is watching — ask for 30 seconds.
