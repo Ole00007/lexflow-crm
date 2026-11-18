@@ -1,6 +1,17 @@
 from ..extensions import db
 from datetime import datetime
 
+
+def _iso(value):
+    """ISO-8601 with an explicit UTC marker (DB values are naive UTC).
+
+    Without the 'Z', a browser parses the string as local time and every note
+    renders one hour off in CET.
+    """
+    if not value:
+        return None
+    return value.isoformat() + ('' if value.tzinfo is not None else 'Z')
+
 class Note(db.Model):
     """Notes attached to any CRM record via polymorphic target_type + target_id."""
     __tablename__ = "notes"
@@ -35,6 +46,6 @@ class Note(db.Model):
             "content": self.content,
             "source": self.source or "human",
             "source_ref": self.source_ref,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": _iso(self.created_at),
+            "updated_at": _iso(self.updated_at),
         }

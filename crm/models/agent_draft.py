@@ -6,7 +6,14 @@ DRAFT_TTL_DAYS = 7
 
 
 def _iso(value):
-    return value.isoformat() if value else None
+    """ISO-8601 with an explicit UTC marker.
+
+    DB timestamps are naive UTC; browsers parse a naive string as LOCAL time, so
+    every rendered time was one hour off in CET. Append 'Z' when no offset.
+    """
+    if not value:
+        return None
+    return value.isoformat() + ('' if value.tzinfo is not None else 'Z')
 
 
 class AgentDraft(db.Model):
