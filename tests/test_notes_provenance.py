@@ -18,6 +18,21 @@ from crm.extensions import db  # noqa: E402
 from crm.models.note import Note  # noqa: E402
 from test_agent import build_state  # noqa: E402
 
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _restore_env():
+    """build_state() repoints DATABASE_URL/Config at a temp DB; undo it afterwards
+    so later modules (e.g. test_seed_gantt_dates) are not left pointing at it."""
+    from crm.config import Config
+    snap = dict(os.environ)
+    uri = Config.SQLALCHEMY_DATABASE_URI
+    yield
+    Config.SQLALCHEMY_DATABASE_URI = uri
+    os.environ.clear()
+    os.environ.update(snap)
+
 
 def _post_note(state, who='super', **overrides):
     payload = {'target_type': 'task', 'target_id': state['task_id'], 'content': 'Mindmap note'}
