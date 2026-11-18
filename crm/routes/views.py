@@ -405,6 +405,20 @@ def graph_view():
     return render_template('graph.html')
 
 
+@views_bp.route('/mindmap')
+@jwt_required(optional=True)
+def mindmap_view():
+    """Mindmap page shell (notes stream + agent draft tray). Data + isolation
+    come from /api/notes and /api/agent/*. Degrades to a placeholder while
+    templates/mindmap.html (Fronty) is not merged yet."""
+    from jinja2 import TemplateNotFound
+    try:
+        return render_template('mindmap.html')
+    except TemplateNotFound:
+        return ('<!doctype html><title>Mindmap</title><h1>Mindmap</h1>'
+                '<p>UI not installed yet (templates/mindmap.html).</p>'), 200
+
+
 @views_bp.route('/settings')
 @jwt_required(optional=True)
 def settings_page():
