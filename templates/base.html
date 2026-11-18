@@ -131,6 +131,7 @@
                 <li><a class="nav-link{{ ' active' if ep == 'views.dashboard' }}" href="{{ url_for('views.dashboard') }}">Dashboard</a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.contacts' }}" href="{{ url_for('views.contacts') }}">Contacts</a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.kanban' }}" href="{{ url_for('views.kanban') }}">Kanban <span class="nav-dot" aria-hidden="true"></span></a></li>
+                <li><a class="nav-link{{ ' active' if ep == 'views.mindmap_view' }}" href="{{ url_for('views.mindmap_view') }}">Mindmap <span class="nav-dot" aria-hidden="true"></span></a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.calendar' }}" href="{{ url_for('views.calendar') }}">Calendar</a></li>
                 <li><a class="nav-link{{ ' active' if ep == 'views.tasks' }}" href="{{ url_for('views.tasks') }}">Tasks</a></li>
                 {% if gantt_enabled %}<li><a class="nav-link{{ ' active' if ep == 'views.gantt' }}" href="{{ url_for('views.gantt') }}">📊 Timeline</a></li>{% endif %}
