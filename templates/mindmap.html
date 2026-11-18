@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Mindmap — LexFlow{% endblock %}
+
+{#
+  Mindmap surface: human note stream + agent draft tray.
+  - Notes:  GET /api/notes/             (target_type/target_id + source/author_id/date_from/date_to/q)
+            POST /api/notes/            (composer — humans only, server forces source='human')
+  - Drafts: GET  /api/agent/drafts?status=proposed
+            POST /api/agent/drafts/<id>/accept|reject   (single-use, per-draft; no approve-all)
+  Auth: JWT in localStorage['jwt'] as Bearer (same contract as gantt/graph).
+  No send/email controls anywhere. Promoted (agent) notes are labelled "for review".
+  Script/style served from 'self' — no inline JS, no CDN.
+#}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mindmap/mindmap.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="mm-page" id="mm-page"
+         data-ws-id="{{ current_user.workspace.id if current_user and current_user.workspace else '' }}"
+         data-target-type="workspace"
+         aria-labelledby="mm-heading">
+  <div class="mm-head">
+    <div>
+      <p class="eyebrow">Mindmap · notes &amp; agent drafts</p>
+      <h1 id="mm-heading">Mindmap</h1>
+      <p class="intro">One record for every note on this workspace and the agent proposals waiting for your review.
+        Humans write notes; agents draft proposals for you to accept or reject.</p>
+    </div>
+    <nav class="mm-tabs" id="mm-target-tabs" aria-label="Target">
+      <button class="mm-tab" type="button" data-target-type="workspace" data-target-id="{{ current_user.workspace.id if current_user and current_user.workspace else '' }}">Workspace</button>
+      <button class="mm-tab" type="button" data-target-type="task">Task</button>
+      <button class="mm-tab" type="button" data-target-type="case">Case</button>
+      <button class="mm-tab" type="button" data-target-type="contact">Contact</button>
+    </nav>
+  </div>
+
+  <div class="mm-bar" id="mm-filters" role="group" aria-label="Note filters">
+    <label class="mm-field mm-src">
+      <span class="mm-field-label">Source</span>
+      <select id="mm-source">
+        <option value="">All</option>
+        <option value="human">Human</option>
+        <option value="agent">Elisa draft</option>
+      </select>
+    </label>
+    <label class="mm-field">
+      <span class="mm-field-label">Author</span>
+      <input id="mm-author" type="text" placeholder="Any author" aria-label="Author">
+    </label>
+    <label class="mm-field">
+      <span class="mm-field-label">From</span>
+      <input id="mm-date-from" type="date" aria-label="Date from">
+    </label>
+    <label class="mm-field">
+      <span class="mm-field-label">To</span>
+      <input id="mm-date-to" type="date" aria-label="Date to">
+    </label>
+    <label class="mm-field mm-q">
+      <span class="mm-field-label">Search</span>
+      <input id="mm-q" type="search" placeholder="Free text…" aria-label="Search notes">
+    </label>
+    <button class="mm-btn mm-apply" id="mm-apply" type="button">Apply</button>
+  </div>
+
+  <div class="mm-main">
+    <div class="mm-stream card stack">
+      <div class="mm-composer" id="mm-composer">
+        <textarea id="mm-compose" rows="2" placeholder="Write a note for this target…" aria-label="New note"></textarea>
+        <button class="mm-btn mm-post" id="mm-post" type="button">Post note</button>
+      </div>
+      <div class="mm-stream-list" id="mm-stream-list" aria-live="polite" aria-label="Note stream">
+      </div>
+    </div>
+
+    <aside class="mm-tray" id="mm-tray" aria-label="Draft tray review" hidden>
+      <div class="mm-tray-head"><h2>Drafts awaiting review</h2></div>
+      <div class="mm-tray-list" id="mm-tray-list"></div>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/mindmap/mindmap.js') }}" defer></script>
+{% endblock %}

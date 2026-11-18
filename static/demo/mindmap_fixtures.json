@@ -1,0 +1,75 @@
+{
+  "notes": [
+    {
+      "id": 1,
+      "author_id": 3,
+      "author_email": "ole@lexflow.test",
+      "author_name": "Ole Ole",
+      "target_type": "workspace",
+      "target_id": 1,
+      "content": "Prep the quote for Marelli before Friday — board review on Monday. Legal review requested.",
+      "source": "human",
+      "source_ref": null,
+      "created_at": "2026-11-18T16:22:00+01:00",
+      "updated_at": "2026-11-18T16:22:00+01:00"
+    },
+    {
+      "id": 7,
+      "author_id": 9,
+      "author_email": "elisa@lexflow.test",
+      "author_name": "Elisa",
+      "target_type": "task",
+      "target_id": 12,
+      "content": "Proposed reminder: the deadline for the Rossi intake form expires tomorrow. Move it to 'Overdue' if not completed by 09:00.",
+      "source": "agent",
+      "source_ref": "7",
+      "created_at": "2026-11-17T09:05:00+01:00",
+      "updated_at": "2026-11-17T09:05:00+01:00"
+    },
+    {
+      "id": 2,
+      "author_id": 3,
+      "author_email": "ole@lexflow.test",
+      "author_name": "Ole Ole",
+      "target_type": "workspace",
+      "target_id": 1,
+      "content": "Client confirmed scope for the acquisition review. Recorded in the matter file.",
+      "source": "human",
+      "source_ref": null,
+      "created_at": "2026-11-15T10:40:00+01:00",
+      "updated_at": "2026-11-15T10:40:00+01:00"
+    }
+  ],
+  "drafts": [
+    {
+      "id": 7,
+      "workspace_id": 1,
+      "target_type": "task",
+      "target_id": 12,
+      "content": "Move task #12 (Rossi intake) to 'Overdue' — deadline passed 4h ago with no completion.",
+      "origin": "event_rule",
+      "requested_by": null,
+      "requested_by_agent": "elisa",
+      "evidence": "Event rule 'deadline_missed' fired at 14:02. task_overdue policy applied. No owner response since.",
+      "status": "proposed",
+      "expires_at": "2026-11-25T20:00:00+01:00",
+      "created_at": "2026-11-18T14:02:00+01:00",
+      "note_id": null
+    },
+    {
+      "id": 8,
+      "workspace_id": 1,
+      "target_type": "workspace",
+      "target_id": 1,
+      "content": "Draft a short status summary for the weekly project report with the current matter milestones.",
+      "origin": "human_request",
+      "requested_by": 3,
+      "requested_by_agent": "elisa",
+      "evidence": "Human asked for a weekly project digest. Observations: 3 milestones due this week, none overdue.",
+      "status": "proposed",
+      "expires_at": "2026-11-25T20:00:00+01:00",
+      "created_at": "2026-11-18T15:30:00+01:00",
+      "note_id": null
+    }
+  ]
+}

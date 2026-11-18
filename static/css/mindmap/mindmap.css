@@ -1,0 +1,154 @@
+/* Mindmap — note stream + agent draft tray.
+   Uses only base.html CSS variables (--surface --surface-2 --border --text
+   --text-muted --text-faint --accent --accent-glow --radius-lg --text-* --space-*
+   --shadow-* --success --transition). No new palette/fonts.
+   390px must not overflow: grid collapses, inputs stay at min-width:0, long text wraps. */
+
+.mm-page { min-width: 0; }
+
+.mm-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);
+}
+
+.mm-tabs {
+  display: flex; gap: var(--space-1); flex-wrap: wrap; padding: var(--space-1);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+}
+.mm-tab {
+  padding: var(--space-1) var(--space-3); border: none; border-radius: var(--radius-full);
+  background: transparent; color: var(--text-muted); font-size: var(--text-sm);
+  font-weight: 600; font-family: inherit; cursor: pointer;
+}
+.mm-tab:hover { color: var(--text); background: var(--surface); }
+.mm-tab.active { background: var(--accent); color: var(--bg); box-shadow: var(--shadow-sm); }
+
+/* Filter bar */
+.mm-bar {
+  display: flex; align-items: flex-end; gap: var(--space-2); flex-wrap: wrap;
+  margin-bottom: var(--space-4); padding: var(--space-3);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+}
+.mm-field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.mm-field-label {
+  font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-muted);
+}
+.mm-field select, .mm-field input {
+  min-width: 0; width: 100%; padding: var(--space-2) var(--space-2);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text); font-size: var(--text-sm); font-family: inherit;
+}
+.mm-field select:focus, .mm-field input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent-glow); }
+.mm-src { width: 130px; }
+.mm-q { flex: 1 1 180px; max-width: 260px; }
+
+.mm-btn {
+  padding: var(--space-2) var(--space-4); border: none; border-radius: var(--radius-full);
+  background: var(--accent); color: var(--bg); font-size: var(--text-sm); font-weight: 600;
+  font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+.mm-btn:hover { background: var(--accent-h); }
+.mm-btn:disabled { opacity: .5; cursor: default; }
+
+/* Layout: stream + right draft rail */
+.mm-main {
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-4);
+  align-items: start;
+}
+.mm-stream { padding: 0; min-width: 0; }
+.mm-stream > * + * { border-top: 1px solid var(--border); }
+
+/* Composer */
+.mm-composer { display: flex; gap: var(--space-2); align-items: flex-end; padding: var(--space-4); background: var(--surface-2); }
+.mm-composer textarea {
+  flex: 1; min-width: 0; resize: vertical; padding: var(--space-3);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  color: var(--text); font-size: var(--text-sm); font-family: inherit; line-height: 1.5;
+}
+.mm-composer textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent-glow); }
+
+/* Note stream */
+.mm-stream-list { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
+.mm-state { color: var(--text-muted); font-size: var(--text-sm); padding: var(--space-6); text-align: center; }
+
+.mm-card {
+  padding: var(--space-3); background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: var(--space-2); min-width: 0;
+}
+.mm-card.mm-agent { border-color: var(--teal); }
+.mm-meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.mm-author { font-size: var(--text-sm); font-weight: 700; color: var(--text); }
+.mm-time { font-size: var(--text-xs); color: var(--text-faint); }
+.mm-target { font-size: var(--text-xs); color: var(--text-muted); display: inline-block; }
+
+.mm-chip {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 700;
+  letter-spacing: .03em; background: var(--accent-glow); color: var(--accent-h); white-space: nowrap;
+}
+.mm-chip.mm-human { background: var(--accent-glow); color: var(--accent-h); }
+.mm-chip.mm-draft { background: color-mix(in srgb, var(--teal) 16%, var(--surface)); color: var(--teal-h); }
+.mm-chip.mm-review { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+.mm-content {
+  color: var(--text); font-size: var(--text-sm); line-height: 1.6;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; min-width: 0;
+}
+
+/* Draft tray */
+.mm-tray { min-width: 0; }
+.mm-tray-head { padding: var(--space-3) var(--space-4); background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.mm-tray-head h2 { margin: 0; font-family: var(--font-body); font-size: var(--text-base); font-weight: 700; }
+.mm-tray-list {
+  display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.mm-tray-head + .mm-tray-list { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+.mm-tray-empty { color: var(--text-muted); font-size: var(--text-sm); padding: var(--space-3); text-align: center; }
+
+.mm-draft {
+  padding: var(--space-3); background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); display: flex; flex-direction: column; gap: var(--space-2); min-width: 0;
+}
+.mm-origin {
+  align-self: flex-start; padding: 2px 8px; border-radius: var(--radius-sm); font-size: var(--text-xs);
+  font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted);
+  background: var(--surface); border: 1px solid var(--border); white-space: nowrap;
+}
+.mm-origin.human_request { color: var(--accent-h); border-color: var(--accent); background: var(--accent-glow); }
+.mm-origin.superior_agent { color: var(--teal-h); border-color: var(--teal); background: color-mix(in srgb, var(--teal) 14%, var(--surface)); }
+.mm-origin.event_rule { color: var(--warning); border-color: var(--warning); background: transparent; }
+.mm-draft-content { font-size: var(--text-sm); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
+.mm-evidence { font-size: var(--text-xs); color: var(--text-muted); border-left: 3px solid var(--border); padding-left: var(--space-2); }
+.mm-expiry { font-size: var(--text-xs); color: var(--text-faint); }
+.mm-draft-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.mm-accept {
+  padding: var(--space-1) var(--space-3); border: none; border-radius: var(--radius-full);
+  background: var(--success); color: var(--bg); font-size: var(--text-xs); font-weight: 700; cursor: pointer;
+}
+.mm-accept:hover { filter: brightness(1.08); }
+.mm-reject {
+  padding: var(--space-1) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); color: var(--text-muted); font-size: var(--text-xs); font-weight: 700; cursor: pointer;
+}
+.mm-reject:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* Ephemeral feedback (demo mode banner / action result) */
+.mm-notice { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-xs); font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); }
+.mm-notice.ok { color: var(--success); border-color: var(--success); }
+.mm-notice.err { color: var(--warning); border-color: var(--warning); }
+
+/* Stack tray below on smaller screens; keep 390px clean. */
+@media (max-width: 900px) {
+  .mm-main { grid-template-columns: minmax(0, 1fr); }
+  .mm-tray { order: 2; }
+}
+@media (max-width: 560px) {
+  .mm-composer { flex-direction: column; align-items: stretch; }
+  .mm-composer .mm-btn { align-self: flex-start; }
+  .mm-q { max-width: none; }
+  .mm-src { width: auto; }
+  .mm-tabs { width: 100%; justify-content: flex-start; }
+}
