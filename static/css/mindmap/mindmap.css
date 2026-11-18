@@ -103,7 +103,7 @@
 }
 
 /* Draft tray */
-.mm-tray { min-width: 0; }
+.mm-tray { min-width: 0; padding-bottom: 120px; }  /* clear the floating Elisa launcher */
 .mm-tray-head { padding: var(--space-3) var(--space-4); background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 .mm-tray-head h2 { margin: 0; font-family: var(--font-body); font-size: var(--text-base); font-weight: 700; }
 .mm-tray-list {

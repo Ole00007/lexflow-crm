@@ -21,6 +21,20 @@
   }
 
   var wsId = parseInt(page.getAttribute('data-ws-id') || '', 10) || null;
+  var wsReady = null;
+  // Page loads arrive without an Authorization header, so the server cannot
+  // render data-ws-id. Resolve the caller's workspace from the API instead.
+  function ensureWorkspace() {
+    if (wsId || DEMO) return Promise.resolve(wsId);
+    if (wsReady) return wsReady;
+    wsReady = api('/api/auth/me').then(function (res) {
+      var u = res && res.ok ? res.data : null;
+      wsId = (u && u.workspace && u.workspace.id) || null;
+      if (ACTIVE.target_type === 'workspace') ACTIVE.target_id = wsId;
+      return wsId;
+    }).catch(function () { return null; });
+    return wsReady;
+  }
   var tabButtons = Array.prototype.slice.call(page.querySelectorAll('.mm-tab'));
   var streamList = document.getElementById('mm-stream-list');
   var tray = document.getElementById('mm-tray');
@@ -434,8 +448,10 @@
   })[0];
   if (activeTab) activeTab.classList.add('active');
   updateComposerState();
-  loadNotes();
-  loadDrafts();
+  ensureWorkspace().then(function () {
+    loadNotes();
+    loadDrafts();
+  });
   // Keep the tray's expiry countdowns fresh.
   setInterval(loadDrafts, 60000);
 })();
