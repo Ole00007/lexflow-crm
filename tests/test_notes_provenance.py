@@ -99,6 +99,16 @@ def test_workspace_target_is_allowed():
     assert r.get_json()['target_type'] == 'workspace'
 
 
+def test_workspace_target_outside_tenant_is_refused():
+    st = build_state()
+    # 'foreign' belongs to a different workspace; targeting workspace 1 must 404,
+    # not silently attach a note to someone else's project.
+    r = st['client'].post('/api/notes/', headers=st['headers']['foreign'], json={
+        'target_type': 'workspace', 'target_id': 1, 'content': 'cross-tenant probe',
+    })
+    assert r.status_code in (403, 404), r.get_json()
+
+
 def test_notes_do_not_leak_across_tenants():
     st = build_state()
     assert _post_note(st, content='tenant A only').status_code == 201

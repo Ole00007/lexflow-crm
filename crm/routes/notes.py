@@ -16,7 +16,15 @@ VALID_SOURCES = {"human", "agent"}
 def _resolve_target(target_type, target_id):
     if target_type == "workspace":
         from ..models.workspace import Workspace
-        return Workspace.query.filter_by(id=target_id).first()
+        from ..workspace import get_visible_workspace_ids
+        ws = Workspace.query.filter_by(id=target_id).first()
+        if not ws:
+            return None
+        visible = get_visible_workspace_ids()
+        # superadmin -> None (all workspaces); everyone else must see this one
+        if visible is not None and ws.id not in visible:
+            return None
+        return ws
     model_map = {"case": Case, "contact": Contact, "task": Task}
     model_cls = model_map.get(target_type)
     if not model_cls: return None
