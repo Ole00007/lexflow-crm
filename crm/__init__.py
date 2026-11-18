@@ -501,15 +501,19 @@ def create_app():
             # 92026). These crash GET /api/tasks with "year XXXX is out of range"
             # during result conversion. Reset the bad date to NULL so the list
             # renders. Runs on boot, idempotent, additive.
+            #
+            # Portable predicate: EXTRACT() is Postgres-only and raised
+            # "near FROM: syntax error" on SQLite, so the heal silently never ran
+            # on the local/demo DB. Bound date literals compare correctly on both
+            # engines (SQLite stores DATE as ISO text; Postgres casts the literal).
             try:
                 from sqlalchemy import text as _text
                 with db.engine.connect() as conn:
                     conn.execute(_text(
                         "UPDATE tasks SET duedate = NULL "
                         "WHERE duedate IS NOT NULL "
-                        "AND (EXTRACT(YEAR FROM duedate) < 1900 "
-                        "     OR EXTRACT(YEAR FROM duedate) > 2100)"
-                    ))
+                        "AND (duedate < :lo OR duedate > :hi)"
+                    ), {"lo": "1900-01-01", "hi": "2100-12-31"})
                     conn.commit()
             except Exception as e:
                 logging.getLogger(__name__).warning(f"heal task dates skipped: {e}")

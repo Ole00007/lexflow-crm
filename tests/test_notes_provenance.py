@@ -94,9 +94,14 @@ def test_date_and_text_filters():
     assert _post_note(st, content='alpha deadline').status_code == 201
     assert _post_note(st, content='beta invoice').status_code == 201
 
-    today = date.today().isoformat()
-    yesterday = (date.today() - timedelta(days=1)).isoformat()
-    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    # Notes store created_at in UTC, so the date window must be expressed in UTC
+    # too: between 00:00 and 01:00 CET the local date is already "tomorrow" and
+    # the filter returned nothing.
+    from datetime import datetime, timezone
+    _utc_today = datetime.now(timezone.utc).date()
+    today = _utc_today.isoformat()
+    yesterday = (_utc_today - timedelta(days=1)).isoformat()
+    tomorrow = (_utc_today + timedelta(days=1)).isoformat()
 
     hit = st['client'].get(f'/api/notes/?date_from={today}&date_to={tomorrow}', headers=h).get_json()
     assert {n['content'] for n in hit} == {'alpha deadline', 'beta invoice'}
