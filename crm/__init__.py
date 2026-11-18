@@ -466,6 +466,20 @@ def create_app():
             except Exception as e:
                 log.warning(f"ensure tasks.vault_ref skipped: {e}")
 
+            # Ensure notes.source / notes.source_ref exist (provenance for the
+            # Mindmap: human vs promoted-agent note). Additive, nullable/defaulted.
+            try:
+                note_cols = [c['name'] for c in inspector.get_columns('notes')]
+                with db.engine.connect() as conn:
+                    if 'source' not in note_cols:
+                        conn.execute(text("ALTER TABLE notes ADD COLUMN source VARCHAR(16) NOT NULL DEFAULT 'human'"))
+                    if 'source_ref' not in note_cols:
+                        conn.execute(text("ALTER TABLE notes ADD COLUMN source_ref VARCHAR(64) NULL"))
+                    conn.commit()
+                log.info("✓ Ensured notes.source/source_ref")
+            except Exception as e:
+                log.warning(f"ensure notes provenance fields skipped: {e}")
+
             # Seed per-tenant code_prefix for case IDs (additive; only fills blank)
             _seed_code_prefixes()
 
