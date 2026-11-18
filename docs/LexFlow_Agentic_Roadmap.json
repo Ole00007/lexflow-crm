@@ -2,7 +2,7 @@
   "project": "LexFlow MVP",
   "file_purpose": "Agentic master tracking file — machine-readable for Hermes agents (Operator-Installer, backend-dev, frontend-dev, LexFlow Head Admin). Designed to mirror Kanban structure for direct rendering inside the CRM UI (next to /kanban).",
   "schema_version": "1.0",
-  "last_updated": "2026-11-17",
+  "last_updated": "2026-11-18",
   "gantt_dates": {
     "pass": "T-028 2026-11-03",
     "purpose": "Real start_date/due_date per task node, so /gantt and the seeded task rows stop deriving dates from the roadmap column.",
@@ -108,28 +108,19 @@
     }
   ],
   "last_status_run": {
-    "date": "2026-11-17",
+    "date": "2026-11-18",
     "by": "operator-installer (daily LexFlow status cron cda5f6d4a18a)",
     "evidence_used": [
-      "GIT (canonical worktree /Users/olesiarasing/projects/lexflow/lexflow-crm-wt-merge): at run time the worktree sat on feat/t025-local-smoke-2026-11-16 @ 6a4c49f, which IS the lexflow_hermes_v1 tip (the branch pointer had been switched, no commit added). `git log --all --since=2026-11-13` on the primary checkout returned ZERO commits: nothing was committed on ANY branch between the 2026-11-13 status commit and today. lexflow_hermes_v1 is 34 commits ahead of origin/lexflow_hermes_v1 (origin tip ddec0aa, 2026-10-27). The working tree carried an UNCOMMITTED 2026-11-14 edit of this file (last_updated 2026-11-14 + two re_probe entries, file mtime 2026-11-14 09:17) — today's run completed and committed it.",
-      "PROD (probe 2026-11-17 09:05-09:08 CET): https://web-production-031a6.up.railway.app is SERVING AGAIN after 12 days of edge-404. / -> 200 text/html, title 'LexFlow – Legal Intake & Status Suite'; /health -> 200 {\"database_url_set\":true,\"db\":\"ok\",\"environment\":\"production\",\"python\":\"3.11.8\",\"status\":\"ok\"}; /kanban -> 200 'Kanban — Secure Workspace'; /tasks -> 200; /login?ws=lexflow, ws=romanelli, ws=pagliano -> 200. NO x-railway-fallback header (server railway-hikari, x-railway-edge cdg1, x-hikari-trace cdg1.8vsn, CSP/HSTS/X-Frame-Options present). /gantt, /graph, /api/public/intake -> 404, so the live build predates those local-only features (T-021/T-022 stay local_verified); exact deployed commit not readable from outside.",
-      "LANDING: https://poetic-kleicha-28d058.netlify.app/ -> 200, unchanged (T-016 deployed still holds).",
-      "KANBAN (~/.hermes/kanban.db, read 2026-11-17 09:10 CET): 125 cards — 94 done / 25 blocked / 5 todo / 1 scheduled. Only SIX cards were touched since 2026-11-14, all on 2026-11-16: t_476b9b7e done (memy, AGENT_RULES §21 doc-sync verification), t_39609afa done (backend-dev, LexFlow demo on :5057), and four roster-notice cards picked up by the 18:08 dispatcher pass (t_72d5c3d2 / t_b8c5107e / t_a1f229a4 / t_d75fd050, all left blocked). No LexFlow engineering card moved.",
-      "VALIDATOR: `python3 docs/tools/validate_roadmap.py` -> exit 1 with 2 violations, both reported and not papered over: [C] two frozen legacy copies of the tracker under /Users/olesiarasing/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/ (frozen legacy per AGENT_RULES §8, TCC-protected, removable only by Ole); [D] last_updated 3 days stale — CLOSED by this run. No [A] report_rule gap and no [B] card<->roadmap drift violation exists today."
+      "GIT (canonical worktree /Users/olesiarasing/projects/lexflow/lexflow-crm-wt-merge, branch lexflow_hermes_v1): HEAD 1d57f83 (2026-11-17 09:11, yesterday's status commit) and `git log --all --since=2026-11-17T00:00:00` returned EXACTLY ONE commit - that status commit itself. ZERO engineering commits on ANY of the 30 worktrees/branches in the 24h window. Working tree clean. lexflow_hermes_v1 is 35 commits ahead of origin/lexflow_hermes_v1 (upstream now legacy-recovered/lexflow_hermes_v1, ahead 115) - the +1 vs yesterday is this tracker's own docs commit. Nothing to promote: no new code, no deploy from our side.",
+      "PROD (probe 2026-11-18 09:26-09:29 CET): https://web-production-031a6.up.railway.app/ -> 200 text/html; /health -> 200 {\"database_url_set\":true,\"db\":\"ok\",\"environment\":\"production\",\"python\":\"3.11.8\",\"status\":\"ok\"}; /kanban -> 200; /tasks -> 200; /login?ws=lexflow -> 200. Headers: server railway-hikari, NO x-railway-fallback, CSP+HSTS+X-Content-Type-Options+X-Frame-Options present. STABLE - same state as the 2026-11-17 recovery, no regression. /gantt, /graph, /api/public/intake -> 404, unchanged: the live build still predates the local-only work (T-021/T-022/T-027 stay local_verified; deployed commit still not readable from outside -> P0-PROD-IDENTITY-UNCONFIRMED-2026-11-06 open).",
+      "KANBAN (~/.hermes/kanban.db, read 2026-11-18 09:31 CET): 127 cards - 95 done / 26 blocked / 5 todo / 1 scheduled. ZERO cards created, started or completed since the 2026-11-17 09:11 run (only t_9f758266 closed and t_9548af59 + t_9b6bcaef created BY that run are in the window). No LexFlow engineering card moved in 24h.",
+      "VAULT: 2026-11-17 daily note carries the full 11-17 status section; no 2026-11-18 note existed before this run (created). No new vault evidence about LexFlow between the two runs.",
+      "VALIDATOR: `python3 docs/tools/validate_roadmap.py` -> exit 1, 1 violation: [C] two frozen legacy copies of the tracker under /Users/olesiarasing/Desktop/projects/Products & Services/LEGAL/LEXFLOW Production/ (+ .../lexflow-crm/docs/). These are the frozen ~/Desktop legacy tree (AGENT_RULES §8, TCC-protected, read-only, never a working location). NOT created by this run, NOT removable without Ole's go - reported, not papered over. Checks A (report_rule), B (card<->roadmap) and D (freshness) all passed."
     ],
-    "moved_today": [
-      "open_p0 P0-PROD-DOWN-REGRESSION-2026-11-04: OPEN (day 11) -> RESOLVED on a live 200 probe",
-      "open_p0 P0-PROD-DOWN: RESOLVED re-confirmed at HTTP level (had been \"not re-confirmed\" since 2026-11-06)",
-      "open_p0 P0-PROD-IDENTITY: fact (a) invalidated — the hostname serves LexFlow again; commit identity still open"
-    ],
-    "cards_created": [
-      "t_9b6bcaef — T-005 WhatsApp Business API implementation; created blocked on Ole approving the scope + provider (HARD GATE)",
-      "t_9548af59 — DEPLOY GATE: lexflow_hermes_v1 (34 commits ahead of origin) + 11 local_verified nodes; created blocked on Ole's per-push go"
-    ],
-    "cards_closed": [
-      "t_9f758266 (P0 REGRESSION 2026-11-04 card) — closed on today's live 200 evidence"
-    ],
-    "note": "Headline is infrastructure, not code: prod came back by itself — a Railway-side service/domain re-attach after 12 days of edge-404 — while nothing was pushed and nothing was committed on any branch since 2026-11-13. ZERO task columns changed, because no commit and no deploy happened on our side and promoting any local_verified node to deployed would be a guess. Run gaps are recorded explicitly in previous_status_runs: 2026-11-14 (partial — this file was edited at 09:17 but never committed, no daily note written), 2026-11-15 and 2026-11-16 (no run at all). Routing per §10.3: 11 unfinished local_verified nodes (T-005, T-008, T-009, T-017, T-019, T-021, T-022, T-023, T-027, T-028, T-029) each lack an open card, but they all share ONE blocker (the push/deploy gate), so they got ONE consolidated gate card instead of 11 duplicate cards (§9); T-005 is separate because its blocker is Ole's scope approval, not the gate."
+    "moved_today": "nothing moved. 0 column flips: no commit, no deploy, no card transition, prod unchanged (still 200 on the recovery state, still 404 on the local-only routes). Columns left exactly as the 2026-11-17 evidence supports.",
+    "cards_created": [],
+    "cards_closed": [],
+    "note": "Second consecutive quiet day on the LexFlow side, but GREEN-quiet: prod stayed up (day 2 after the 12-day edge-404 outage) and the board did not drift. The whole project is still gated on Ole, not on engineering velocity: t_9548af59 (DEPLOY GATE - push of 35 local commits, 11 local_verified nodes behind it), plus t_aa43a4c0 (Railway SECRET_KEY/JWT_SECRET_KEY), t_da4552e5 (Resend verified domain/SMTP), t_9b6bcaef (T-005 WhatsApp scope), t_4ae8b7e1 (feature-flag vars), t_a885fb80 (Admy Railway token). Card t_9548af59's title still says '34 commits ahead' - actual is 35; not renamed (no value in churning a blocked card), noted here instead. No new Kanban cards created: every unfinished node already owns exactly one open card or is covered by the consolidated deploy gate (§9/§10.3 dedupe held)."
   },
   "kanban_card_map": {
     "T-002": "t_a5f4dd68",
