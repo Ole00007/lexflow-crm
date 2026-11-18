@@ -27,6 +27,7 @@
   var trayList = document.getElementById('mm-tray-list');
   var composer = document.getElementById('mm-post');
   var composeBox = document.getElementById('mm-compose');
+  var postFeedback = document.getElementById('mm-post-feedback');
   var applyBtn = document.getElementById('mm-apply');
   var filters = {
     source: document.getElementById('mm-source'),
@@ -38,6 +39,7 @@
 
   var TARGET_LABEL = { workspace: 'Workspace', task: 'Task', case: 'Case', contact: 'Contact' };
   var ORIGIN_LABEL = { human_request: 'Human request', superior_agent: 'Superior agent', event_rule: 'Event rule' };
+  var NO_TARGET_HINT = 'Select a Task, Case or Contact to post a note for it.';
   var ACTIVE = { target_type: 'workspace', target_id: wsId };
   var loadingDrafts = false;
 
@@ -91,6 +93,10 @@
         var list = store.notes.slice();
         if (f.source) list = list.filter(function (n) { return n.source === f.source; });
         if (f.target_type) list = list.filter(function (n) { return n.target_type === f.target_type; });
+        if (f.author_id) {
+          var aid = String(f.author_id);
+          list = list.filter(function (n) { return String(n.author_id) === aid; });
+        }
         if (f.q) {
           var qq = f.q.toLowerCase();
           list = list.filter(function (n) {
@@ -190,13 +196,52 @@
   function chipFor(n) {
     if (n.source === 'agent') {
       // Promoted agent draft: never a send/email action — labelled "for review".
-      return '<span class="mm-chip mm-draft">Elisa draft</span>'
+      return '<span class="mm-chip mm-chip-draft">Elisa draft</span>'
         + '<span class="mm-chip mm-review">for review</span>';
     }
     return '<span class="mm-chip mm-human">Human</span>';
   }
 
   /* ---------- note stream ---------- */
+
+  // Rebuild the Author filter's <select> from the loaded notes' distinct authors,
+  // preserving the current selection so Apply/refresh keep the chosen filter.
+  function populateAuthorSelect(notes) {
+    if (!filters.author) return;
+    var current = filters.author.value;
+    var byId = {};
+    (notes || []).forEach(function (n) {
+      if (n.author_id === null || n.author_id === undefined) return;
+      byId[String(n.author_id)] = authorName(n);
+    });
+    var ids = Object.keys(byId);
+    var html = '<option value="">Any author</option>';
+    ids.forEach(function (id) { html += '<option value="' + esc(id) + '">' + esc(byId[id]) + '</option>'; });
+    filters.author.innerHTML = html;
+    if (current && byId[current] !== undefined) filters.author.value = current;
+  }
+
+  // Inline, persistent composer feedback (fixes silent post failures): aria-live element
+  // next to the Post button shows server errors/hints even when the draft tray is hidden.
+  function setComposerFeedback(msg, kind) {
+    if (!postFeedback) return;
+    postFeedback.textContent = msg || '';
+    postFeedback.className = 'mm-post-feedback mm-post-feedback-' + (kind || 'ok');
+    if (msg) composer.setAttribute('aria-describedby', 'mm-post-feedback');
+    else composer.removeAttribute('aria-describedby');
+  }
+
+  function updateComposerState() {
+    var hasTarget = ACTIVE.target_id !== null && ACTIVE.target_id !== undefined && ACTIVE.target_id !== '';
+    composer.disabled = !hasTarget;
+    if (hasTarget) {
+      composer.title = '';
+      setComposerFeedback('', 'ok');
+    } else {
+      composer.title = NO_TARGET_HINT;
+      setComposerFeedback(NO_TARGET_HINT, 'hint');
+    }
+  }
 
   function noteCard(n) {
     return '<article class="mm-card' + (n.source === 'agent' ? ' mm-agent' : '') + '">'
@@ -211,13 +256,11 @@
   }
 
   function buildParams() {
-    var authorRaw = filters.author.value.trim();
-    var authorId = /^\d+$/.test(authorRaw) ? authorRaw : '';
     return {
       target_type: ACTIVE.target_type,
       target_id: ACTIVE.target_id,
       source: filters.source.value,
-      author_id: authorId,
+      author_id: filters.author.value,
       date_from: filters.dateFrom.value,
       date_to: filters.dateTo.value,
       q: filters.q.value.trim()
@@ -231,6 +274,7 @@
     streamList.appendChild(loading);
     return api('/api/notes/' + qs(buildParams())).then(function (res) {
       var notes = res.ok && Array.isArray(res.data) ? res.data : [];
+      populateAuthorSelect(notes);
       if (!notes.length) {
         streamList.innerHTML = '<div class="mm-state">No notes yet for this target.</div>';
         return;
@@ -245,6 +289,10 @@
 
   function postNote() {
     var text = composeBox.value.trim();
+    if (composer.disabled || ACTIVE.target_id === null || ACTIVE.target_id === undefined) {
+      updateComposerState();
+      return;
+    }
     if (!text) { composeBox.focus(); return; }
     composer.disabled = true;
     api('/api/notes/', {
@@ -254,13 +302,14 @@
       composer.disabled = false;
       if (res.ok) {
         composeBox.value = '';
+        setComposerFeedback('Note posted.', 'ok');
         loadNotes();
       } else {
-        flashTray((res.data && res.data.error) || 'Could not post note.', 'err');
+        setComposerFeedback((res.data && res.data.error) || 'Could not post note.', 'err');
       }
     }).catch(function () {
       composer.disabled = false;
-      flashTray('Could not post note. Check your connection.', 'err');
+      setComposerFeedback('Could not post note. Check your connection.', 'err');
     });
   }
 
@@ -292,7 +341,10 @@
     var origin = ORIGIN_LABEL[d.origin] || d.origin;
     var ev = d.evidence ? '<div class="mm-evidence">' + esc(d.evidence) + '</div>' : '';
     return '<article class="mm-draft" data-id="' + d.id + '">'
-      + '<span class="mm-origin ' + esc(d.origin || '') + '">' + esc(origin) + '</span>'
+      + '<div class="mm-draft-top">'
+      +   '<span class="mm-origin ' + esc(d.origin || '') + '">' + esc(origin) + '</span>'
+      +   '<span class="mm-draft-target">' + esc(targetTag(d)) + '</span>'
+      + '</div>'
       + '<div class="mm-draft-content">' + esc(d.content) + '</div>'
       + ev
       + '<div class="mm-expiry">' + esc(countdown(d.expires_at)) + '</div>'
@@ -348,7 +400,8 @@
       btn.classList.add('active');
       ACTIVE.target_type = btn.getAttribute('data-target-type');
       var tid = btn.getAttribute('data-target-id');
-      if (tid) ACTIVE.target_id = parseInt(tid, 10);
+      ACTIVE.target_id = tid ? parseInt(tid, 10) : null;
+      updateComposerState();
       loadNotes();
     });
   });
@@ -380,6 +433,7 @@
     return b.getAttribute('data-target-type') === ACTIVE.target_type;
   })[0];
   if (activeTab) activeTab.classList.add('active');
+  updateComposerState();
   loadNotes();
   loadDrafts();
   // Keep the tray's expiry countdowns fresh.

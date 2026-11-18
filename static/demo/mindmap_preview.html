@@ -98,7 +98,7 @@
             <option value="">All</option><option value="human">Human</option><option value="agent">Elisa draft</option>
           </select>
         </label>
-        <label class="mm-field"><span class="mm-field-label">Author</span><input id="mm-author" type="text" placeholder="Any author" aria-label="Author"></label>
+        <label class="mm-field mm-author"><span class="mm-field-label">Author</span><select id="mm-author" aria-label="Author"><option value="">Any author</option></select></label>
         <label class="mm-field"><span class="mm-field-label">From</span><input id="mm-date-from" type="date" aria-label="Date from"></label>
         <label class="mm-field"><span class="mm-field-label">To</span><input id="mm-date-to" type="date" aria-label="Date to"></label>
         <label class="mm-field mm-q"><span class="mm-field-label">Search</span><input id="mm-q" type="search" placeholder="Free text…" aria-label="Search notes"></label>
@@ -109,6 +109,7 @@
         <div class="mm-stream card stack">
           <div class="mm-composer" id="mm-composer">
             <textarea id="mm-compose" rows="2" placeholder="Write a note for this target…" aria-label="New note"></textarea>
+            <span class="mm-post-feedback" id="mm-post-feedback" aria-live="polite"></span>
             <button class="mm-btn mm-post" id="mm-post" type="button">Post note</button>
           </div>
           <div class="mm-stream-list" id="mm-stream-list" aria-live="polite" aria-label="Note stream"></div>

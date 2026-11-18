@@ -45,9 +45,11 @@
         <option value="agent">Elisa draft</option>
       </select>
     </label>
-    <label class="mm-field">
+    <label class="mm-field mm-author">
       <span class="mm-field-label">Author</span>
-      <input id="mm-author" type="text" placeholder="Any author" aria-label="Author">
+      <select id="mm-author" aria-label="Author">
+        <option value="">Any author</option>
+      </select>
     </label>
     <label class="mm-field">
       <span class="mm-field-label">From</span>
@@ -68,6 +70,7 @@
     <div class="mm-stream card stack">
       <div class="mm-composer" id="mm-composer">
         <textarea id="mm-compose" rows="2" placeholder="Write a note for this target…" aria-label="New note"></textarea>
+        <span class="mm-post-feedback" id="mm-post-feedback" aria-live="polite"></span>
         <button class="mm-btn mm-post" id="mm-post" type="button">Post note</button>
       </div>
       <div class="mm-stream-list" id="mm-stream-list" aria-live="polite" aria-label="Note stream">
