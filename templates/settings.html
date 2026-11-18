@@ -23,6 +23,51 @@
     <p id="msg" style="margin-top:var(--space-3);font-size:var(--text-sm)"></p>
 </div>
 
+<div class="card" style="max-width:520px;margin-top:var(--space-4)">
+    <div class="eyebrow">Agent proposals</div>
+    <p class="intro" style="margin-top:var(--space-2)">Superadmin only. Engaged means background agent proposals stop for this workspace immediately. Notes stay human-writable — agents never write to the record.</p>
+    <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);font-weight:600">
+        <input type="checkbox" id="ksToggle" onchange="toggleKillSwitch(this.checked)">
+        Stop all background agent proposals
+    </label>
+    <p id="ksMsg" aria-live="polite" style="margin-top:var(--space-2);font-size:var(--text-sm)"></p>
+</div>
+
+<script>
+function token() { return localStorage.getItem('jwt') || ''; }
+function loadKillSwitch() {
+    var msg = document.getElementById('ksMsg');
+    var box = document.getElementById('ksToggle');
+    if (!msg || !box) return;
+    fetch('/api/agent/policies/kill-switch', { headers: {'Authorization': 'Bearer ' + token()} })
+    .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(d){
+        box.checked = !!d.kill_switch;
+        msg.textContent = d.kill_switch ? 'Engaged — no background proposals.' : 'Released — policies apply.';
+        msg.style.color = d.kill_switch ? 'var(--warning)' : 'var(--text-muted)';
+    })
+    .catch(function(){ msg.textContent = 'Superadmin only.'; msg.style.color = 'var(--text-muted)'; });
+}
+function toggleKillSwitch(stop) {
+    var msg = document.getElementById('ksMsg');
+    msg.textContent = 'Saving…';
+    fetch('/api/agent/policies/kill-switch', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token()},
+        body: JSON.stringify({enabled: !stop})
+    })
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
+    .then(function(res){
+        if (!res.ok) { msg.textContent = '✕ ' + (res.data.error || 'Failed'); msg.style.color='var(--warning)'; return; }
+        var engaged = !!res.data.kill_switch;
+        document.getElementById('ksToggle').checked = engaged;
+        msg.textContent = engaged ? 'Engaged — no background proposals.' : 'Released — policies apply.';
+        msg.style.color = engaged ? 'var(--warning)' : 'var(--text-muted)';
+    })
+    .catch(function(err){ msg.textContent = 'Network error: ' + err.message; msg.style.color='var(--warning)'; });
+}
+loadKillSwitch();
+</script>
 <script>
 function token() { return localStorage.getItem('jwt') || ''; }
 function saveCreds(e) {

@@ -341,6 +341,17 @@ def upsert_policy(event_key):
     return jsonify(policy.to_dict()), 200
 
 
+@agent_drafts_bp.get('/policies/kill-switch')
+@jwt_required()
+def kill_switch_state():
+    """Read the switch so the settings UI can render its current position."""
+    user = _user()
+    if not user or not _can_see_workspace(user.workspace_id):
+        return _err('Forbidden', 403)
+    engaged = _kill_switch_engaged(user.workspace_id)
+    return jsonify({'kill_switch': engaged, 'event_rule_generation_enabled': not engaged}), 200
+
+
 @agent_drafts_bp.post('/policies/kill-switch')
 @jwt_required()
 def kill_switch():
