@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import sys
 import threading
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -18,7 +18,7 @@ from crm.extensions import db  # noqa: E402
 from crm.models.agent_audit import AgentPendingAction  # noqa: E402
 from crm.models.task import Task  # noqa: E402
 
-MSG = 'Create task Hardening probe for matter Rasing separazione due 2026-11-03'
+MSG = f'Create task Hardening probe for matter Rasing separazione due {(date.today() + timedelta(days=2)).isoformat()}'
 
 
 def _propose(state, who='super', msg=MSG):

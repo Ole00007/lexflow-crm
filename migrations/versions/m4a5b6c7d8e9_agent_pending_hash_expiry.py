@@ -1,14 +1,14 @@
 """agent pending actions: payload_hash + expires_at (approval bound to exact content, with expiry)
 
 Revision ID: m4a5b6c7d8e9
-Revises: l3f4a5b6c7d8
+Revises: m4b5c6d7e8f9
 Create Date: 2026-11-02 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = 'm4a5b6c7d8e9'
-down_revision = 'l3f4a5b6c7d8'
+down_revision = 'm4b5c6d7e8f9'
 branch_labels = None
 depends_on = None
 
