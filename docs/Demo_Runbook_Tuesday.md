@@ -15,7 +15,7 @@ cd ~/projects/lexflow/lexflow-crm-wt-integration
 ./run_demo.sh          # or the command in section 6
 
 # 3. golden smoke — must print RESULT: PASS
-./local_venv/bin/python scripts/demo_smoke.py --base http://127.0.0.1:5057
+~/projects/lexflow/lexflow-crm-wt-hmerge/local_venv/bin/python scripts/demo_smoke.py --base http://127.0.0.1:5057
 ```
 
 If smoke fails, **do not improvise in front of the client** — use the fallback in section 5.
@@ -53,9 +53,9 @@ guarantee, not a setting.
 
 If the server or a call fails:
 
-1. `./local_venv/bin/python scripts/demo_smoke.py` → read the FAIL line; it names the broken step.
+1. `~/projects/lexflow/lexflow-crm-wt-hmerge/local_venv/bin/python scripts/demo_smoke.py` → read the FAIL line; it names the broken step.
 2. If it is a data problem, reset and reseed:
-   `python scripts/demo_reset.py && python seed_mindmap_demo.py --workspace lexflow && python seed_mindmap_notes.py`
+   `~/projects/lexflow/lexflow-crm-wt-hmerge/local_venv/bin/python scripts/demo_reset.py && ~/projects/lexflow/lexflow-crm-wt-hmerge/local_venv/bin/python seed_mindmap_demo.py --workspace lexflow && ~/projects/lexflow/lexflow-crm-wt-hmerge/local_venv/bin/python seed_mindmap_notes.py`
 3. If it is a code problem, switch to screenshots in `docs/`: `mindmap-ui-1440.png`,
    `mindmap-ui-390.png` (already generated), and continue the conversation from there.
 4. Never restart the server while the client is watching — ask for 30 seconds.
@@ -68,7 +68,7 @@ DATABASE_URL="sqlite:///$HOME/.hermes/profiles/smoothy_op_dir/cache/scratch/mind
 LEXFLOW_VAULT_DIR="$HOME/.hermes/profiles/smoothy_op_dir/cache/scratch/demo_vault" \
 AGENT_ENABLED=1 SECRET_KEY=local-demo-secret-key-for-dev-only-32b \
 JWT_SECRET_KEY=local-demo-jwt-secret-key-for-dev-only-32b \
-./local_venv/bin/python ~/.hermes/profiles/smoothy_op_dir/cache/scratch/mindmap_boot_5057.py
+~/projects/lexflow/lexflow-crm-wt-hmerge/local_venv/bin/python ~/.hermes/profiles/smoothy_op_dir/cache/scratch/mindmap_boot_5057.py
 ```
 
 ## 7. After the demo
